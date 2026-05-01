@@ -178,6 +178,18 @@ const DJEventManage = () => {
               <Button variant="outline" onClick={copyJoinLink}>
                 <Copy className="mr-2 h-4 w-4" /> Copy join link
               </Button>
+              <Button variant="outline" onClick={() => setAwardOpen(true)}>
+                <Award className="mr-2 h-4 w-4" /> Award points
+              </Button>
+              <Button asChild variant="outline">
+                <Link to={`/leaderboard?event=${event.id}`}>
+                  <Trophy className="mr-2 h-4 w-4" /> Leaderboard
+                </Link>
+              </Button>
+              <Button variant="ghost" onClick={handleSeed} disabled={seeding} className="text-muted-foreground">
+                {seeding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+                Seed demo
+              </Button>
             </div>
           </div>
           <div className="flex justify-center lg:justify-end">
@@ -241,6 +253,8 @@ const DJEventManage = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      <AwardPointsDialog open={awardOpen} onOpenChange={setAwardOpen} eventId={event.id} />
     </div>
   );
 };
