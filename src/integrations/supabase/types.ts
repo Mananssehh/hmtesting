@@ -14,16 +14,197 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      events: {
+        Row: {
+          created_at: string
+          dj_id: string
+          dj_name: string
+          id: string
+          is_active: boolean
+          name: string
+          room_code: string
+          venue: string | null
+        }
+        Insert: {
+          created_at?: string
+          dj_id: string
+          dj_name: string
+          id?: string
+          is_active?: boolean
+          name: string
+          room_code: string
+          venue?: string | null
+        }
+        Update: {
+          created_at?: string
+          dj_id?: string
+          dj_name?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          room_code?: string
+          venue?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          is_premium: boolean
+          nickname: string
+          points: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          is_premium?: boolean
+          nickname?: string
+          points?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_premium?: boolean
+          nickname?: string
+          points?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      song_requests: {
+        Row: {
+          album_art: string | null
+          artist: string
+          boost: number
+          created_at: string
+          downvotes: number
+          event_id: string
+          external_url: string | null
+          id: string
+          requested_by: string | null
+          requester_name: string
+          status: Database["public"]["Enums"]["request_status"]
+          title: string
+          upvotes: number
+        }
+        Insert: {
+          album_art?: string | null
+          artist: string
+          boost?: number
+          created_at?: string
+          downvotes?: number
+          event_id: string
+          external_url?: string | null
+          id?: string
+          requested_by?: string | null
+          requester_name?: string
+          status?: Database["public"]["Enums"]["request_status"]
+          title: string
+          upvotes?: number
+        }
+        Update: {
+          album_art?: string | null
+          artist?: string
+          boost?: number
+          created_at?: string
+          downvotes?: number
+          event_id?: string
+          external_url?: string | null
+          id?: string
+          requested_by?: string | null
+          requester_name?: string
+          status?: Database["public"]["Enums"]["request_status"]
+          title?: string
+          upvotes?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "song_requests_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      votes: {
+        Row: {
+          created_at: string
+          id: string
+          song_request_id: string
+          user_id: string
+          value: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          song_request_id: string
+          user_id: string
+          value: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          song_request_id?: string
+          user_id?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "votes_song_request_id_fkey"
+            columns: ["song_request_id"]
+            isOneToOne: false
+            referencedRelation: "song_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "dj" | "guest"
+      request_status:
+        | "pending"
+        | "approved"
+        | "playing"
+        | "played"
+        | "skipped"
+        | "removed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +331,16 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["dj", "guest"],
+      request_status: [
+        "pending",
+        "approved",
+        "playing",
+        "played",
+        "skipped",
+        "removed",
+      ],
+    },
   },
 } as const
