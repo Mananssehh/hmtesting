@@ -14,6 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      event_participants: {
+        Row: {
+          event_id: string
+          id: string
+          joined_at: string
+          nickname: string
+          user_id: string
+        }
+        Insert: {
+          event_id: string
+          id?: string
+          joined_at?: string
+          nickname?: string
+          user_id: string
+        }
+        Update: {
+          event_id?: string
+          id?: string
+          joined_at?: string
+          nickname?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_participants_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           created_at: string
@@ -46,6 +78,57 @@ export type Database = {
           venue?: string | null
         }
         Relationships: []
+      }
+      points_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          event_id: string | null
+          id: string
+          reason: string
+          song_request_id: string | null
+          type: Database["public"]["Enums"]["point_tx_type"]
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          event_id?: string | null
+          id?: string
+          reason?: string
+          song_request_id?: string | null
+          type: Database["public"]["Enums"]["point_tx_type"]
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          event_id?: string | null
+          id?: string
+          reason?: string
+          song_request_id?: string | null
+          type?: Database["public"]["Enums"]["point_tx_type"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "points_transactions_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "points_transactions_song_request_id_fkey"
+            columns: ["song_request_id"]
+            isOneToOne: false
+            referencedRelation: "song_requests"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -188,6 +271,51 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      award_points: {
+        Args: {
+          _amount: number
+          _created_by?: string
+          _event_id: string
+          _reason?: string
+          _song_request_id?: string
+          _type: Database["public"]["Enums"]["point_tx_type"]
+          _user_id: string
+        }
+        Returns: undefined
+      }
+      boost_request: {
+        Args: { _amount: number; _song_request_id: string }
+        Returns: {
+          album_art: string | null
+          artist: string
+          boost: number
+          created_at: string
+          downvotes: number
+          event_id: string
+          external_url: string | null
+          id: string
+          requested_by: string | null
+          requester_name: string
+          status: Database["public"]["Enums"]["request_status"]
+          title: string
+          upvotes: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "song_requests"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      dj_award_points: {
+        Args: {
+          _amount: number
+          _event_id: string
+          _reason: string
+          _user_id: string
+        }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -198,6 +326,7 @@ export type Database = {
     }
     Enums: {
       app_role: "dj" | "guest"
+      point_tx_type: "earned" | "spent" | "manual_adjustment"
       request_status:
         | "pending"
         | "approved"
@@ -333,6 +462,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["dj", "guest"],
+      point_tx_type: ["earned", "spent", "manual_adjustment"],
       request_status: [
         "pending",
         "approved",
