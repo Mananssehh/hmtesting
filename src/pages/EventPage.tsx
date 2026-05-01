@@ -60,11 +60,10 @@ const EventPage = () => {
 
       // Record participation (idempotent — unique constraint protects)
       const nick = profile?.nickname || "Guest";
-      await supabase.from("event_participants").insert({
-        event_id: ev.id,
-        user_id: user.id,
-        nickname: nick,
-      } as never).then(() => null, () => null); // ignore unique violation
+      await supabase
+        .from("event_participants")
+        .insert({ event_id: ev.id, user_id: user.id, nickname: nick })
+        .then(() => null, () => null); // ignore unique violation
 
       const [{ data: reqs }, { data: votes }] = await Promise.all([
         supabase.from("song_requests").select("*").eq("event_id", ev.id),
