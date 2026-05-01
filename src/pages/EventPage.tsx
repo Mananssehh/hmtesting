@@ -1,15 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { Loader2, Plus, Search, Sparkles } from "lucide-react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { Loader2, Plus, Search, Sparkles, Trophy } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppHeader } from "@/components/AppHeader";
 import { SongRequestCard, SongRequestRow } from "@/components/SongRequestCard";
+import { BoostDialog } from "@/components/BoostDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import { searchMockSongs, MockSong } from "@/lib/mockSongs";
 
 type SortMode = "top" | "new" | "trending";
@@ -17,7 +19,7 @@ type SortMode = "top" | "new" | "trending";
 const EventPage = () => {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
 
   const [eventInfo, setEventInfo] = useState<{ id: string; name: string; venue: string | null; dj_name: string; is_active: boolean } | null>(null);
   const [songs, setSongs] = useState<SongRequestRow[]>([]);
@@ -26,6 +28,7 @@ const EventPage = () => {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [requestOpen, setRequestOpen] = useState(false);
+  const [boostTarget, setBoostTarget] = useState<SongRequestRow | null>(null);
 
   // Redirect if not signed in (need a session — even anonymous — to vote)
   useEffect(() => {
