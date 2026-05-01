@@ -10,6 +10,7 @@ import Join from "./pages/Join";
 import EventPage from "./pages/EventPage";
 import DJDashboard from "./pages/DJDashboard";
 import DJEventManage from "./pages/DJEventManage";
+import Leaderboard from "./pages/Leaderboard";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/event/:code" element={<EventPage />} />
             <Route path="/dj" element={<DJDashboard />} />
             <Route path="/dj/:id" element={<DJEventManage />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
