@@ -1,16 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
-import { Loader2, Trophy, Medal, Crown, ArrowLeft } from "lucide-react";
+import { Loader2, Trophy, Crown, Medal, ArrowLeft, Sparkles, Music2, ThumbsUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppHeader } from "@/components/AppHeader";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 
 type EventOption = { id: string; name: string; room_code: string; venue: string | null };
-type LeaderRow = {
+type GuestRow = {
   user_id: string | null;
   nickname: string;
   requests: number;
@@ -18,6 +20,16 @@ type LeaderRow = {
   downvotes: number;
   boost: number;
   points: number;
+};
+type SongRow = {
+  id: string;
+  title: string;
+  artist: string;
+  album_art: string | null;
+  upvotes: number;
+  downvotes: number;
+  boost: number;
+  requester_name: string;
 };
 
 const Leaderboard = () => {
@@ -28,14 +40,15 @@ const Leaderboard = () => {
 
   const [events, setEvents] = useState<EventOption[]>([]);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(eventIdParam);
-  const [rows, setRows] = useState<LeaderRow[]>([]);
+  const [guests, setGuests] = useState<GuestRow[]>([]);
+  const [songs, setSongs] = useState<SongRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState<"points" | "upvotes" | "requests" | "boosted">("points");
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth", { replace: true });
   }, [user, authLoading, navigate]);
 
-  // Load events list (active first)
   useEffect(() => {
     (async () => {
       const { data } = await supabase
@@ -53,7 +66,6 @@ const Leaderboard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Load leaderboard for selected event
   useEffect(() => {
     if (!selectedEventId) return;
     let cancelled = false;
@@ -62,12 +74,23 @@ const Leaderboard = () => {
     (async () => {
       const { data: reqs } = await supabase
         .from("song_requests")
-        .select("requested_by, requester_name, upvotes, downvotes, boost")
+        .select("id, requested_by, requester_name, title, artist, album_art, upvotes, downvotes, boost")
         .eq("event_id", selectedEventId);
 
       if (cancelled) return;
+      const songRows: SongRow[] = (reqs ?? []).map((r) => ({
+        id: r.id,
+        title: r.title,
+        artist: r.artist,
+        album_art: r.album_art,
+        upvotes: r.upvotes,
+        downvotes: r.downvotes,
+        boost: r.boost,
+        requester_name: r.requester_name || "Guest",
+      }));
+      setSongs(songRows);
 
-      const map = new Map<string, LeaderRow>();
+      const map = new Map<string, GuestRow>();
       for (const r of reqs ?? []) {
         const key = r.requested_by ?? `anon:${r.requester_name}`;
         const existing = map.get(key) ?? {
@@ -86,39 +109,46 @@ const Leaderboard = () => {
         map.set(key, existing);
       }
 
-      // Enrich nicknames from profiles for known users
       const userIds = Array.from(map.values()).map((r) => r.user_id).filter(Boolean) as string[];
+      let pointsMap = new Map<string, number>();
       if (userIds.length) {
         const { data: profs } = await supabase
           .from("profiles")
-          .select("id, nickname")
+          .select("id, nickname, points")
           .in("id", userIds);
         for (const p of profs ?? []) {
+          pointsMap.set(p.id, p.points ?? 0);
           const row = Array.from(map.values()).find((r) => r.user_id === p.id);
           if (row && p.nickname) row.nickname = p.nickname;
         }
       }
 
-      // Points formula: 2 per upvote, +5 per boost, -1 per downvote, +1 per request submitted
       const computed = Array.from(map.values()).map((r) => ({
         ...r,
-        points: r.upvotes * 2 + r.boost * 5 - r.downvotes + r.requests,
+        points: r.user_id ? (pointsMap.get(r.user_id) ?? 0) : 0,
       }));
-      computed.sort((a, b) => b.points - a.points);
-      setRows(computed);
+      setGuests(computed);
       setLoading(false);
     })();
 
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [selectedEventId]);
+
+  const sortedGuests = useMemo(() => {
+    const arr = [...guests];
+    if (tab === "points") arr.sort((a, b) => b.points - a.points);
+    else if (tab === "upvotes") arr.sort((a, b) => b.upvotes - a.upvotes);
+    else if (tab === "requests") arr.sort((a, b) => b.requests - a.requests);
+    return arr;
+  }, [guests, tab]);
+
+  const boostedSongs = useMemo(() => [...songs].sort((a, b) => b.boost - a.boost).filter((s) => s.boost > 0), [songs]);
 
   const myRank = useMemo(() => {
     if (!user) return null;
-    const idx = rows.findIndex((r) => r.user_id === user.id);
+    const idx = sortedGuests.findIndex((r) => r.user_id === user.id);
     return idx >= 0 ? idx + 1 : null;
-  }, [rows, user]);
+  }, [sortedGuests, user]);
 
   const handleEventChange = (id: string) => {
     setSelectedEventId(id);
@@ -129,31 +159,30 @@ const Leaderboard = () => {
     if (rank === 1) return <Crown className="h-5 w-5 text-primary" />;
     if (rank === 2) return <Medal className="h-5 w-5 text-muted-foreground" />;
     if (rank === 3) return <Medal className="h-5 w-5 text-accent" />;
-    return <span className="text-muted-foreground font-mono text-sm w-5 text-center">{rank}</span>;
+    return <span className="text-muted-foreground font-mono text-sm w-5 text-center tabular-nums">{rank}</span>;
   };
+
+  const metricLabel = tab === "points" ? "pts" : tab === "upvotes" ? "▲" : "reqs";
+  const metricValue = (r: GuestRow) =>
+    tab === "points" ? r.points : tab === "upvotes" ? r.upvotes : r.requests;
 
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
       <main className="container max-w-3xl py-8 space-y-6">
-        <div className="flex items-center justify-between gap-4">
-          <div>
-            <Button asChild variant="ghost" size="sm" className="mb-2 -ml-3">
-              <Link to="/"><ArrowLeft className="h-4 w-4 mr-1" />Back</Link>
-            </Button>
-            <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-              <Trophy className="h-7 w-7 text-primary" />
-              Leaderboard
-            </h1>
-            <p className="text-muted-foreground text-sm mt-1">Top requesters by crowd votes</p>
-          </div>
+        <div>
+          <Button asChild variant="ghost" size="sm" className="mb-2 -ml-3">
+            <Link to="/"><ArrowLeft className="h-4 w-4 mr-1" />Back</Link>
+          </Button>
+          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
+            <Trophy className="h-7 w-7 text-primary" />
+            Leaderboard
+          </h1>
+          <p className="text-muted-foreground text-sm mt-1">Hot 100 of the dance floor</p>
         </div>
 
         <Card className="glass">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Event</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="p-4">
             <Select value={selectedEventId ?? undefined} onValueChange={handleEventChange}>
               <SelectTrigger>
                 <SelectValue placeholder="Select an event" />
@@ -170,54 +199,91 @@ const Leaderboard = () => {
           </CardContent>
         </Card>
 
-        {myRank && (
+        {myRank && tab !== "boosted" && (
           <Card className="glass border-primary/40">
-            <CardContent className="py-4 flex items-center justify-between">
+            <CardContent className="py-3 flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Your rank</span>
               <Badge className="bg-primary/20 text-primary border-primary/40">#{myRank}</Badge>
             </CardContent>
           </Card>
         )}
 
-        <Card>
-          <CardContent className="p-0 divide-y">
-            {loading ? (
-              <div className="py-16 flex justify-center">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : rows.length === 0 ? (
-              <div className="py-16 text-center text-muted-foreground">
-                No requests yet for this event.
-              </div>
-            ) : (
-              rows.map((r, i) => {
-                const rank = i + 1;
-                const isMe = user && r.user_id === user.id;
-                return (
-                  <div
-                    key={(r.user_id ?? r.nickname) + i}
-                    className={`flex items-center gap-4 px-4 py-3 ${isMe ? "bg-primary/5" : ""}`}
-                  >
-                    <div className="w-8 flex justify-center">{rankIcon(rank)}</div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate">
-                        {r.nickname}
-                        {isMe && <span className="ml-2 text-xs text-primary">(you)</span>}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {r.requests} request{r.requests === 1 ? "" : "s"} · {r.upvotes} ▲ · {r.downvotes} ▼
-                        {r.boost > 0 && <> · {r.boost} boost</>}
-                      </div>
-                    </div>
-                    <Badge variant="secondary" className="bg-primary/15 text-primary border-primary/30">
-                      {r.points} pts
-                    </Badge>
+        <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
+          <TabsList className="grid grid-cols-4 w-full">
+            <TabsTrigger value="points"><Trophy className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">Points</span></TabsTrigger>
+            <TabsTrigger value="upvotes"><ThumbsUp className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">Upvotes</span></TabsTrigger>
+            <TabsTrigger value="requests"><Music2 className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">Requesters</span></TabsTrigger>
+            <TabsTrigger value="boosted"><Sparkles className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">Boosted</span></TabsTrigger>
+          </TabsList>
+
+          <TabsContent value={tab} className="mt-4">
+            <Card>
+              <CardContent className="p-0 divide-y">
+                {loading ? (
+                  <div className="py-16 flex justify-center">
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                   </div>
-                );
-              })
-            )}
-          </CardContent>
-        </Card>
+                ) : tab === "boosted" ? (
+                  boostedSongs.length === 0 ? (
+                    <div className="py-16 text-center text-muted-foreground">No boosted songs yet.</div>
+                  ) : (
+                    boostedSongs.map((s, i) => (
+                      <div key={s.id} className="flex items-center gap-4 px-4 py-3">
+                        <div className="w-8 flex justify-center">{rankIcon(i + 1)}</div>
+                        {s.album_art ? (
+                          <img src={s.album_art} alt="" className="h-12 w-12 rounded-md object-cover" loading="lazy" />
+                        ) : (
+                          <div className="h-12 w-12 rounded-md bg-gradient-to-br from-primary/40 to-accent/40" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium truncate">{s.title}</div>
+                          <div className="text-xs text-muted-foreground truncate">{s.artist} · by {s.requester_name}</div>
+                        </div>
+                        <Badge className="bg-primary/20 text-primary border-primary/40 gap-1">
+                          <Sparkles className="h-3 w-3" /> +{s.boost}
+                        </Badge>
+                      </div>
+                    ))
+                  )
+                ) : sortedGuests.length === 0 ? (
+                  <div className="py-16 text-center text-muted-foreground">
+                    No activity yet for this event.
+                  </div>
+                ) : (
+                  sortedGuests.map((r, i) => {
+                    const rank = i + 1;
+                    const isMe = user && r.user_id === user.id;
+                    return (
+                      <div
+                        key={(r.user_id ?? r.nickname) + i}
+                        className={cn(
+                          "flex items-center gap-4 px-4 py-3",
+                          isMe && "bg-primary/5",
+                          rank === 1 && "bg-gradient-to-r from-primary/10 via-transparent to-transparent",
+                        )}
+                      >
+                        <div className="w-8 flex justify-center">{rankIcon(rank)}</div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium truncate">
+                            {r.nickname}
+                            {isMe && <span className="ml-2 text-xs text-primary">(you)</span>}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {r.requests} req · {r.upvotes} ▲ · {r.downvotes} ▼
+                            {r.boost > 0 && <> · {r.boost} boost</>}
+                          </div>
+                        </div>
+                        <Badge variant="secondary" className="bg-primary/15 text-primary border-primary/30 tabular-nums">
+                          {metricValue(r)} {metricLabel}
+                        </Badge>
+                      </div>
+                    );
+                  })
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );
