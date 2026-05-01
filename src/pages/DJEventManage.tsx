@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { Check, Copy, Loader2, Play, SkipForward, Trash2, X } from "lucide-react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { Award, Check, Copy, Loader2, Play, SkipForward, Sparkles, Trash2, Trophy, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppHeader } from "@/components/AppHeader";
 import { SongRequestCard, SongRequestRow } from "@/components/SongRequestCard";
+import { AwardPointsDialog } from "@/components/AwardPointsDialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { seedDemoEvent } from "@/lib/demoSeed";
 
 interface EventInfo {
   id: string;
@@ -39,6 +41,8 @@ const DJEventManage = () => {
   const [songs, setSongs] = useState<SongRequestRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<Status | "all">("all");
+  const [awardOpen, setAwardOpen] = useState(false);
+  const [seeding, setSeeding] = useState(false);
 
   useEffect(() => {
     if (!authLoading && (!user || !isDJ)) navigate("/auth", { replace: true });
@@ -120,6 +124,20 @@ const DJEventManage = () => {
     const url = `${window.location.origin}/join?code=${event.room_code}`;
     navigator.clipboard.writeText(url);
     toast.success("Join link copied!");
+  };
+
+  const handleSeed = async () => {
+    if (!event) return;
+    if (!confirm("Add demo songs and fake guests to this event?")) return;
+    setSeeding(true);
+    try {
+      const { count } = await seedDemoEvent(event.id);
+      toast.success(`Seeded ${count} demo requests 🎉`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Seed failed");
+    } finally {
+      setSeeding(false);
+    }
   };
 
   if (authLoading || loading || !event) {
