@@ -211,9 +211,22 @@ const EventPage = () => {
       <div className="container max-w-3xl py-6 sm:py-10">
         {/* Event header */}
         <div className="mb-8 p-6 rounded-2xl bg-gradient-to-br from-primary/15 via-card to-card border border-primary/20">
-          <div className="flex items-center gap-2 text-xs text-primary font-medium mb-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-            LIVE
+          <div className="flex items-center justify-between gap-3 mb-2">
+            <div className="flex items-center gap-2 text-xs text-primary font-medium">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+              LIVE
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="bg-primary/15 text-primary border-primary/30 gap-1">
+                <Sparkles className="h-3 w-3" />{profile?.points ?? 0} pts
+              </Badge>
+              <Button asChild size="sm" variant="ghost" className="h-7">
+                <Link to={`/leaderboard?event=${eventInfo.id}`}>
+                  <Trophy className="h-3.5 w-3.5 sm:mr-1" />
+                  <span className="hidden sm:inline text-xs">Top fans</span>
+                </Link>
+              </Button>
+            </div>
           </div>
           <h1 className="text-3xl font-bold">{eventInfo.name}</h1>
           <p className="text-muted-foreground mt-1">
