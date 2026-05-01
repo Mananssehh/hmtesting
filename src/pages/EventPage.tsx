@@ -291,11 +291,21 @@ const EventPage = () => {
                 song={s}
                 myVote={myVotes[s.id] ?? 0}
                 onVote={(v) => handleVote(s.id, v)}
+                onBoost={() => setBoostTarget(s)}
               />
             ))}
           </div>
         )}
       </div>
+
+      {boostTarget && (
+        <BoostDialog
+          open={!!boostTarget}
+          onOpenChange={(o) => !o && setBoostTarget(null)}
+          songRequestId={boostTarget.id}
+          songTitle={`${boostTarget.title} — ${boostTarget.artist}`}
+        />
+      )}
     </div>
   );
 };
