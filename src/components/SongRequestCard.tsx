@@ -1,4 +1,4 @@
-import { ArrowBigDown, ArrowBigUp, Sparkles, ExternalLink } from "lucide-react";
+import { ArrowBigDown, ArrowBigUp, Sparkles, ExternalLink, Rocket } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,10 +31,11 @@ interface Props {
   song: SongRequestRow;
   myVote?: 1 | -1 | 0;
   onVote?: (value: 1 | -1) => void;
+  onBoost?: () => void;
   disabled?: boolean;
 }
 
-export function SongRequestCard({ rank, song, myVote = 0, onVote, disabled }: Props) {
+export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, disabled }: Props) {
   const score = song.upvotes - song.downvotes + song.boost;
 
   return (
@@ -42,6 +43,7 @@ export function SongRequestCard({ rank, song, myVote = 0, onVote, disabled }: Pr
       className={cn(
         "group flex items-center gap-3 p-3 rounded-xl bg-card/60 border border-border/60 hover:border-primary/40 transition-all",
         song.status === "playing" && "ring-1 ring-primary/60 bg-primary/5",
+        song.boost > 0 && "ring-1 ring-primary/30 bg-gradient-to-r from-primary/5 to-transparent",
       )}
     >
       {/* Vote column */}
@@ -97,26 +99,44 @@ export function SongRequestCard({ rank, song, myVote = 0, onVote, disabled }: Pr
 
       {/* Title block */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <h3 className="font-semibold truncate">{song.title}</h3>
           <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 capitalize border", statusStyles[song.status])}>
             {song.status}
           </Badge>
+          {song.boost > 0 && (
+            <Badge className="text-[10px] px-1.5 py-0 bg-primary/20 text-primary border-primary/40 gap-1">
+              <Sparkles className="h-2.5 w-2.5" /> +{song.boost}
+            </Badge>
+          )}
         </div>
         <p className="text-sm text-muted-foreground truncate">{song.artist}</p>
         <p className="text-xs text-muted-foreground/70 truncate">
           Requested by {song.requester_name}
-          {song.boost > 0 && <span className="text-primary"> · +{song.boost} boost</span>}
         </p>
       </div>
 
-      {song.external_url && (
-        <Button asChild size="icon" variant="ghost" className="opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-          <a href={song.external_url} target="_blank" rel="noreferrer" aria-label="Open in Spotify">
-            <ExternalLink className="h-4 w-4" />
-          </a>
-        </Button>
-      )}
+      <div className="flex items-center gap-1 shrink-0">
+        {onBoost && song.status !== "played" && song.status !== "skipped" && (
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={onBoost}
+            className="text-primary hover:text-primary hover:bg-primary/10 h-8 px-2"
+            aria-label="Boost"
+          >
+            <Rocket className="h-4 w-4 sm:mr-1" />
+            <span className="hidden sm:inline text-xs">Boost</span>
+          </Button>
+        )}
+        {song.external_url && (
+          <Button asChild size="icon" variant="ghost" className="opacity-0 group-hover:opacity-100 transition-opacity">
+            <a href={song.external_url} target="_blank" rel="noreferrer" aria-label="Open in Spotify">
+              <ExternalLink className="h-4 w-4" />
+            </a>
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
