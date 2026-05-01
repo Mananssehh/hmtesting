@@ -1,5 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
-import { mockSongs } from "@/lib/mockSongs";
+import { MOCK_SONGS } from "@/lib/mockSongs";
 
 const DEMO_GUESTS = [
   "NeonRider", "BassQueen", "DiscoDuke", "MidnightMia", "PulseKid",
@@ -14,7 +14,7 @@ const DEMO_GUESTS = [
  * Returns a summary of what was inserted.
  */
 export async function seedDemoEvent(eventId: string) {
-  const picks = [...mockSongs].sort(() => Math.random() - 0.5).slice(0, 8);
+  const picks = [...MOCK_SONGS].sort(() => Math.random() - 0.5).slice(0, 8);
 
   // Build fake requests (requested_by = null because we can't fake auth users)
   // RLS requires auth.uid() = requested_by for INSERT, so we use the DJ as requester
