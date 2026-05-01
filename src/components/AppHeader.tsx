@@ -37,7 +37,10 @@ export function AppHeader() {
                   <Link to="/dj">Dashboard</Link>
                 </Button>
               )}
-              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary text-sm">
+              <Link
+                to="/profile"
+                className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary text-sm hover:bg-secondary/80 transition-colors"
+              >
                 <UserIcon className="h-3.5 w-3.5 text-muted-foreground" />
                 <span className="font-medium">{profile?.nickname ?? "Guest"}</span>
                 {profile && (
@@ -45,7 +48,10 @@ export function AppHeader() {
                     {profile.points} pts
                   </Badge>
                 )}
-              </div>
+              </Link>
+              <Button asChild variant="ghost" size="icon" className="sm:hidden" aria-label="Profile">
+                <Link to="/profile"><UserIcon className="h-4 w-4" /></Link>
+              </Button>
               <Button variant="ghost" size="icon" onClick={handleSignOut} aria-label="Sign out">
                 <LogOut className="h-4 w-4" />
               </Button>

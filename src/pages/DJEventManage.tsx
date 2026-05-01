@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { Check, Copy, Loader2, Play, SkipForward, Trash2, X } from "lucide-react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { Award, Check, Copy, Loader2, Play, SkipForward, Sparkles, Trash2, Trophy, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppHeader } from "@/components/AppHeader";
 import { SongRequestCard, SongRequestRow } from "@/components/SongRequestCard";
+import { AwardPointsDialog } from "@/components/AwardPointsDialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { seedDemoEvent } from "@/lib/demoSeed";
 
 interface EventInfo {
   id: string;
@@ -39,6 +41,8 @@ const DJEventManage = () => {
   const [songs, setSongs] = useState<SongRequestRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<Status | "all">("all");
+  const [awardOpen, setAwardOpen] = useState(false);
+  const [seeding, setSeeding] = useState(false);
 
   useEffect(() => {
     if (!authLoading && (!user || !isDJ)) navigate("/auth", { replace: true });
@@ -122,6 +126,20 @@ const DJEventManage = () => {
     toast.success("Join link copied!");
   };
 
+  const handleSeed = async () => {
+    if (!event) return;
+    if (!confirm("Add demo songs and fake guests to this event?")) return;
+    setSeeding(true);
+    try {
+      const { count } = await seedDemoEvent(event.id);
+      toast.success(`Seeded ${count} demo requests 🎉`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Seed failed");
+    } finally {
+      setSeeding(false);
+    }
+  };
+
   if (authLoading || loading || !event) {
     return (
       <div className="min-h-screen">
@@ -159,6 +177,18 @@ const DJEventManage = () => {
               </div>
               <Button variant="outline" onClick={copyJoinLink}>
                 <Copy className="mr-2 h-4 w-4" /> Copy join link
+              </Button>
+              <Button variant="outline" onClick={() => setAwardOpen(true)}>
+                <Award className="mr-2 h-4 w-4" /> Award points
+              </Button>
+              <Button asChild variant="outline">
+                <Link to={`/leaderboard?event=${event.id}`}>
+                  <Trophy className="mr-2 h-4 w-4" /> Leaderboard
+                </Link>
+              </Button>
+              <Button variant="ghost" onClick={handleSeed} disabled={seeding} className="text-muted-foreground">
+                {seeding ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+                Seed demo
               </Button>
             </div>
           </div>
@@ -223,6 +253,8 @@ const DJEventManage = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      <AwardPointsDialog open={awardOpen} onOpenChange={setAwardOpen} eventId={event.id} />
     </div>
   );
 };
