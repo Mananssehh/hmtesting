@@ -61,6 +61,7 @@ const DJEventManage = () => {
   const [removeTarget, setRemoveTarget] = useState<SongRequestRow | null>(null);
   const [endConfirmOpen, setEndConfirmOpen] = useState(false);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
 
   useEffect(() => {
     if (!authLoading && (!user || !isDJ)) navigate("/auth", { replace: true });
