@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Loader2, Plus, Radio, Settings, Wand2 } from "lucide-react";
+import { Archive as ArchiveIcon, Loader2, Plus, Radio, Settings, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -123,19 +123,24 @@ const DJDashboard = () => {
             <h1 className="text-3xl font-bold">DJ Dashboard</h1>
             <p className="text-muted-foreground">Welcome back, {profile?.nickname}</p>
           </div>
-          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground">
-                <Plus className="mr-1 h-4 w-4" /> New event
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create live event</DialogTitle>
-              </DialogHeader>
-              <CreateEventForm defaultDJ={profile?.nickname ?? ""} onCreate={handleCreate} />
-            </DialogContent>
-          </Dialog>
+          <div className="flex gap-2">
+            <Button asChild variant="outline">
+              <Link to="/dj/archive"><ArchiveIcon className="mr-1 h-4 w-4" /> Archive</Link>
+            </Button>
+            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground">
+                  <Plus className="mr-1 h-4 w-4" /> New event
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create live event</DialogTitle>
+                </DialogHeader>
+                <CreateEventForm defaultDJ={profile?.nickname ?? ""} onCreate={handleCreate} />
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         {events.length === 0 ? (
