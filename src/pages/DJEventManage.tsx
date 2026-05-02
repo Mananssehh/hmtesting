@@ -1,15 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
-  Award, Check, Copy, Loader2, Play, SkipForward, Sparkles, Trash2, Trophy, Wand2,
+  Award, Check, Copy, Loader2, Play, SkipForward, Sparkles, Trophy, Wand2,
   PauseCircle, PlayCircle, XCircle, Music, Rocket, RefreshCw, ListMusic,
+  Maximize2, Minimize2, BarChart3,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppHeader } from "@/components/AppHeader";
 import { SongRequestCard, SongRequestRow } from "@/components/SongRequestCard";
+import { DJSongActions } from "@/components/DJSongActions";
 import { AwardPointsDialog } from "@/components/AwardPointsDialog";
+import { ArchivedEventSummary } from "@/components/ArchivedEventSummary";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
