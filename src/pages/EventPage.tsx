@@ -15,6 +15,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { searchMockSongs, MockSong } from "@/lib/mockSongs";
+import { formatDuration, platformLabel } from "@/lib/searchLinks";
 
 type SortMode = "top" | "new" | "trending";
 
