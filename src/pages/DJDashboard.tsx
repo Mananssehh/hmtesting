@@ -96,16 +96,22 @@ const DJDashboard = () => {
   };
 
   const launchDemoRoom = async () => {
-    const { error } = await supabase.rpc("ensure_demo_event");
+    const { error } = await supabase.rpc("ensure_demo_event", { _code: "DEMO123" });
     if (error) return toast.error(error.message);
     toast.success("Demo room ready — code DEMO123");
     navigate("/event/DEMO123");
   };
 
-  const resetDemoRoom = async () => {
-    const { error } = await supabase.rpc("reset_demo_event");
+  const resetDemoRooms = async () => {
+    const { error } = await supabase.rpc("reset_demo_events");
     if (error) return toast.error(error.message);
-    toast.success("Demo room reset");
+    toast.success("All demo rooms reset");
+  };
+
+  const copyDemoLink = () => {
+    const url = `${window.location.origin}/join?code=DEMO123`;
+    navigator.clipboard.writeText(url);
+    toast.success("Demo join link copied");
   };
 
   const toggleActive = async (ev: EventRow) => {
