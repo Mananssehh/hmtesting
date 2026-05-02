@@ -95,8 +95,8 @@ export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, disab
 
       {/* Album art */}
       <div className="relative h-14 w-14 sm:h-16 sm:w-16 rounded-lg overflow-hidden bg-muted shrink-0">
-        {song.album_art ? (
-          <img src={song.album_art} alt="" className="h-full w-full object-cover" loading="lazy" />
+        {(song.album_art_url || song.album_art) ? (
+          <img src={song.album_art_url || song.album_art!} alt="" className="h-full w-full object-cover" loading="lazy" />
         ) : (
           <div className="h-full w-full bg-gradient-to-br from-primary/40 to-accent/40" />
         )}
@@ -111,6 +111,9 @@ export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, disab
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <h3 className="font-semibold truncate">{song.title}</h3>
+          {song.explicit && (
+            <span className="text-[9px] font-bold px-1 rounded bg-muted text-muted-foreground border border-border">E</span>
+          )}
           <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 capitalize border", statusStyles[song.status])}>
             {song.status}
           </Badge>
@@ -121,8 +124,16 @@ export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, disab
           )}
         </div>
         <p className="text-sm text-muted-foreground truncate">{song.artist}</p>
-        <p className="text-xs text-muted-foreground/70 truncate">
-          Requested by {song.requester_name}
+        <p className="text-xs text-muted-foreground/70 truncate flex items-center gap-2">
+          <span>Requested by {song.requester_name}</span>
+          {formatDuration(song.duration_ms) && (
+            <span className="inline-flex items-center gap-0.5">
+              <Clock className="h-2.5 w-2.5" />{formatDuration(song.duration_ms)}
+            </span>
+          )}
+          {song.source_platform && song.source_platform !== "mock" && (
+            <span className="hidden sm:inline">· {platformLabel(song.source_platform)}</span>
+          )}
         </p>
       </div>
 
