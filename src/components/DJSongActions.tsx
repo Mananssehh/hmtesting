@@ -9,8 +9,9 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
   DropdownMenuLabel, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { searchLinks, djCopyText } from "@/lib/searchLinks";
+import { searchLinks, djCopyText, platformLabel } from "@/lib/searchLinks";
 import { SongRequestRow } from "@/components/SongRequestCard";
+import { PreviewButton } from "@/components/PreviewButton";
 
 interface Props {
   song: SongRequestRow;
@@ -83,6 +84,16 @@ export function DJSongActions({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      {song.preview_url && <PreviewButton src={song.preview_url} />}
+
+      {song.external_url && (
+        <Button asChild size="sm" variant="outline" className="h-9">
+          <a href={song.external_url} target="_blank" rel="noreferrer">
+            <ExternalLink className="mr-1 h-4 w-4" /> Open {platformLabel(song.source_platform).split(" ")[0]}
+          </a>
+        </Button>
+      )}
 
       {/* External search menu */}
       <DropdownMenu>

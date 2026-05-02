@@ -14,8 +14,9 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { searchMockSongs, MockSong } from "@/lib/mockSongs";
+import { searchMusic, MusicSearchResult, normalizeKey } from "@/lib/musicSearch";
 import { formatDuration, platformLabel } from "@/lib/searchLinks";
+import { PreviewButton } from "@/components/PreviewButton";
 
 type SortMode = "top" | "new" | "trending";
 
@@ -168,7 +169,7 @@ const EventPage = () => {
     }
   };
 
-  const handleRequestSong = async (song: MockSong) => {
+  const handleRequestSong = async (song: MusicSearchResult) => {
     if (!user || !eventInfo) return;
     if (eventInfo.requests_status !== "live") {
       toast.error(eventInfo.requests_status === "paused" ? "Requests are paused" : "Event has ended");
@@ -182,11 +183,13 @@ const EventPage = () => {
       return;
     }
 
-    const exists = songs.some(
-      (s) => s.title.toLowerCase() === song.title.toLowerCase()
-        && s.artist.toLowerCase() === song.artist.toLowerCase()
-        && s.status !== "removed",
-    );
+    // Duplicate detection: source_song_id first, then normalized title+artist
+    const key = normalizeKey(song.title, song.artist);
+    const exists = songs.some((s) => {
+      if (s.status === "removed") return false;
+      if (song.source_song_id && s.source_song_id && s.source_song_id === song.source_song_id) return true;
+      return normalizeKey(s.title, s.artist) === key;
+    });
     if (exists) {
       toast.error("Already requested — vote for it instead!");
       setRequestOpen(false);
@@ -204,11 +207,13 @@ const EventPage = () => {
         title: song.title,
         artist: song.artist,
         album: song.album,
-        album_art: song.album_art,
-        album_art_url: song.album_art,
+        album_art: song.album_art_url,
+        album_art_url: song.album_art_url,
         duration_ms: song.duration_ms,
+        preview_url: song.preview_url,
         explicit: song.explicit,
         source_platform: song.source_platform,
+        source_song_id: song.source_song_id,
         external_url: song.external_url,
       })
       .select()
@@ -435,43 +440,96 @@ function StatusBadge({ status }: { status: "live" | "paused" | "ended" }) {
   );
 }
 
-function RequestPicker({ onPick, existing }: { onPick: (song: MockSong) => void; existing: SongRequestRow[] }) {
+function RequestPicker({ onPick, existing }: { onPick: (song: MusicSearchResult) => void; existing: SongRequestRow[] }) {
   const [q, setQ] = useState("");
-  const results = useMemo(() => searchMockSongs(q), [q]);
+  const [debounced, setDebounced] = useState("");
+  const [results, setResults] = useState<MusicSearchResult[]>([]);
+  const [provider, setProvider] = useState<"spotify" | "itunes" | "mock" | "none">("mock");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
 
-  const isAlreadyRequested = (s: MockSong) =>
+  // Debounce
+  useEffect(() => {
+    const t = setTimeout(() => setDebounced(q), 350);
+    return () => clearTimeout(t);
+  }, [q]);
+
+  // Fetch
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      setError(false);
+      try {
+        const res = await searchMusic(debounced);
+        if (cancelled) return;
+        setResults(res.results);
+        setProvider(res.provider);
+      } catch {
+        if (cancelled) return;
+        setError(true);
+        setResults([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [debounced]);
+
+  const isAlreadyRequested = (s: MusicSearchResult) =>
     existing.some(
-      (e) => e.title.toLowerCase() === s.title.toLowerCase()
-        && e.artist.toLowerCase() === s.artist.toLowerCase()
-        && e.status !== "removed",
+      (e) => {
+        if (e.status === "removed") return false;
+        if (s.source_song_id && e.source_song_id && e.source_song_id === s.source_song_id) return true;
+        return normalizeKey(e.title, e.artist) === normalizeKey(s.title, s.artist);
+      },
     );
 
   return (
     <div>
-      <div className="relative mb-4">
+      <div className="relative mb-3">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           autoFocus
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search title or artist..."
+          placeholder="Search any song..."
           className="pl-9"
         />
+        {loading && (
+          <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+        )}
       </div>
+
       <div className="max-h-[55vh] overflow-y-auto scrollbar-thin space-y-1 pr-1">
+        {!loading && results.length === 0 && debounced && (
+          <div className="text-center py-12">
+            <Search className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">
+              {error ? "Search unavailable. Try again." : "No matches found"}
+            </p>
+            <p className="text-xs text-muted-foreground/70 mt-1">Try a different title or artist.</p>
+          </div>
+        )}
+
         {results.map((s) => {
           const already = isAlreadyRequested(s);
           const dur = formatDuration(s.duration_ms);
+          const key = `${s.source_platform}-${s.source_song_id ?? `${s.title}-${s.artist}`}`;
           return (
-            <button
-              key={`${s.title}-${s.artist}`}
-              onClick={() => !already && onPick(s)}
-              disabled={already}
-              className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-secondary text-left transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            <div
+              key={key}
+              className="flex items-center gap-3 p-2 rounded-lg hover:bg-secondary/60 transition-colors"
             >
-              <img src={s.album_art} alt="" className="h-12 w-12 rounded-md object-cover bg-muted" />
+              <div className="h-12 w-12 rounded-md overflow-hidden bg-muted shrink-0">
+                {s.album_art_url ? (
+                  <img src={s.album_art_url} alt="" className="h-full w-full object-cover" loading="lazy" />
+                ) : (
+                  <div className="h-full w-full bg-gradient-to-br from-primary/40 to-accent/40" />
+                )}
+              </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   <span className="font-medium truncate">{s.title}</span>
                   {s.explicit && (
                     <span className="text-[9px] font-bold px-1 rounded bg-muted text-muted-foreground border border-border">E</span>
@@ -482,24 +540,23 @@ function RequestPicker({ onPick, existing }: { onPick: (song: MockSong) => void;
                   {s.album}{dur && ` · ${dur}`} · {platformLabel(s.source_platform)}
                 </div>
               </div>
-              {already ? (
-                <Badge variant="secondary" className="text-[10px] shrink-0">Already requested</Badge>
-              ) : (
-                <Plus className="h-4 w-4 text-muted-foreground shrink-0" />
-              )}
-            </button>
+              <div className="flex items-center gap-1 shrink-0">
+                {s.preview_url && <PreviewButton src={s.preview_url} size="icon" />}
+                {already ? (
+                  <Badge variant="secondary" className="text-[10px]">Already requested</Badge>
+                ) : (
+                  <Button size="sm" onClick={() => onPick(s)} className="bg-primary text-primary-foreground h-8">
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
           );
         })}
-        {q && results.length === 0 && (
-          <div className="text-center py-12">
-            <Search className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground">No matches in catalog</p>
-            <p className="text-xs text-muted-foreground/70 mt-1">Try a different title or artist.</p>
-          </div>
-        )}
       </div>
+
       <p className="text-xs text-muted-foreground mt-3">
-        MVP: requests use a demo catalog. The DJ plays from their own setup.
+        Powered by {platformLabel(provider === "none" ? "mock" : provider)} · DJ plays from their own setup.
       </p>
     </div>
   );
