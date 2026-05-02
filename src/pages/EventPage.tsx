@@ -23,9 +23,9 @@ type SortMode = "top" | "new" | "trending";
 interface EventInfo {
   id: string; name: string; venue: string | null; dj_name: string;
   is_active: boolean; requests_status: "live" | "paused" | "ended";
+  allow_explicit: boolean; require_approval: boolean;
+  cooldown_seconds: number; rules_text: string | null;
 }
-
-const REQUEST_COOLDOWN_SEC = 30;
 
 const EventPage = () => {
   const { code } = useParams<{ code: string }>();
@@ -59,7 +59,7 @@ const EventPage = () => {
       setLoading(true);
       const { data: ev } = await supabase
         .from("events")
-        .select("id, name, venue, dj_name, is_active, requests_status")
+        .select("id, name, venue, dj_name, is_active, requests_status, allow_explicit, require_approval, cooldown_seconds, rules_text")
         .eq("room_code", code.toUpperCase())
         .maybeSingle();
 
