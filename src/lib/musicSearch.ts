@@ -55,8 +55,8 @@ export async function searchMusic(query: string): Promise<MusicSearchResponse> {
 
   try {
     const { data, error } = await supabase.functions.invoke<MusicSearchResponse>(
-      `music-search?q=${encodeURIComponent(q)}`,
-      { method: "GET" },
+      "music-search",
+      { body: { q } },
     );
     if (error) throw error;
     if (data && data.results && data.results.length > 0) {
