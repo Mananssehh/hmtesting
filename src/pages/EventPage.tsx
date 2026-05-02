@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { Loader2, Plus, Search, Sparkles, Trophy } from "lucide-react";
+import {
+  Loader2, Plus, Search, Sparkles, Trophy, Music, PauseCircle, XCircle, PartyPopper,
+} from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -16,12 +18,19 @@ import { searchMockSongs, MockSong } from "@/lib/mockSongs";
 
 type SortMode = "top" | "new" | "trending";
 
+interface EventInfo {
+  id: string; name: string; venue: string | null; dj_name: string;
+  is_active: boolean; requests_status: "live" | "paused" | "ended";
+}
+
+const REQUEST_COOLDOWN_SEC = 30;
+
 const EventPage = () => {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
   const { user, profile, loading: authLoading } = useAuth();
 
-  const [eventInfo, setEventInfo] = useState<{ id: string; name: string; venue: string | null; dj_name: string; is_active: boolean } | null>(null);
+  const [eventInfo, setEventInfo] = useState<EventInfo | null>(null);
   const [songs, setSongs] = useState<SongRequestRow[]>([]);
   const [myVotes, setMyVotes] = useState<Record<string, 1 | -1>>({});
   const [sort, setSort] = useState<SortMode>("top");
@@ -29,8 +38,10 @@ const EventPage = () => {
   const [loading, setLoading] = useState(true);
   const [requestOpen, setRequestOpen] = useState(false);
   const [boostTarget, setBoostTarget] = useState<SongRequestRow | null>(null);
+  const [showHint, setShowHint] = useState(false);
+  const [lastRequestAt, setLastRequestAt] = useState(0);
 
-  // Redirect if not signed in (need a session — even anonymous — to vote)
+  // Redirect if not signed in
   useEffect(() => {
     if (!authLoading && !user) {
       navigate(`/join?code=${code ?? ""}`, { replace: true });
@@ -46,24 +57,30 @@ const EventPage = () => {
       setLoading(true);
       const { data: ev } = await supabase
         .from("events")
-        .select("id, name, venue, dj_name, is_active")
+        .select("id, name, venue, dj_name, is_active, requests_status")
         .eq("room_code", code.toUpperCase())
         .maybeSingle();
 
       if (!ev) {
-        toast.error("Event not found");
+        toast.error("That event doesn't exist anymore");
         navigate("/join", { replace: true });
         return;
       }
       if (cancelled) return;
-      setEventInfo(ev);
+      setEventInfo(ev as EventInfo);
 
-      // Record participation (idempotent — unique constraint protects)
+      // Show welcome hint once per event per browser
+      const hintKey = `decks-hint-${ev.id}`;
+      if (!localStorage.getItem(hintKey)) {
+        setShowHint(true);
+        localStorage.setItem(hintKey, "1");
+      }
+
       const nick = profile?.nickname || "Guest";
       await supabase
         .from("event_participants")
         .insert({ event_id: ev.id, user_id: user.id, nickname: nick })
-        .then(() => null, () => null); // ignore unique violation
+        .then(() => null, () => null);
 
       const [{ data: reqs }, { data: votes }] = await Promise.all([
         supabase.from("song_requests").select("*").eq("event_id", ev.id),
@@ -78,12 +95,10 @@ const EventPage = () => {
       setLoading(false);
     })();
 
-    return () => {
-      cancelled = true;
-    };
-  }, [code, user, navigate]);
+    return () => { cancelled = true; };
+  }, [code, user, navigate, profile?.nickname]);
 
-  // Realtime subscriptions
+  // Realtime: songs + event lifecycle
   useEffect(() => {
     if (!eventInfo) return;
     const channel = supabase
@@ -102,15 +117,20 @@ const EventPage = () => {
           });
         },
       )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "events", filter: `id=eq.${eventInfo.id}` },
+        (payload) => setEventInfo((prev) => prev ? { ...prev, ...(payload.new as EventInfo) } : prev),
+      )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [eventInfo]);
 
+  const nowPlaying = useMemo(() => songs.find((s) => s.status === "playing"), [songs]);
+
   const visibleSongs = useMemo(() => {
-    let list = songs.filter((s) => s.status !== "removed");
+    let list = songs.filter((s) => s.status !== "removed" && s.status !== "playing");
     const q = search.trim().toLowerCase();
     if (q) list = list.filter((s) => s.title.toLowerCase().includes(q) || s.artist.toLowerCase().includes(q));
 
@@ -119,7 +139,6 @@ const EventPage = () => {
     } else if (sort === "new") {
       list = [...list].sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at));
     } else {
-      // trending: score divided by hours since posted
       list = [...list].sort((a, b) => {
         const ageA = Math.max(0.25, (Date.now() - +new Date(a.created_at)) / 3600000);
         const ageB = Math.max(0.25, (Date.now() - +new Date(b.created_at)) / 3600000);
@@ -131,15 +150,13 @@ const EventPage = () => {
 
   const handleVote = async (songId: string, value: 1 | -1) => {
     if (!user) return;
+    if (eventInfo?.requests_status === "ended") {
+      toast.error("Voting closed — this event has ended");
+      return;
+    }
     const current = myVotes[songId];
-
     if (current === value) {
-      // Remove vote
-      setMyVotes((prev) => {
-        const next = { ...prev };
-        delete next[songId];
-        return next;
-      });
+      setMyVotes((prev) => { const n = { ...prev }; delete n[songId]; return n; });
       await supabase.from("votes").delete().eq("song_request_id", songId).eq("user_id", user.id);
     } else {
       setMyVotes((prev) => ({ ...prev, [songId]: value }));
@@ -152,13 +169,25 @@ const EventPage = () => {
 
   const handleRequestSong = async (song: MockSong) => {
     if (!user || !eventInfo) return;
+    if (eventInfo.requests_status !== "live") {
+      toast.error(eventInfo.requests_status === "paused" ? "Requests are paused" : "Event has ended");
+      return;
+    }
 
-    // Check duplicate
+    // Client-side cooldown
+    const elapsed = (Date.now() - lastRequestAt) / 1000;
+    if (elapsed < REQUEST_COOLDOWN_SEC) {
+      toast.error(`Slow down! Try again in ${Math.ceil(REQUEST_COOLDOWN_SEC - elapsed)}s`);
+      return;
+    }
+
     const exists = songs.some(
-      (s) => s.title.toLowerCase() === song.title.toLowerCase() && s.artist.toLowerCase() === song.artist.toLowerCase() && s.status !== "removed",
+      (s) => s.title.toLowerCase() === song.title.toLowerCase()
+        && s.artist.toLowerCase() === song.artist.toLowerCase()
+        && s.status !== "removed",
     );
     if (exists) {
-      toast.error("That song is already in the queue — go upvote it!");
+      toast.error("Already requested — vote for it instead!");
       setRequestOpen(false);
       return;
     }
@@ -180,17 +209,19 @@ const EventPage = () => {
       .single();
 
     if (error) {
-      toast.error(error.message);
+      if (error.code === "23505") toast.error("Already requested — vote for it!");
+      else toast.error(error.message);
       return;
     }
 
-    // Auto-upvote own request
+    setLastRequestAt(Date.now());
+
     if (inserted) {
       await supabase.from("votes").upsert({ song_request_id: inserted.id, user_id: user.id, value: 1 });
       setMyVotes((p) => ({ ...p, [inserted.id]: 1 }));
     }
 
-    toast.success("Song requested! 🎶");
+    toast.success("Song requested! +5 pts 🎶", { icon: <PartyPopper className="h-4 w-4" /> });
     setRequestOpen(false);
   };
 
@@ -205,31 +236,32 @@ const EventPage = () => {
     );
   }
 
+  const status = eventInfo.requests_status;
+  const isLive = status === "live";
+  const isPaused = status === "paused";
+  const isEnded = status === "ended";
+
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen pb-24 sm:pb-10">
       <AppHeader />
-      <div className="container max-w-3xl py-6 sm:py-10">
+      <div className="container max-w-3xl py-4 sm:py-8">
         {/* Event header */}
-        <div className="mb-8 p-6 rounded-2xl bg-gradient-to-br from-primary/15 via-card to-card border border-primary/20">
-          <div className="flex items-center justify-between gap-3 mb-2">
-            <div className="flex items-center gap-2 text-xs text-primary font-medium">
-              <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-              LIVE
-            </div>
-            <div className="flex items-center gap-2">
+        <div className="mb-4 sm:mb-6 p-4 sm:p-6 rounded-2xl bg-gradient-to-br from-primary/15 via-card to-card border border-primary/20">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <StatusBadge status={status} />
+            <div className="flex items-center gap-1.5">
               <Badge variant="secondary" className="bg-primary/15 text-primary border-primary/30 gap-1">
                 <Sparkles className="h-3 w-3" />{profile?.points ?? 0} pts
               </Badge>
-              <Button asChild size="sm" variant="ghost" className="h-7">
-                <Link to={`/leaderboard?event=${eventInfo.id}`}>
-                  <Trophy className="h-3.5 w-3.5 sm:mr-1" />
-                  <span className="hidden sm:inline text-xs">Top fans</span>
+              <Button asChild size="sm" variant="ghost" className="h-7 px-2">
+                <Link to={`/leaderboard?event=${eventInfo.id}`} aria-label="Top fans">
+                  <Trophy className="h-3.5 w-3.5" />
                 </Link>
               </Button>
             </div>
           </div>
-          <h1 className="text-3xl font-bold">{eventInfo.name}</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-2xl sm:text-3xl font-bold leading-tight">{eventInfo.name}</h1>
+          <p className="text-sm text-muted-foreground mt-1">
             {eventInfo.venue ? `${eventInfo.venue} · ` : ""}with DJ {eventInfo.dj_name}
           </p>
           <div className="mt-3 inline-block px-3 py-1 rounded-full bg-secondary text-xs font-mono">
@@ -237,8 +269,56 @@ const EventPage = () => {
           </div>
         </div>
 
+        {/* First-time hint */}
+        {showHint && (
+          <div className="mb-4 p-4 rounded-2xl bg-primary/5 border border-primary/20 flex items-start gap-3 animate-in fade-in slide-in-from-top-2">
+            <PartyPopper className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+            <div className="flex-1 text-sm">
+              <p className="font-medium">Welcome to the dancefloor</p>
+              <p className="text-muted-foreground mt-0.5">
+                Request songs, vote on the crowd&rsquo;s picks, and earn points when your songs get love.
+              </p>
+            </div>
+            <Button size="sm" variant="ghost" onClick={() => setShowHint(false)}>Got it</Button>
+          </div>
+        )}
+
+        {/* Lifecycle banners */}
+        {isPaused && (
+          <div className="mb-4 p-4 rounded-2xl bg-warning/10 border border-warning/30 flex items-start gap-3 bg-amber-500/10 border-amber-500/30">
+            <PauseCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <p className="font-medium text-amber-200">Requests are paused</p>
+              <p className="text-muted-foreground">You can still vote on what's already in the queue.</p>
+            </div>
+          </div>
+        )}
+        {isEnded && (
+          <div className="mb-4 p-4 rounded-2xl bg-destructive/10 border border-destructive/30 flex items-start gap-3">
+            <XCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <p className="font-medium">This event has ended</p>
+              <p className="text-muted-foreground">Thanks for playing — see you next time!</p>
+            </div>
+          </div>
+        )}
+
+        {/* Now Playing */}
+        {nowPlaying && (
+          <div className="mb-4">
+            <div className="flex items-center gap-2 mb-2 text-xs uppercase tracking-wider text-primary font-medium">
+              <Music className="h-3.5 w-3.5" /> Now playing
+            </div>
+            <SongRequestCard
+              song={nowPlaying}
+              myVote={myVotes[nowPlaying.id] ?? 0}
+              onVote={(v) => handleVote(nowPlaying.id, v)}
+            />
+          </div>
+        )}
+
         {/* Search + request */}
-        <div className="flex gap-2 mb-4">
+        <div className="flex gap-2 mb-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -250,7 +330,10 @@ const EventPage = () => {
           </div>
           <Dialog open={requestOpen} onOpenChange={setRequestOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground shrink-0">
+              <Button
+                disabled={!isLive}
+                className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground shrink-0"
+              >
                 <Plus className="mr-1 h-4 w-4" /> Request
               </Button>
             </DialogTrigger>
@@ -265,10 +348,8 @@ const EventPage = () => {
 
         {/* Sort tabs */}
         <Tabs value={sort} onValueChange={(v) => setSort(v as SortMode)} className="mb-4">
-          <TabsList className="grid grid-cols-3 w-full sm:w-auto">
-            <TabsTrigger value="top">
-              <Sparkles className="h-3.5 w-3.5 mr-1.5" /> Top
-            </TabsTrigger>
+          <TabsList className="grid grid-cols-3 w-full">
+            <TabsTrigger value="top"><Sparkles className="h-3.5 w-3.5 mr-1.5" />Top</TabsTrigger>
             <TabsTrigger value="trending">Trending</TabsTrigger>
             <TabsTrigger value="new">Newest</TabsTrigger>
           </TabsList>
@@ -276,11 +357,17 @@ const EventPage = () => {
 
         {/* Song list */}
         {visibleSongs.length === 0 ? (
-          <div className="text-center py-16 text-muted-foreground">
-            <p className="mb-4">No requests yet. Be the first!</p>
-            <Button onClick={() => setRequestOpen(true)} variant="outline">
-              <Plus className="mr-1 h-4 w-4" /> Request a song
-            </Button>
+          <div className="text-center py-16 px-4 rounded-2xl border border-dashed border-border/60">
+            <Music className="h-10 w-10 text-muted-foreground/50 mx-auto mb-3" />
+            <p className="font-medium">No requests yet</p>
+            <p className="text-sm text-muted-foreground mb-4">
+              {isLive ? "Be the first to drop a track." : "Waiting for the DJ to reopen requests."}
+            </p>
+            {isLive && (
+              <Button onClick={() => setRequestOpen(true)} variant="outline">
+                <Plus className="mr-1 h-4 w-4" /> Request a song
+              </Button>
+            )}
           </div>
         ) : (
           <div className="space-y-2">
@@ -291,12 +378,24 @@ const EventPage = () => {
                 song={s}
                 myVote={myVotes[s.id] ?? 0}
                 onVote={(v) => handleVote(s.id, v)}
-                onBoost={() => setBoostTarget(s)}
+                onBoost={isLive ? () => setBoostTarget(s) : undefined}
               />
             ))}
           </div>
         )}
       </div>
+
+      {/* Mobile sticky request CTA */}
+      {isLive && (
+        <div className="sm:hidden fixed bottom-4 inset-x-4 z-30">
+          <Button
+            onClick={() => setRequestOpen(true)}
+            className="w-full h-12 bg-gradient-to-r from-primary to-primary-glow text-primary-foreground shadow-lg glow-primary"
+          >
+            <Plus className="mr-2 h-5 w-5" /> Request a song
+          </Button>
+        </div>
+      )}
 
       {boostTarget && (
         <BoostDialog
@@ -309,6 +408,26 @@ const EventPage = () => {
     </div>
   );
 };
+
+function StatusBadge({ status }: { status: "live" | "paused" | "ended" }) {
+  if (status === "live")
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-primary font-medium">
+        <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" /> LIVE
+      </div>
+    );
+  if (status === "paused")
+    return (
+      <div className="flex items-center gap-1.5 text-xs text-amber-400 font-medium">
+        <PauseCircle className="h-3.5 w-3.5" /> PAUSED
+      </div>
+    );
+  return (
+    <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-medium">
+      <XCircle className="h-3.5 w-3.5" /> ENDED
+    </div>
+  );
+}
 
 function RequestPicker({ onPick }: { onPick: (song: MockSong) => void }) {
   const [q, setQ] = useState("");
@@ -335,7 +454,13 @@ function RequestPicker({ onPick }: { onPick: (song: MockSong) => void }) {
             <Plus className="h-4 w-4 text-muted-foreground" />
           </button>
         ))}
-        {results.length === 0 && <p className="text-center text-sm text-muted-foreground py-8">No matches in catalog</p>}
+        {q && results.length === 0 && (
+          <div className="text-center py-12">
+            <Search className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">No matches in catalog</p>
+            <p className="text-xs text-muted-foreground/70 mt-1">Try a different title or artist.</p>
+          </div>
+        )}
       </div>
       <p className="text-xs text-muted-foreground mt-3">
         MVP: requests use a mock catalog. The DJ plays from their own setup.
