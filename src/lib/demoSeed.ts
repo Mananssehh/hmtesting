@@ -29,7 +29,7 @@ export async function seedDemoEvent(eventId: string) {
     boost: i === 0 ? 30 : i === 1 ? 10 : 0,
     upvotes: Math.max(0, 18 - i * 2 + Math.floor(Math.random() * 4)),
     downvotes: Math.floor(Math.random() * 3),
-    status: i === 9 ? "playing" : "pending" as const,
+    status: (i === 9 ? "playing" : "pending") as "playing" | "pending",
   }));
 
   const { data: rows, error } = await supabase
