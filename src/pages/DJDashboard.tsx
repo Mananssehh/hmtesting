@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Loader2, Plus, Radio, Settings } from "lucide-react";
+import { Loader2, Plus, Radio, Settings, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -56,7 +56,6 @@ const DJDashboard = () => {
     if (!parsed.success) throw new Error(parsed.error.issues[0].message);
     if (!user) throw new Error("Not signed in");
 
-    // Generate unique code
     let code = generateRoomCode();
     for (let i = 0; i < 5; i++) {
       const { data: existing } = await supabase.from("events").select("id").eq("room_code", code).maybeSingle();
@@ -81,6 +80,19 @@ const DJDashboard = () => {
     setCreateOpen(false);
     toast.success("Event created!");
     navigate(`/dj/${data.id}`);
+  };
+
+  const createDemoEvent = async () => {
+    if (!user) return;
+    try {
+      await handleCreate({
+        name: "Demo Night @ Club Neon",
+        venue: "Club Neon",
+        dj_name: profile?.nickname || "DJ Demo",
+      });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not create demo");
+    }
   };
 
   const toggleActive = async (ev: EventRow) => {
