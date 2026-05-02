@@ -169,7 +169,7 @@ const EventPage = () => {
     }
   };
 
-  const handleRequestSong = async (song: MockSong) => {
+  const handleRequestSong = async (song: MusicSearchResult) => {
     if (!user || !eventInfo) return;
     if (eventInfo.requests_status !== "live") {
       toast.error(eventInfo.requests_status === "paused" ? "Requests are paused" : "Event has ended");
@@ -183,11 +183,13 @@ const EventPage = () => {
       return;
     }
 
-    const exists = songs.some(
-      (s) => s.title.toLowerCase() === song.title.toLowerCase()
-        && s.artist.toLowerCase() === song.artist.toLowerCase()
-        && s.status !== "removed",
-    );
+    // Duplicate detection: source_song_id first, then normalized title+artist
+    const key = normalizeKey(song.title, song.artist);
+    const exists = songs.some((s) => {
+      if (s.status === "removed") return false;
+      if (song.source_song_id && s.source_song_id && s.source_song_id === song.source_song_id) return true;
+      return normalizeKey(s.title, s.artist) === key;
+    });
     if (exists) {
       toast.error("Already requested — vote for it instead!");
       setRequestOpen(false);
@@ -205,11 +207,13 @@ const EventPage = () => {
         title: song.title,
         artist: song.artist,
         album: song.album,
-        album_art: song.album_art,
-        album_art_url: song.album_art,
+        album_art: song.album_art_url,
+        album_art_url: song.album_art_url,
         duration_ms: song.duration_ms,
+        preview_url: song.preview_url,
         explicit: song.explicit,
         source_platform: song.source_platform,
+        source_song_id: song.source_song_id,
         external_url: song.external_url,
       })
       .select()
