@@ -37,9 +37,12 @@ const Join = () => {
         throw new Error("Please choose a different nickname.");
       }
 
-      // For the demo code, ensure the demo event exists (auto-creates if missing)
-      if (codeParse.data === "DEMO123") {
-        await supabase.rpc("ensure_demo_event");
+      const DEMO_CODES = ["DEMO123", "EMPTY123", "PAUSED123", "ENDED123", "MOD123"];
+      const isDemo = DEMO_CODES.includes(codeParse.data);
+
+      // For demo codes, ensure the corresponding demo event exists (idempotent)
+      if (isDemo) {
+        await supabase.rpc("ensure_demo_event", { _code: codeParse.data });
       }
 
       // Verify event exists & is active
@@ -51,7 +54,10 @@ const Join = () => {
 
       if (eventError) throw eventError;
       if (!event) throw new Error("No event with that code. Double-check with the DJ.");
-      if (event.requests_status === "ended" || !event.is_active) throw new Error("This event has ended");
+      // Allow ENDED demo room through so guests can see the ended recap state
+      if (!isDemo && (event.requests_status === "ended" || !event.is_active)) {
+        throw new Error("This event has ended");
+      }
 
       // If not signed in, create anonymous session so the user can vote
       if (!user) {
