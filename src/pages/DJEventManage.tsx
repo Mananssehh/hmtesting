@@ -418,37 +418,28 @@ const DJEventManage = () => {
                 <p className="text-sm text-muted-foreground">Requests will appear as guests submit them.</p>
               </div>
             ) : (
-              <div className="space-y-2">
-                {filtered.map((song) => (
-                  <div key={song.id} className="space-y-2">
-                    <SongRequestCard song={song} />
-                    <div className="flex flex-wrap gap-2 pl-2 sm:pl-4">
-                      {song.status !== "playing" && (
-                        <Button size="sm" onClick={() => updateStatus(song.id, "playing")} className="bg-primary text-primary-foreground h-9">
-                          <Play className="mr-1 h-4 w-4" /> Play now
-                        </Button>
-                      )}
-                      {song.status === "pending" && (
-                        <Button size="sm" variant="outline" onClick={() => updateStatus(song.id, "approved")} className="h-9">
-                          <Check className="mr-1 h-4 w-4" /> Approve
-                        </Button>
-                      )}
-                      {song.status !== "played" && song.status !== "skipped" && (
-                        <Button size="sm" variant="outline" onClick={() => updateStatus(song.id, "played")} className="h-9">
-                          Mark played
-                        </Button>
-                      )}
-                      {song.status !== "skipped" && song.status !== "played" && (
-                        <Button size="sm" variant="outline" onClick={() => updateStatus(song.id, "skipped")} className="h-9">
-                          <SkipForward className="mr-1 h-4 w-4" /> Skip
-                        </Button>
-                      )}
-                      <Button size="sm" variant="ghost" onClick={() => setRemoveTarget(song)} className="text-destructive hover:text-destructive h-9">
-                        <Trash2 className="mr-1 h-4 w-4" /> Remove
-                      </Button>
+              <div className="space-y-3">
+                {filtered.map((song) => {
+                  const queueIdx = queueSongs.findIndex((s) => s.id === song.id);
+                  const inQueue = queueIdx >= 0;
+                  return (
+                    <div key={song.id} className="space-y-2 p-2 rounded-xl bg-card/30 border border-border/30">
+                      <SongRequestCard song={song} />
+                      <DJSongActions
+                        song={song}
+                        isPlaying={song.status === "playing"}
+                        onMarkPlaying={() => updateStatus(song.id, "playing")}
+                        onMarkPlayed={() => updateStatus(song.id, "played")}
+                        onSkip={() => updateStatus(song.id, "skipped")}
+                        onRemove={() => setRemoveTarget(song)}
+                        canReorder={inQueue}
+                        onMoveTop={inQueue && queueIdx > 0 ? () => moveTo(song, "top") : undefined}
+                        onMoveUp={inQueue && queueIdx > 0 ? () => moveTo(song, "up") : undefined}
+                        onMoveDown={inQueue && queueIdx < queueSongs.length - 1 ? () => moveTo(song, "down") : undefined}
+                      />
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </TabsContent>
