@@ -517,6 +517,9 @@ const DJEventManage = () => {
                         onMarkPlayed={() => updateStatus(song.id, "played")}
                         onSkip={() => updateStatus(song.id, "skipped")}
                         onRemove={() => setRemoveTarget(song)}
+                        onApprove={song.status === "pending" ? () => updateStatus(song.id, "approved") : undefined}
+                        onHide={song.status !== "removed" && song.status !== "playing" ? () => updateStatus(song.id, "removed") : undefined}
+                        onBan={song.requested_by ? () => setBanTarget(song) : undefined}
                         canReorder={inQueue}
                         onMoveTop={inQueue && queueIdx > 0 ? () => moveTo(song, "top") : undefined}
                         onMoveUp={inQueue && queueIdx > 0 ? () => moveTo(song, "up") : undefined}
