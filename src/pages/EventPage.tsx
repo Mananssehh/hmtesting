@@ -321,6 +321,24 @@ const EventPage = () => {
           </div>
         )}
 
+        {/* Event rules chips */}
+        {isLive && (
+          <div className="mb-4 flex flex-wrap items-center gap-1.5 text-xs">
+            <Badge variant="secondary" className={eventInfo.allow_explicit ? "" : "bg-amber-500/15 text-amber-300 border-amber-500/30"}>
+              {eventInfo.allow_explicit ? "Explicit OK" : "No explicit"}
+            </Badge>
+            <Badge variant="secondary" className={eventInfo.require_approval ? "bg-accent/15 text-accent border-accent/30" : ""}>
+              {eventInfo.require_approval ? "DJ approves first" : "Open requests"}
+            </Badge>
+            {eventInfo.cooldown_seconds > 0 && (
+              <Badge variant="secondary">{eventInfo.cooldown_seconds}s cooldown</Badge>
+            )}
+            {eventInfo.rules_text && (
+              <span className="text-muted-foreground italic ml-1 truncate">{eventInfo.rules_text}</span>
+            )}
+          </div>
+        )}
+
         {/* Now Playing */}
         {nowPlaying && (
           <div className="mb-4">
