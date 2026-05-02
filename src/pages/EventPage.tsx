@@ -434,31 +434,61 @@ function StatusBadge({ status }: { status: "live" | "paused" | "ended" }) {
   );
 }
 
-function RequestPicker({ onPick }: { onPick: (song: MockSong) => void }) {
+function RequestPicker({ onPick, existing }: { onPick: (song: MockSong) => void; existing: SongRequestRow[] }) {
   const [q, setQ] = useState("");
   const results = useMemo(() => searchMockSongs(q), [q]);
+
+  const isAlreadyRequested = (s: MockSong) =>
+    existing.some(
+      (e) => e.title.toLowerCase() === s.title.toLowerCase()
+        && e.artist.toLowerCase() === s.artist.toLowerCase()
+        && e.status !== "removed",
+    );
 
   return (
     <div>
       <div className="relative mb-4">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search title or artist..." className="pl-9" />
+        <Input
+          autoFocus
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Search title or artist..."
+          className="pl-9"
+        />
       </div>
-      <div className="max-h-[50vh] overflow-y-auto scrollbar-thin space-y-1 pr-1">
-        {results.map((s) => (
-          <button
-            key={`${s.title}-${s.artist}`}
-            onClick={() => onPick(s)}
-            className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-secondary text-left transition-colors"
-          >
-            <img src={s.album_art} alt="" className="h-10 w-10 rounded-md object-cover" />
-            <div className="flex-1 min-w-0">
-              <div className="font-medium truncate">{s.title}</div>
-              <div className="text-sm text-muted-foreground truncate">{s.artist}</div>
-            </div>
-            <Plus className="h-4 w-4 text-muted-foreground" />
-          </button>
-        ))}
+      <div className="max-h-[55vh] overflow-y-auto scrollbar-thin space-y-1 pr-1">
+        {results.map((s) => {
+          const already = isAlreadyRequested(s);
+          const dur = formatDuration(s.duration_ms);
+          return (
+            <button
+              key={`${s.title}-${s.artist}`}
+              onClick={() => !already && onPick(s)}
+              disabled={already}
+              className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-secondary text-left transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              <img src={s.album_art} alt="" className="h-12 w-12 rounded-md object-cover bg-muted" />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-medium truncate">{s.title}</span>
+                  {s.explicit && (
+                    <span className="text-[9px] font-bold px-1 rounded bg-muted text-muted-foreground border border-border">E</span>
+                  )}
+                </div>
+                <div className="text-sm text-muted-foreground truncate">{s.artist}</div>
+                <div className="text-xs text-muted-foreground/70 truncate">
+                  {s.album}{dur && ` · ${dur}`} · {platformLabel(s.source_platform)}
+                </div>
+              </div>
+              {already ? (
+                <Badge variant="secondary" className="text-[10px] shrink-0">Already requested</Badge>
+              ) : (
+                <Plus className="h-4 w-4 text-muted-foreground shrink-0" />
+              )}
+            </button>
+          );
+        })}
         {q && results.length === 0 && (
           <div className="text-center py-12">
             <Search className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
@@ -468,7 +498,7 @@ function RequestPicker({ onPick }: { onPick: (song: MockSong) => void }) {
         )}
       </div>
       <p className="text-xs text-muted-foreground mt-3">
-        MVP: requests use a mock catalog. The DJ plays from their own setup.
+        MVP: requests use a demo catalog. The DJ plays from their own setup.
       </p>
     </div>
   );
