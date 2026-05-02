@@ -347,7 +347,7 @@ const EventPage = () => {
               <DialogHeader>
                 <DialogTitle>Request a song</DialogTitle>
               </DialogHeader>
-              <RequestPicker onPick={handleRequestSong} />
+              <RequestPicker onPick={handleRequestSong} existing={songs} />
             </DialogContent>
           </Dialog>
         </div>
