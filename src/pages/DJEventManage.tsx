@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   Award, Check, Copy, Loader2, Play, SkipForward, Sparkles, Trophy, Wand2,
   PauseCircle, PlayCircle, XCircle, Music, Rocket, RefreshCw, ListMusic,
-  Maximize2, Minimize2, BarChart3,
+  Maximize2, Minimize2, BarChart3, Shield, UserX, EyeOff,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +13,7 @@ import { SongRequestCard, SongRequestRow } from "@/components/SongRequestCard";
 import { DJSongActions } from "@/components/DJSongActions";
 import { AwardPointsDialog } from "@/components/AwardPointsDialog";
 import { ArchivedEventSummary } from "@/components/ArchivedEventSummary";
+import { ModerationDialog } from "@/components/ModerationDialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
@@ -33,13 +34,18 @@ interface EventInfo {
   requests_status: "live" | "paused" | "ended";
   created_at: string;
   ended_at: string | null;
+  allow_explicit: boolean;
+  require_approval: boolean;
+  cooldown_seconds: number;
+  rules_text: string | null;
 }
 
 type Status = SongRequestRow["status"];
-type Filter = "queue" | "boosted" | "newest" | "approved" | "played" | "all";
+type Filter = "queue" | "pending" | "boosted" | "newest" | "approved" | "played" | "all";
 
 const filters: { key: Filter; label: string; icon?: React.ReactNode }[] = [
   { key: "queue", label: "Queue" },
+  { key: "pending", label: "Pending", icon: <Shield className="h-3.5 w-3.5 mr-1" /> },
   { key: "boosted", label: "Boosted", icon: <Sparkles className="h-3.5 w-3.5 mr-1" /> },
   { key: "newest", label: "Newest" },
   { key: "approved", label: "Approved" },
@@ -62,6 +68,8 @@ const DJEventManage = () => {
   const [endConfirmOpen, setEndConfirmOpen] = useState(false);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
+  const [moderationOpen, setModerationOpen] = useState(false);
+  const [banTarget, setBanTarget] = useState<SongRequestRow | null>(null);
 
   useEffect(() => {
     if (!authLoading && (!user || !isDJ)) navigate("/auth", { replace: true });
