@@ -176,10 +176,17 @@ const EventPage = () => {
       return;
     }
 
+    // Block explicit if event disallows
+    if (!eventInfo.allow_explicit && song.explicit) {
+      toast.error("This event isn't accepting explicit songs.");
+      return;
+    }
+
     // Client-side cooldown
+    const cooldown = eventInfo.cooldown_seconds ?? 30;
     const elapsed = (Date.now() - lastRequestAt) / 1000;
-    if (elapsed < REQUEST_COOLDOWN_SEC) {
-      toast.error(`Slow down! Try again in ${Math.ceil(REQUEST_COOLDOWN_SEC - elapsed)}s`);
+    if (cooldown > 0 && elapsed < cooldown) {
+      toast.error(`Slow down! Try again in ${Math.ceil(cooldown - elapsed)}s`);
       return;
     }
 
