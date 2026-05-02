@@ -296,6 +296,9 @@ const DJEventManage = () => {
                   <Trophy className="mr-2 h-4 w-4" /> Leaderboard
                 </Link>
               </Button>
+              <Button variant="outline" onClick={() => setFocusMode(true)} disabled={status === "ended"}>
+                <Maximize2 className="mr-2 h-4 w-4" /> Focus mode
+              </Button>
             </div>
 
             {/* Lifecycle controls */}
