@@ -94,8 +94,13 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const url = new URL(req.url);
-    const q = (url.searchParams.get("q") ?? "").trim();
+    let q = "";
+    if (req.method === "GET") {
+      q = (new URL(req.url).searchParams.get("q") ?? "").trim();
+    } else {
+      const body = await req.json().catch(() => ({}));
+      q = String(body?.q ?? "").trim();
+    }
     if (!q) {
       return new Response(JSON.stringify({ provider: "none", results: [] }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
