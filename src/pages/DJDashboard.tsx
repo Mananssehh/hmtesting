@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Archive as ArchiveIcon, ClipboardCheck, Loader2, Plus, Radio, RefreshCw, Settings, Sparkles, Wand2 } from "lucide-react";
+import { Archive as ArchiveIcon, ClipboardCheck, Copy, Loader2, Plus, Radio, RefreshCw, Settings, Sparkles, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -152,7 +152,10 @@ const DJDashboard = () => {
             <Button variant="outline" onClick={launchDemoRoom}>
               <Sparkles className="mr-1 h-4 w-4 text-accent" /> Demo room
             </Button>
-            <Button variant="ghost" size="icon" onClick={resetDemoRoom} title="Reset demo room">
+            <Button variant="outline" size="icon" onClick={copyDemoLink} title="Copy demo join link">
+              <Copy className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={resetDemoRooms} title="Reset all demo rooms">
               <RefreshCw className="h-4 w-4" />
             </Button>
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>
