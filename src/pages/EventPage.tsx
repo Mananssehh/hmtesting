@@ -14,8 +14,9 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { searchMockSongs, MockSong } from "@/lib/mockSongs";
+import { searchMusic, MusicSearchResult, normalizeKey } from "@/lib/musicSearch";
 import { formatDuration, platformLabel } from "@/lib/searchLinks";
+import { PreviewButton } from "@/components/PreviewButton";
 
 type SortMode = "top" | "new" | "trending";
 
