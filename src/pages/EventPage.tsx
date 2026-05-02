@@ -465,7 +465,7 @@ function StatusBadge({ status }: { status: "live" | "paused" | "ended" }) {
   );
 }
 
-function RequestPicker({ onPick, existing }: { onPick: (song: MusicSearchResult) => void; existing: SongRequestRow[] }) {
+function RequestPicker({ onPick, existing, allowExplicit = true }: { onPick: (song: MusicSearchResult) => void; existing: SongRequestRow[]; allowExplicit?: boolean }) {
   const [q, setQ] = useState("");
   const [debounced, setDebounced] = useState("");
   const [results, setResults] = useState<MusicSearchResult[]>([]);
@@ -569,6 +569,8 @@ function RequestPicker({ onPick, existing }: { onPick: (song: MusicSearchResult)
                 {s.preview_url && <PreviewButton src={s.preview_url} size="icon" />}
                 {already ? (
                   <Badge variant="secondary" className="text-[10px]">Already requested</Badge>
+                ) : !allowExplicit && s.explicit ? (
+                  <Badge variant="secondary" className="text-[10px] bg-amber-500/15 text-amber-300 border-amber-500/30">Explicit blocked</Badge>
                 ) : (
                   <Button size="sm" onClick={() => onPick(s)} className="bg-primary text-primary-foreground h-8">
                     <Plus className="h-4 w-4" />
