@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Loader2, Plus, Radio, Settings } from "lucide-react";
+import { Loader2, Plus, Radio, Settings, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -56,7 +56,6 @@ const DJDashboard = () => {
     if (!parsed.success) throw new Error(parsed.error.issues[0].message);
     if (!user) throw new Error("Not signed in");
 
-    // Generate unique code
     let code = generateRoomCode();
     for (let i = 0; i < 5; i++) {
       const { data: existing } = await supabase.from("events").select("id").eq("room_code", code).maybeSingle();
@@ -83,10 +82,25 @@ const DJDashboard = () => {
     navigate(`/dj/${data.id}`);
   };
 
+  const createDemoEvent = async () => {
+    if (!user) return;
+    try {
+      await handleCreate({
+        name: "Demo Night @ Club Neon",
+        venue: "Club Neon",
+        dj_name: profile?.nickname || "DJ Demo",
+      });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not create demo");
+    }
+  };
+
   const toggleActive = async (ev: EventRow) => {
-    const { error } = await supabase.from("events").update({ is_active: !ev.is_active }).eq("id", ev.id);
+    const next = ev.is_active ? "ended" : "live";
+    const { error } = await supabase.from("events").update({ requests_status: next }).eq("id", ev.id);
     if (error) return toast.error(error.message);
     setEvents((prev) => prev.map((e) => (e.id === ev.id ? { ...e, is_active: !ev.is_active } : e)));
+    toast.success(next === "live" ? "Event reopened" : "Event ended");
   };
 
   if (authLoading || loading) {
@@ -125,13 +139,18 @@ const DJDashboard = () => {
         </div>
 
         {events.length === 0 ? (
-          <div className="text-center py-20 rounded-2xl glass">
+          <div className="text-center py-16 sm:py-20 rounded-2xl glass px-4">
             <Radio className="h-12 w-12 text-primary mx-auto mb-3" />
             <h2 className="text-xl font-semibold">No events yet</h2>
             <p className="text-muted-foreground mt-1 mb-6">Create your first session to start receiving requests.</p>
-            <Button onClick={() => setCreateOpen(true)} className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground">
-              <Plus className="mr-1 h-4 w-4" /> New event
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2 justify-center">
+              <Button onClick={() => setCreateOpen(true)} className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground">
+                <Plus className="mr-1 h-4 w-4" /> New event
+              </Button>
+              <Button variant="outline" onClick={createDemoEvent}>
+                <Wand2 className="mr-1 h-4 w-4" /> Create demo event
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="grid sm:grid-cols-2 gap-4">

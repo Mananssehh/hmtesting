@@ -36,13 +36,13 @@ const Join = () => {
       // Verify event exists & is active
       const { data: event, error: eventError } = await supabase
         .from("events")
-        .select("id, is_active")
+        .select("id, is_active, requests_status")
         .eq("room_code", codeParse.data)
         .maybeSingle();
 
       if (eventError) throw eventError;
-      if (!event) throw new Error("No event found with that code");
-      if (!event.is_active) throw new Error("This event has ended");
+      if (!event) throw new Error("No event with that code. Double-check with the DJ.");
+      if (event.requests_status === "ended" || !event.is_active) throw new Error("This event has ended");
 
       // If not signed in, create anonymous session so the user can vote
       if (!user) {

@@ -48,32 +48,38 @@ export type Database = {
       }
       events: {
         Row: {
+          archived_at: string | null
           created_at: string
           dj_id: string
           dj_name: string
           id: string
           is_active: boolean
           name: string
+          requests_status: string
           room_code: string
           venue: string | null
         }
         Insert: {
+          archived_at?: string | null
           created_at?: string
           dj_id: string
           dj_name: string
           id?: string
           is_active?: boolean
           name: string
+          requests_status?: string
           room_code: string
           venue?: string | null
         }
         Update: {
+          archived_at?: string | null
           created_at?: string
           dj_id?: string
           dj_name?: string
           id?: string
           is_active?: boolean
           name?: string
+          requests_status?: string
           room_code?: string
           venue?: string | null
         }
@@ -322,6 +328,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      recent_request_count: {
+        Args: { _event_id: string; _seconds?: number }
+        Returns: number
       }
     }
     Enums: {
