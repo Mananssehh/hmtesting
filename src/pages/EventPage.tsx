@@ -285,7 +285,7 @@ const EventPage = () => {
 
         {/* Lifecycle banners */}
         {isPaused && (
-          <div className="mb-4 p-4 rounded-2xl bg-warning/10 border border-warning/30 flex items-start gap-3 bg-amber-500/10 border-amber-500/30">
+          <div className="mb-4 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3">
             <PauseCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
             <div className="text-sm">
               <p className="font-medium text-amber-200">Requests are paused</p>
