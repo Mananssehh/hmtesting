@@ -211,6 +211,22 @@ const DJEventManage = () => {
     setRemoveTarget(null);
   };
 
+  const banGuest = async (song: SongRequestRow) => {
+    if (!event || !song.requested_by) {
+      toast.error("Anonymous request — can't ban");
+      setBanTarget(null);
+      return;
+    }
+    const { error } = await supabase.from("event_banned_guests").insert({
+      event_id: event.id,
+      user_id: song.requested_by,
+      reason: `Banned from "${song.title}"`,
+    });
+    if (error) toast.error(error.message);
+    else toast.success(`${song.requester_name} muted for this event`);
+    setBanTarget(null);
+  };
+
   const setLifecycle = async (next: "live" | "paused" | "ended") => {
     if (!event) return;
     const { error } = await supabase.from("events").update({ requests_status: next }).eq("id", event.id);
