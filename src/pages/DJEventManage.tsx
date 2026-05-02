@@ -353,6 +353,15 @@ const DJEventManage = () => {
           </div>
         </div>
 
+        {status === "ended" && (
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-3 text-xs uppercase tracking-wider text-muted-foreground font-semibold">
+              <BarChart3 className="h-3.5 w-3.5" /> Event summary
+            </div>
+            <ArchivedEventSummary eventId={event.id} startedAt={event.created_at} endedAt={event.ended_at} />
+          </div>
+        )}
+
         {/* Now Playing + Next Up */}
         <div className="grid md:grid-cols-2 gap-4 mb-6">
           <div className="p-4 rounded-2xl bg-primary/5 border border-primary/30">
