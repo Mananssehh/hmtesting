@@ -31,6 +31,8 @@ interface EventInfo {
   is_active: boolean;
   dj_id: string;
   requests_status: "live" | "paused" | "ended";
+  created_at: string;
+  ended_at: string | null;
 }
 
 type Status = SongRequestRow["status"];
