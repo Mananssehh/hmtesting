@@ -111,7 +111,14 @@ const DJEventManage = () => {
   const queueSongs = useMemo(
     () => songs
       .filter((s) => s.status === "pending" || s.status === "approved")
-      .sort((a, b) => (b.upvotes - b.downvotes + b.boost) - (a.upvotes - a.downvotes + a.boost)),
+      .sort((a, b) => {
+        const ap = a.queue_position;
+        const bp = b.queue_position;
+        if (ap != null && bp != null) return ap - bp;
+        if (ap != null) return -1;
+        if (bp != null) return 1;
+        return (b.upvotes - b.downvotes + b.boost) - (a.upvotes - a.downvotes + a.boost);
+      }),
     [songs],
   );
 
