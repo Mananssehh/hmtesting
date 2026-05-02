@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Archive as ArchiveIcon, Loader2, Plus, Radio, Settings, Wand2 } from "lucide-react";
+import { Archive as ArchiveIcon, ClipboardCheck, Loader2, Plus, Radio, RefreshCw, Settings, Sparkles, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -95,6 +95,19 @@ const DJDashboard = () => {
     }
   };
 
+  const launchDemoRoom = async () => {
+    const { error } = await supabase.rpc("ensure_demo_event");
+    if (error) return toast.error(error.message);
+    toast.success("Demo room ready — code DEMO123");
+    navigate("/event/DEMO123");
+  };
+
+  const resetDemoRoom = async () => {
+    const { error } = await supabase.rpc("reset_demo_event");
+    if (error) return toast.error(error.message);
+    toast.success("Demo room reset");
+  };
+
   const toggleActive = async (ev: EventRow) => {
     const next = ev.is_active ? "ended" : "live";
     const { error } = await supabase.from("events").update({ requests_status: next }).eq("id", ev.id);
@@ -123,9 +136,18 @@ const DJDashboard = () => {
             <h1 className="text-3xl font-bold">DJ Dashboard</h1>
             <p className="text-muted-foreground">Welcome back, {profile?.nickname}</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline">
+              <Link to="/testing"><ClipboardCheck className="mr-1 h-4 w-4" /> Testing</Link>
+            </Button>
             <Button asChild variant="outline">
               <Link to="/dj/archive"><ArchiveIcon className="mr-1 h-4 w-4" /> Archive</Link>
+            </Button>
+            <Button variant="outline" onClick={launchDemoRoom}>
+              <Sparkles className="mr-1 h-4 w-4 text-accent" /> Demo room
+            </Button>
+            <Button variant="ghost" size="icon" onClick={resetDemoRoom} title="Reset demo room">
+              <RefreshCw className="h-4 w-4" />
             </Button>
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>
               <DialogTrigger asChild>
