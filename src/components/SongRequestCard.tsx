@@ -1,7 +1,8 @@
-import { ArrowBigDown, ArrowBigUp, Sparkles, ExternalLink, Rocket } from "lucide-react";
+import { ArrowBigDown, ArrowBigUp, Sparkles, ExternalLink, Rocket, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { formatDuration, platformLabel } from "@/lib/searchLinks";
 
 export interface SongRequestRow {
   id: string;
@@ -15,6 +16,15 @@ export interface SongRequestRow {
   status: "pending" | "approved" | "playing" | "played" | "skipped" | "removed";
   requester_name: string;
   created_at: string;
+  // Phase 4 optional metadata
+  album?: string | null;
+  album_art_url?: string | null;
+  duration_ms?: number | null;
+  preview_url?: string | null;
+  source_platform?: string | null;
+  source_song_id?: string | null;
+  explicit?: boolean | null;
+  queue_position?: number | null;
 }
 
 const statusStyles: Record<SongRequestRow["status"], string> = {
