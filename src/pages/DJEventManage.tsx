@@ -116,9 +116,11 @@ const DJEventManage = () => {
 
   const nowPlaying = useMemo(() => songs.find((s) => s.status === "playing"), [songs]);
 
+  const requireApproval = !!event?.require_approval;
+
   const queueSongs = useMemo(
     () => songs
-      .filter((s) => s.status === "pending" || s.status === "approved")
+      .filter((s) => requireApproval ? s.status === "approved" : (s.status === "pending" || s.status === "approved"))
       .sort((a, b) => {
         const ap = a.queue_position;
         const bp = b.queue_position;
@@ -127,11 +129,18 @@ const DJEventManage = () => {
         if (bp != null) return 1;
         return (b.upvotes - b.downvotes + b.boost) - (a.upvotes - a.downvotes + a.boost);
       }),
+    [songs, requireApproval],
+  );
+
+  const pendingSongs = useMemo(
+    () => songs.filter((s) => s.status === "pending")
+      .sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at)),
     [songs],
   );
 
   const filtered = useMemo(() => {
     if (filter === "queue") return queueSongs;
+    if (filter === "pending") return pendingSongs;
     if (filter === "boosted") return [...songs].filter((s) => s.boost > 0 && s.status !== "removed")
       .sort((a, b) => b.boost - a.boost);
     if (filter === "newest") return [...songs].filter((s) => s.status !== "removed")
@@ -141,16 +150,17 @@ const DJEventManage = () => {
       .sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at));
     return [...songs].filter((s) => s.status !== "removed")
       .sort((a, b) => (b.upvotes - b.downvotes + b.boost) - (a.upvotes - a.downvotes + a.boost));
-  }, [songs, queueSongs, filter]);
+  }, [songs, queueSongs, pendingSongs, filter]);
 
   const counts = useMemo(() => ({
     queue: queueSongs.length,
+    pending: pendingSongs.length,
     boosted: songs.filter((s) => s.boost > 0 && s.status !== "removed").length,
     newest: songs.filter((s) => s.status !== "removed").length,
     approved: songs.filter((s) => s.status === "approved").length,
     played: songs.filter((s) => s.status === "played" || s.status === "skipped").length,
     all: songs.filter((s) => s.status !== "removed").length,
-  }), [songs, queueSongs]);
+  }), [songs, queueSongs, pendingSongs]);
 
   const updateStatus = async (songId: string, status: Status) => {
     if (status === "playing") {
