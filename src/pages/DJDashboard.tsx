@@ -84,9 +84,11 @@ const DJDashboard = () => {
   };
 
   const toggleActive = async (ev: EventRow) => {
-    const { error } = await supabase.from("events").update({ is_active: !ev.is_active }).eq("id", ev.id);
+    const next = ev.is_active ? "ended" : "live";
+    const { error } = await supabase.from("events").update({ requests_status: next }).eq("id", ev.id);
     if (error) return toast.error(error.message);
     setEvents((prev) => prev.map((e) => (e.id === ev.id ? { ...e, is_active: !ev.is_active } : e)));
+    toast.success(next === "live" ? "Event reopened" : "Event ended");
   };
 
   if (authLoading || loading) {
