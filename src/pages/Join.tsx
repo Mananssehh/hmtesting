@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AppHeader } from "@/components/AppHeader";
 import { nicknameSchema, roomCodeSchema } from "@/lib/validation";
+import { containsProfanity, looksSpammy } from "@/lib/profanity";
 
 const Join = () => {
   const navigate = useNavigate();
@@ -32,6 +33,9 @@ const Join = () => {
       if (!codeParse.success) throw new Error(codeParse.error.issues[0].message);
       const nickParse = nicknameSchema.safeParse(nickname);
       if (!nickParse.success) throw new Error(nickParse.error.issues[0].message);
+      if (containsProfanity(nickParse.data) || looksSpammy(nickParse.data)) {
+        throw new Error("Please choose a different nickname.");
+      }
 
       // Verify event exists & is active
       const { data: event, error: eventError } = await supabase
