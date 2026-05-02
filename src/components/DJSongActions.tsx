@@ -166,11 +166,23 @@ export function DJSongActions({
         </DropdownMenu>
       )}
 
-      {onRemove && (
-        <Button size="sm" variant="ghost" onClick={onRemove} className="text-destructive hover:text-destructive h-9 ml-auto">
-          <Trash2 className="mr-1 h-4 w-4" /> Remove
-        </Button>
-      )}
+      <div className="flex gap-1 ml-auto">
+        {onHide && song.status !== "removed" && (
+          <Button size="sm" variant="ghost" onClick={onHide} className="text-muted-foreground h-9" title="Hide from guests">
+            <EyeOff className="mr-1 h-4 w-4" /> Hide
+          </Button>
+        )}
+        {onBan && song.requested_by && (
+          <Button size="sm" variant="ghost" onClick={onBan} className="text-destructive hover:text-destructive h-9" title="Ban requester">
+            <UserX className="mr-1 h-4 w-4" /> Ban
+          </Button>
+        )}
+        {onRemove && (
+          <Button size="sm" variant="ghost" onClick={onRemove} className="text-destructive hover:text-destructive h-9">
+            <Trash2 className="mr-1 h-4 w-4" /> Remove
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
