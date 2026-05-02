@@ -532,4 +532,141 @@ const DJEventManage = () => {
   );
 };
 
+interface FocusProps {
+  event: EventInfo;
+  nowPlaying: SongRequestRow | undefined;
+  queue: SongRequestRow[];
+  boosted: SongRequestRow[];
+  onPlay: (id: string) => void;
+  onPlayed: (id: string) => void;
+  onSkip: (id: string) => void;
+  onExit: () => void;
+}
+
+function FocusView({ event, nowPlaying, queue, boosted, onPlay, onPlayed, onSkip, onExit }: FocusProps) {
+  const top5 = queue.slice(0, 5);
+  const next = queue[0];
+  const copy = (s: SongRequestRow) => {
+    navigator.clipboard.writeText(`${s.title} - ${s.artist}`);
+    toast.success("Copied for DJ");
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="container max-w-5xl py-4 sm:py-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">Focus mode</div>
+            <h1 className="text-xl sm:text-2xl font-bold">{event.name}</h1>
+          </div>
+          <Button variant="outline" onClick={onExit}>
+            <Minimize2 className="mr-2 h-4 w-4" /> Exit focus
+          </Button>
+        </div>
+
+        {/* Now playing */}
+        <div className="rounded-2xl p-5 sm:p-6 bg-gradient-to-br from-primary/20 via-primary/5 to-card border border-primary/40 mb-4">
+          <div className="text-xs uppercase tracking-wider text-primary font-semibold mb-2 flex items-center gap-2">
+            <Music className="h-3.5 w-3.5" /> Now playing
+          </div>
+          {nowPlaying ? (
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex-1 min-w-0">
+                <div className="text-2xl sm:text-4xl font-bold truncate">{nowPlaying.title}</div>
+                <div className="text-base sm:text-xl text-muted-foreground truncate">{nowPlaying.artist}</div>
+              </div>
+              <div className="flex gap-2">
+                <Button size="lg" variant="outline" onClick={() => copy(nowPlaying)}>
+                  <Copy className="mr-2 h-5 w-5" /> Copy
+                </Button>
+                <Button size="lg" variant="outline" onClick={() => onPlayed(nowPlaying.id)}>
+                  <Check className="mr-2 h-5 w-5" /> Played
+                </Button>
+                <Button size="lg" variant="outline" onClick={() => onSkip(nowPlaying.id)}>
+                  <SkipForward className="mr-2 h-5 w-5" /> Skip
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="text-muted-foreground py-4">Nothing playing yet.</div>
+          )}
+        </div>
+
+        {/* Next up */}
+        <div className="rounded-2xl p-5 bg-card/60 border border-border mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-xs uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-2">
+              <ListMusic className="h-3.5 w-3.5" /> Next up
+            </div>
+            {next && (
+              <Button size="lg" onClick={() => onPlay(next.id)} className="bg-primary text-primary-foreground">
+                <Play className="mr-2 h-5 w-5" /> Play next
+              </Button>
+            )}
+          </div>
+          {next ? (
+            <div className="text-xl sm:text-2xl font-semibold truncate">
+              {next.title} <span className="text-muted-foreground font-normal">— {next.artist}</span>
+            </div>
+          ) : (
+            <div className="text-muted-foreground">Queue is empty.</div>
+          )}
+        </div>
+
+        {/* Top 5 + Boosted */}
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="rounded-2xl p-4 bg-card/40 border border-border/60">
+            <div className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-3 flex items-center gap-2">
+              <Trophy className="h-3.5 w-3.5" /> Top 5 requested
+            </div>
+            <div className="space-y-2">
+              {top5.length === 0 && <div className="text-sm text-muted-foreground">No requests yet.</div>}
+              {top5.map((s, i) => (
+                <FocusRow key={s.id} index={i + 1} song={s} onPlay={onPlay} onCopy={copy} />
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-2xl p-4 bg-card/40 border border-primary/30">
+            <div className="text-xs uppercase tracking-wider text-primary font-semibold mb-3 flex items-center gap-2">
+              <Rocket className="h-3.5 w-3.5" /> Boosted
+            </div>
+            <div className="space-y-2">
+              {boosted.length === 0 && <div className="text-sm text-muted-foreground">No boosted requests.</div>}
+              {boosted.slice(0, 5).map((s, i) => (
+                <FocusRow key={s.id} index={i + 1} song={s} onPlay={onPlay} onCopy={copy} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FocusRow({ index, song, onPlay, onCopy }: { index: number; song: SongRequestRow; onPlay: (id: string) => void; onCopy: (s: SongRequestRow) => void }) {
+  return (
+    <div className="flex items-center gap-3 p-2 rounded-lg bg-background/60">
+      <div className="text-lg font-bold text-muted-foreground w-6 text-center tabular-nums">{index}</div>
+      <div className="flex-1 min-w-0">
+        <div className="font-semibold truncate">{song.title}</div>
+        <div className="text-sm text-muted-foreground truncate">{song.artist}</div>
+      </div>
+      <Badge variant="secondary" className="gap-1">
+        {song.boost > 0 && <Rocket className="h-3 w-3 text-primary" />}
+        {song.upvotes - song.downvotes + song.boost}
+      </Badge>
+      <Button size="sm" variant="ghost" onClick={() => onCopy(song)} aria-label="Copy">
+        <Copy className="h-4 w-4" />
+      </Button>
+      {song.status !== "playing" && (
+        <Button size="sm" onClick={() => onPlay(song.id)} className="bg-primary text-primary-foreground">
+          <Play className="h-4 w-4" />
+        </Button>
+      )}
+    </div>
+  );
+}
+
 export default DJEventManage;
+
