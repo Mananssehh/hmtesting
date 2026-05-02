@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Headphones, Loader2 } from "lucide-react";
+import { Headphones, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -35,6 +35,11 @@ const Join = () => {
       if (!nickParse.success) throw new Error(nickParse.error.issues[0].message);
       if (containsProfanity(nickParse.data) || looksSpammy(nickParse.data)) {
         throw new Error("Please choose a different nickname.");
+      }
+
+      // For the demo code, ensure the demo event exists (auto-creates if missing)
+      if (codeParse.data === "DEMO123") {
+        await supabase.rpc("ensure_demo_event");
       }
 
       // Verify event exists & is active
@@ -112,7 +117,24 @@ const Join = () => {
             Join event
           </Button>
 
-          <p className="text-xs text-center text-muted-foreground pt-2">
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            disabled={loading}
+            onClick={() => {
+              setCode("DEMO123");
+              if (!nickname) setNickname("DemoGuest");
+            }}
+          >
+            <Sparkles className="mr-2 h-4 w-4 text-accent" />
+            Use Demo Code
+          </Button>
+
+          <p className="text-xs text-center text-muted-foreground pt-1">
+            Testing? Use code <span className="font-mono font-semibold text-foreground">DEMO123</span>
+          </p>
+          <p className="text-xs text-center text-muted-foreground">
             No signup needed. We'll create a guest session for you.
           </p>
         </form>
