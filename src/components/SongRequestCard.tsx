@@ -15,6 +15,7 @@ export interface SongRequestRow {
   boost: number;
   status: "pending" | "approved" | "playing" | "played" | "skipped" | "removed";
   requester_name: string;
+  requested_by?: string | null;
   created_at: string;
   // Phase 4 optional metadata
   album?: string | null;

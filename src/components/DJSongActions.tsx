@@ -1,7 +1,7 @@
 import { useState } from "react";
 import {
   Copy, Check, Music2, ExternalLink, Play, SkipForward, Trash2,
-  ArrowUp, ArrowDown, ChevronsUp, Rocket,
+  ArrowUp, ArrowDown, ChevronsUp, Rocket, EyeOff, UserX, ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,9 @@ interface Props {
   onMarkPlayed?: () => void;
   onSkip?: () => void;
   onRemove?: () => void;
+  onApprove?: () => void;
+  onHide?: () => void;
+  onBan?: () => void;
   onMoveTop?: () => void;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
@@ -28,6 +31,7 @@ interface Props {
 
 export function DJSongActions({
   song, isPlaying, onMarkPlaying, onMarkPlayed, onSkip, onRemove,
+  onApprove, onHide, onBan,
   onMoveTop, onMoveUp, onMoveDown, canReorder,
 }: Props) {
   const [copied, setCopied] = useState<string | null>(null);
@@ -45,8 +49,14 @@ export function DJSongActions({
 
   return (
     <div className="flex flex-wrap gap-1.5 pl-2 sm:pl-4">
+      {/* Approval */}
+      {onApprove && song.status === "pending" && (
+        <Button size="sm" onClick={onApprove} className="bg-accent text-accent-foreground h-9">
+          <ShieldCheck className="mr-1 h-4 w-4" /> Approve
+        </Button>
+      )}
       {/* Primary action */}
-      {!isPlaying && onMarkPlaying && (
+      {!isPlaying && onMarkPlaying && song.status !== "pending" && (
         <Button size="sm" onClick={onMarkPlaying} className="bg-primary text-primary-foreground h-9">
           <Play className="mr-1 h-4 w-4" /> Now playing
         </Button>
@@ -156,11 +166,23 @@ export function DJSongActions({
         </DropdownMenu>
       )}
 
-      {onRemove && (
-        <Button size="sm" variant="ghost" onClick={onRemove} className="text-destructive hover:text-destructive h-9 ml-auto">
-          <Trash2 className="mr-1 h-4 w-4" /> Remove
-        </Button>
-      )}
+      <div className="flex gap-1 ml-auto">
+        {onHide && song.status !== "removed" && (
+          <Button size="sm" variant="ghost" onClick={onHide} className="text-muted-foreground h-9" title="Hide from guests">
+            <EyeOff className="mr-1 h-4 w-4" /> Hide
+          </Button>
+        )}
+        {onBan && song.requested_by && (
+          <Button size="sm" variant="ghost" onClick={onBan} className="text-destructive hover:text-destructive h-9" title="Ban requester">
+            <UserX className="mr-1 h-4 w-4" /> Ban
+          </Button>
+        )}
+        {onRemove && (
+          <Button size="sm" variant="ghost" onClick={onRemove} className="text-destructive hover:text-destructive h-9">
+            <Trash2 className="mr-1 h-4 w-4" /> Remove
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

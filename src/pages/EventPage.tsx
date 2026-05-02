@@ -23,9 +23,9 @@ type SortMode = "top" | "new" | "trending";
 interface EventInfo {
   id: string; name: string; venue: string | null; dj_name: string;
   is_active: boolean; requests_status: "live" | "paused" | "ended";
+  allow_explicit: boolean; require_approval: boolean;
+  cooldown_seconds: number; rules_text: string | null;
 }
-
-const REQUEST_COOLDOWN_SEC = 30;
 
 const EventPage = () => {
   const { code } = useParams<{ code: string }>();
@@ -59,7 +59,7 @@ const EventPage = () => {
       setLoading(true);
       const { data: ev } = await supabase
         .from("events")
-        .select("id, name, venue, dj_name, is_active, requests_status")
+        .select("id, name, venue, dj_name, is_active, requests_status, allow_explicit, require_approval, cooldown_seconds, rules_text")
         .eq("room_code", code.toUpperCase())
         .maybeSingle();
 
@@ -176,10 +176,17 @@ const EventPage = () => {
       return;
     }
 
+    // Block explicit if event disallows
+    if (!eventInfo.allow_explicit && song.explicit) {
+      toast.error("This event isn't accepting explicit songs.");
+      return;
+    }
+
     // Client-side cooldown
+    const cooldown = eventInfo.cooldown_seconds ?? 30;
     const elapsed = (Date.now() - lastRequestAt) / 1000;
-    if (elapsed < REQUEST_COOLDOWN_SEC) {
-      toast.error(`Slow down! Try again in ${Math.ceil(REQUEST_COOLDOWN_SEC - elapsed)}s`);
+    if (cooldown > 0 && elapsed < cooldown) {
+      toast.error(`Slow down! Try again in ${Math.ceil(cooldown - elapsed)}s`);
       return;
     }
 
@@ -314,6 +321,24 @@ const EventPage = () => {
           </div>
         )}
 
+        {/* Event rules chips */}
+        {isLive && (
+          <div className="mb-4 flex flex-wrap items-center gap-1.5 text-xs">
+            <Badge variant="secondary" className={eventInfo.allow_explicit ? "" : "bg-amber-500/15 text-amber-300 border-amber-500/30"}>
+              {eventInfo.allow_explicit ? "Explicit OK" : "No explicit"}
+            </Badge>
+            <Badge variant="secondary" className={eventInfo.require_approval ? "bg-accent/15 text-accent border-accent/30" : ""}>
+              {eventInfo.require_approval ? "DJ approves first" : "Open requests"}
+            </Badge>
+            {eventInfo.cooldown_seconds > 0 && (
+              <Badge variant="secondary">{eventInfo.cooldown_seconds}s cooldown</Badge>
+            )}
+            {eventInfo.rules_text && (
+              <span className="text-muted-foreground italic ml-1 truncate">{eventInfo.rules_text}</span>
+            )}
+          </div>
+        )}
+
         {/* Now Playing */}
         {nowPlaying && (
           <div className="mb-4">
@@ -352,7 +377,7 @@ const EventPage = () => {
               <DialogHeader>
                 <DialogTitle>Request a song</DialogTitle>
               </DialogHeader>
-              <RequestPicker onPick={handleRequestSong} existing={songs} />
+              <RequestPicker onPick={handleRequestSong} existing={songs} allowExplicit={eventInfo.allow_explicit} />
             </DialogContent>
           </Dialog>
         </div>
@@ -440,7 +465,7 @@ function StatusBadge({ status }: { status: "live" | "paused" | "ended" }) {
   );
 }
 
-function RequestPicker({ onPick, existing }: { onPick: (song: MusicSearchResult) => void; existing: SongRequestRow[] }) {
+function RequestPicker({ onPick, existing, allowExplicit = true }: { onPick: (song: MusicSearchResult) => void; existing: SongRequestRow[]; allowExplicit?: boolean }) {
   const [q, setQ] = useState("");
   const [debounced, setDebounced] = useState("");
   const [results, setResults] = useState<MusicSearchResult[]>([]);
@@ -544,6 +569,8 @@ function RequestPicker({ onPick, existing }: { onPick: (song: MusicSearchResult)
                 {s.preview_url && <PreviewButton src={s.preview_url} size="icon" />}
                 {already ? (
                   <Badge variant="secondary" className="text-[10px]">Already requested</Badge>
+                ) : !allowExplicit && s.explicit ? (
+                  <Badge variant="secondary" className="text-[10px] bg-amber-500/15 text-amber-300 border-amber-500/30">Explicit blocked</Badge>
                 ) : (
                   <Button size="sm" onClick={() => onPick(s)} className="bg-primary text-primary-foreground h-8">
                     <Plus className="h-4 w-4" />

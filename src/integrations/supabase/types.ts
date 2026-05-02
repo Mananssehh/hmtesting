@@ -14,6 +14,73 @@ export type Database = {
   }
   public: {
     Tables: {
+      event_banned_guests: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_banned_guests_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      event_blocklist: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          event_id: string
+          id: string
+          kind: string
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          event_id: string
+          id?: string
+          kind: string
+          value: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          event_id?: string
+          id?: string
+          kind?: string
+          value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_blocklist_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_participants: {
         Row: {
           event_id: string
@@ -48,7 +115,9 @@ export type Database = {
       }
       events: {
         Row: {
+          allow_explicit: boolean
           archived_at: string | null
+          cooldown_seconds: number
           created_at: string
           dj_id: string
           dj_name: string
@@ -57,11 +126,15 @@ export type Database = {
           is_active: boolean
           name: string
           requests_status: string
+          require_approval: boolean
           room_code: string
+          rules_text: string | null
           venue: string | null
         }
         Insert: {
+          allow_explicit?: boolean
           archived_at?: string | null
+          cooldown_seconds?: number
           created_at?: string
           dj_id: string
           dj_name: string
@@ -70,11 +143,15 @@ export type Database = {
           is_active?: boolean
           name: string
           requests_status?: string
+          require_approval?: boolean
           room_code: string
+          rules_text?: string | null
           venue?: string | null
         }
         Update: {
+          allow_explicit?: boolean
           archived_at?: string | null
+          cooldown_seconds?: number
           created_at?: string
           dj_id?: string
           dj_name?: string
@@ -83,7 +160,9 @@ export type Database = {
           is_active?: boolean
           name?: string
           requests_status?: string
+          require_approval?: boolean
           room_code?: string
+          rules_text?: string | null
           venue?: string | null
         }
         Relationships: []

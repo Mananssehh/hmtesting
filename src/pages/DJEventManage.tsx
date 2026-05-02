@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   Award, Check, Copy, Loader2, Play, SkipForward, Sparkles, Trophy, Wand2,
   PauseCircle, PlayCircle, XCircle, Music, Rocket, RefreshCw, ListMusic,
-  Maximize2, Minimize2, BarChart3,
+  Maximize2, Minimize2, BarChart3, Shield, UserX, EyeOff,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +13,7 @@ import { SongRequestCard, SongRequestRow } from "@/components/SongRequestCard";
 import { DJSongActions } from "@/components/DJSongActions";
 import { AwardPointsDialog } from "@/components/AwardPointsDialog";
 import { ArchivedEventSummary } from "@/components/ArchivedEventSummary";
+import { ModerationDialog } from "@/components/ModerationDialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
@@ -33,13 +34,18 @@ interface EventInfo {
   requests_status: "live" | "paused" | "ended";
   created_at: string;
   ended_at: string | null;
+  allow_explicit: boolean;
+  require_approval: boolean;
+  cooldown_seconds: number;
+  rules_text: string | null;
 }
 
 type Status = SongRequestRow["status"];
-type Filter = "queue" | "boosted" | "newest" | "approved" | "played" | "all";
+type Filter = "queue" | "pending" | "boosted" | "newest" | "approved" | "played" | "all";
 
 const filters: { key: Filter; label: string; icon?: React.ReactNode }[] = [
   { key: "queue", label: "Queue" },
+  { key: "pending", label: "Pending", icon: <Shield className="h-3.5 w-3.5 mr-1" /> },
   { key: "boosted", label: "Boosted", icon: <Sparkles className="h-3.5 w-3.5 mr-1" /> },
   { key: "newest", label: "Newest" },
   { key: "approved", label: "Approved" },
@@ -62,6 +68,8 @@ const DJEventManage = () => {
   const [endConfirmOpen, setEndConfirmOpen] = useState(false);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
+  const [moderationOpen, setModerationOpen] = useState(false);
+  const [banTarget, setBanTarget] = useState<SongRequestRow | null>(null);
 
   useEffect(() => {
     if (!authLoading && (!user || !isDJ)) navigate("/auth", { replace: true });
@@ -108,9 +116,11 @@ const DJEventManage = () => {
 
   const nowPlaying = useMemo(() => songs.find((s) => s.status === "playing"), [songs]);
 
+  const requireApproval = !!event?.require_approval;
+
   const queueSongs = useMemo(
     () => songs
-      .filter((s) => s.status === "pending" || s.status === "approved")
+      .filter((s) => requireApproval ? s.status === "approved" : (s.status === "pending" || s.status === "approved"))
       .sort((a, b) => {
         const ap = a.queue_position;
         const bp = b.queue_position;
@@ -119,11 +129,18 @@ const DJEventManage = () => {
         if (bp != null) return 1;
         return (b.upvotes - b.downvotes + b.boost) - (a.upvotes - a.downvotes + a.boost);
       }),
+    [songs, requireApproval],
+  );
+
+  const pendingSongs = useMemo(
+    () => songs.filter((s) => s.status === "pending")
+      .sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at)),
     [songs],
   );
 
   const filtered = useMemo(() => {
     if (filter === "queue") return queueSongs;
+    if (filter === "pending") return pendingSongs;
     if (filter === "boosted") return [...songs].filter((s) => s.boost > 0 && s.status !== "removed")
       .sort((a, b) => b.boost - a.boost);
     if (filter === "newest") return [...songs].filter((s) => s.status !== "removed")
@@ -133,16 +150,17 @@ const DJEventManage = () => {
       .sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at));
     return [...songs].filter((s) => s.status !== "removed")
       .sort((a, b) => (b.upvotes - b.downvotes + b.boost) - (a.upvotes - a.downvotes + a.boost));
-  }, [songs, queueSongs, filter]);
+  }, [songs, queueSongs, pendingSongs, filter]);
 
   const counts = useMemo(() => ({
     queue: queueSongs.length,
+    pending: pendingSongs.length,
     boosted: songs.filter((s) => s.boost > 0 && s.status !== "removed").length,
     newest: songs.filter((s) => s.status !== "removed").length,
     approved: songs.filter((s) => s.status === "approved").length,
     played: songs.filter((s) => s.status === "played" || s.status === "skipped").length,
     all: songs.filter((s) => s.status !== "removed").length,
-  }), [songs, queueSongs]);
+  }), [songs, queueSongs, pendingSongs]);
 
   const updateStatus = async (songId: string, status: Status) => {
     if (status === "playing") {
@@ -191,6 +209,22 @@ const DJEventManage = () => {
     const { error } = await supabase.from("song_requests").delete().eq("id", songId);
     if (error) toast.error(error.message);
     setRemoveTarget(null);
+  };
+
+  const banGuest = async (song: SongRequestRow) => {
+    if (!event || !song.requested_by) {
+      toast.error("Anonymous request — can't ban");
+      setBanTarget(null);
+      return;
+    }
+    const { error } = await supabase.from("event_banned_guests").insert({
+      event_id: event.id,
+      user_id: song.requested_by,
+      reason: `Banned from "${song.title}"`,
+    });
+    if (error) toast.error(error.message);
+    else toast.success(`${song.requester_name} muted for this event`);
+    setBanTarget(null);
   };
 
   const setLifecycle = async (next: "live" | "paused" | "ended") => {
@@ -314,6 +348,30 @@ const DJEventManage = () => {
               <Button variant="outline" onClick={() => setFocusMode(true)} disabled={status === "ended"}>
                 <Maximize2 className="mr-2 h-4 w-4" /> Focus mode
               </Button>
+              <Button variant="outline" onClick={() => setModerationOpen(true)}>
+                <Shield className="mr-2 h-4 w-4" /> Moderation
+              </Button>
+              <Button asChild variant="outline">
+                <Link to={`/dj/${event.id}/analytics`}>
+                  <BarChart3 className="mr-2 h-4 w-4" /> Analytics
+                </Link>
+              </Button>
+            </div>
+
+            {/* Moderation summary chips */}
+            <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
+              <Badge variant="secondary" className={event.allow_explicit ? "" : "bg-amber-500/15 text-amber-300 border-amber-500/30"}>
+                {event.allow_explicit ? "Explicit allowed" : "No explicit"}
+              </Badge>
+              <Badge variant="secondary" className={event.require_approval ? "bg-accent/15 text-accent border-accent/30" : ""}>
+                {event.require_approval ? "Approval required" : "Open requests"}
+              </Badge>
+              <Badge variant="secondary">{event.cooldown_seconds}s cooldown</Badge>
+              {pendingSongs.length > 0 && (
+                <Badge className="bg-primary/20 text-primary border-primary/40 gap-1">
+                  <Shield className="h-3 w-3" /> {pendingSongs.length} pending
+                </Badge>
+              )}
             </div>
 
             {/* Lifecycle controls */}
@@ -459,6 +517,9 @@ const DJEventManage = () => {
                         onMarkPlayed={() => updateStatus(song.id, "played")}
                         onSkip={() => updateStatus(song.id, "skipped")}
                         onRemove={() => setRemoveTarget(song)}
+                        onApprove={song.status === "pending" ? () => updateStatus(song.id, "approved") : undefined}
+                        onHide={song.status !== "removed" && song.status !== "playing" ? () => updateStatus(song.id, "removed") : undefined}
+                        onBan={song.requested_by ? () => setBanTarget(song) : undefined}
                         canReorder={inQueue}
                         onMoveTop={inQueue && queueIdx > 0 ? () => moveTo(song, "top") : undefined}
                         onMoveUp={inQueue && queueIdx > 0 ? () => moveTo(song, "up") : undefined}
@@ -528,6 +589,37 @@ const DJEventManage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Confirm ban */}
+      <AlertDialog open={!!banTarget} onOpenChange={(o) => !o && setBanTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Mute this guest for the event?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {banTarget && <>{banTarget.requester_name} won&rsquo;t be able to submit new requests. You can unmute them anytime in Moderation.</>}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => banTarget && banGuest(banTarget)} className="bg-destructive hover:bg-destructive/90">
+              Mute guest
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <ModerationDialog
+        open={moderationOpen}
+        onOpenChange={setModerationOpen}
+        eventId={event.id}
+        initial={{
+          allow_explicit: event.allow_explicit,
+          require_approval: event.require_approval,
+          cooldown_seconds: event.cooldown_seconds,
+          rules_text: event.rules_text,
+        }}
+        onSaved={(next) => setEvent((p) => p ? { ...p, ...next } : p)}
+      />
     </div>
   );
 };
