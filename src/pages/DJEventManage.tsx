@@ -162,6 +162,31 @@ const DJEventManage = () => {
     toast.success(`Playing: ${next.title}`);
   };
 
+  const setQueuePosition = async (songId: string, position: number) => {
+    const { error } = await supabase.from("song_requests").update({ queue_position: position }).eq("id", songId);
+    if (error) toast.error(error.message);
+  };
+
+  const moveTo = async (song: SongRequestRow, direction: "top" | "up" | "down") => {
+    const idx = queueSongs.findIndex((s) => s.id === song.id);
+    if (idx < 0) return;
+    if (direction === "top") {
+      const minPos = Math.min(...queueSongs.map((s) => s.queue_position ?? 9999));
+      await setQueuePosition(song.id, minPos - 1);
+      return;
+    }
+    const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+    const swap = queueSongs[swapIdx];
+    if (!swap) return;
+    // Assign explicit positions for both based on their current ordering index
+    const baseA = swap.queue_position ?? swapIdx;
+    const baseB = song.queue_position ?? idx;
+    await Promise.all([
+      setQueuePosition(song.id, baseA - 0.5 * (direction === "up" ? 1 : -1) - (direction === "up" ? 0 : 1)),
+      setQueuePosition(swap.id, baseB),
+    ]);
+  };
+
   const remove = async (songId: string) => {
     const { error } = await supabase.from("song_requests").delete().eq("id", songId);
     if (error) toast.error(error.message);
