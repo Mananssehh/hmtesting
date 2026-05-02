@@ -139,13 +139,18 @@ const DJDashboard = () => {
         </div>
 
         {events.length === 0 ? (
-          <div className="text-center py-20 rounded-2xl glass">
+          <div className="text-center py-16 sm:py-20 rounded-2xl glass px-4">
             <Radio className="h-12 w-12 text-primary mx-auto mb-3" />
             <h2 className="text-xl font-semibold">No events yet</h2>
             <p className="text-muted-foreground mt-1 mb-6">Create your first session to start receiving requests.</p>
-            <Button onClick={() => setCreateOpen(true)} className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground">
-              <Plus className="mr-1 h-4 w-4" /> New event
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-2 justify-center">
+              <Button onClick={() => setCreateOpen(true)} className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground">
+                <Plus className="mr-1 h-4 w-4" /> New event
+              </Button>
+              <Button variant="outline" onClick={createDemoEvent}>
+                <Wand2 className="mr-1 h-4 w-4" /> Create demo event
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="grid sm:grid-cols-2 gap-4">
