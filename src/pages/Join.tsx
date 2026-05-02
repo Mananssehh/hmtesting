@@ -37,9 +37,12 @@ const Join = () => {
         throw new Error("Please choose a different nickname.");
       }
 
-      // For the demo code, ensure the demo event exists (auto-creates if missing)
-      if (codeParse.data === "DEMO123") {
-        await supabase.rpc("ensure_demo_event");
+      const DEMO_CODES = ["DEMO123", "EMPTY123", "PAUSED123", "ENDED123", "MOD123"];
+      const isDemo = DEMO_CODES.includes(codeParse.data);
+
+      // For demo codes, ensure the corresponding demo event exists (idempotent)
+      if (isDemo) {
+        await supabase.rpc("ensure_demo_event", { _code: codeParse.data });
       }
 
       // Verify event exists & is active
@@ -51,7 +54,10 @@ const Join = () => {
 
       if (eventError) throw eventError;
       if (!event) throw new Error("No event with that code. Double-check with the DJ.");
-      if (event.requests_status === "ended" || !event.is_active) throw new Error("This event has ended");
+      // Allow ENDED demo room through so guests can see the ended recap state
+      if (!isDemo && (event.requests_status === "ended" || !event.is_active)) {
+        throw new Error("This event has ended");
+      }
 
       // If not signed in, create anonymous session so the user can vote
       if (!user) {
@@ -117,23 +123,35 @@ const Join = () => {
             Join event
           </Button>
 
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full"
-            disabled={loading}
-            onClick={() => {
-              setCode("DEMO123");
-              if (!nickname) setNickname("DemoGuest");
-            }}
-          >
-            <Sparkles className="mr-2 h-4 w-4 text-accent" />
-            Use Demo Code
-          </Button>
-
-          <p className="text-xs text-center text-muted-foreground pt-1">
-            Testing? Use code <span className="font-mono font-semibold text-foreground">DEMO123</span>
-          </p>
+          <div className="space-y-2 pt-1">
+            <p className="text-xs text-center text-muted-foreground">
+              Testing? Try one of the demo codes:
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { code: "DEMO123", label: "Full Demo" },
+                { code: "EMPTY123", label: "Empty Event" },
+                { code: "PAUSED123", label: "Paused Event" },
+                { code: "ENDED123", label: "Ended Event" },
+                { code: "MOD123", label: "Moderation" },
+              ].map((d) => (
+                <Button
+                  key={d.code}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={loading}
+                  onClick={() => {
+                    setCode(d.code);
+                    if (!nickname) setNickname("DemoGuest");
+                  }}
+                >
+                  <Sparkles className="mr-1 h-3 w-3 text-accent" />
+                  {d.label}
+                </Button>
+              ))}
+            </div>
+          </div>
           <p className="text-xs text-center text-muted-foreground">
             No signup needed. We'll create a guest session for you.
           </p>
