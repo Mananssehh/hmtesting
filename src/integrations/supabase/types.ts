@@ -52,6 +52,7 @@ export type Database = {
           created_at: string
           dj_id: string
           dj_name: string
+          ended_at: string | null
           id: string
           is_active: boolean
           name: string
@@ -64,6 +65,7 @@ export type Database = {
           created_at?: string
           dj_id: string
           dj_name: string
+          ended_at?: string | null
           id?: string
           is_active?: boolean
           name: string
@@ -76,6 +78,7 @@ export type Database = {
           created_at?: string
           dj_id?: string
           dj_name?: string
+          ended_at?: string | null
           id?: string
           is_active?: boolean
           name?: string
@@ -165,46 +168,70 @@ export type Database = {
       }
       song_requests: {
         Row: {
+          album: string | null
           album_art: string | null
+          album_art_url: string | null
           artist: string
           boost: number
           created_at: string
           downvotes: number
+          duration_ms: number | null
           event_id: string
+          explicit: boolean
           external_url: string | null
           id: string
+          preview_url: string | null
+          queue_position: number | null
           requested_by: string | null
           requester_name: string
+          source_platform: string | null
+          source_song_id: string | null
           status: Database["public"]["Enums"]["request_status"]
           title: string
           upvotes: number
         }
         Insert: {
+          album?: string | null
           album_art?: string | null
+          album_art_url?: string | null
           artist: string
           boost?: number
           created_at?: string
           downvotes?: number
+          duration_ms?: number | null
           event_id: string
+          explicit?: boolean
           external_url?: string | null
           id?: string
+          preview_url?: string | null
+          queue_position?: number | null
           requested_by?: string | null
           requester_name?: string
+          source_platform?: string | null
+          source_song_id?: string | null
           status?: Database["public"]["Enums"]["request_status"]
           title: string
           upvotes?: number
         }
         Update: {
+          album?: string | null
           album_art?: string | null
+          album_art_url?: string | null
           artist?: string
           boost?: number
           created_at?: string
           downvotes?: number
+          duration_ms?: number | null
           event_id?: string
+          explicit?: boolean
           external_url?: string | null
           id?: string
+          preview_url?: string | null
+          queue_position?: number | null
           requested_by?: string | null
           requester_name?: string
+          source_platform?: string | null
+          source_song_id?: string | null
           status?: Database["public"]["Enums"]["request_status"]
           title?: string
           upvotes?: number
@@ -292,16 +319,24 @@ export type Database = {
       boost_request: {
         Args: { _amount: number; _song_request_id: string }
         Returns: {
+          album: string | null
           album_art: string | null
+          album_art_url: string | null
           artist: string
           boost: number
           created_at: string
           downvotes: number
+          duration_ms: number | null
           event_id: string
+          explicit: boolean
           external_url: string | null
           id: string
+          preview_url: string | null
+          queue_position: number | null
           requested_by: string | null
           requester_name: string
+          source_platform: string | null
+          source_song_id: string | null
           status: Database["public"]["Enums"]["request_status"]
           title: string
           upvotes: number

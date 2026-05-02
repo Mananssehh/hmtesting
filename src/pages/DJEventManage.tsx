@@ -1,15 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
-  Award, Check, Copy, Loader2, Play, SkipForward, Sparkles, Trash2, Trophy, Wand2,
+  Award, Check, Copy, Loader2, Play, SkipForward, Sparkles, Trophy, Wand2,
   PauseCircle, PlayCircle, XCircle, Music, Rocket, RefreshCw, ListMusic,
+  Maximize2, Minimize2, BarChart3,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppHeader } from "@/components/AppHeader";
 import { SongRequestCard, SongRequestRow } from "@/components/SongRequestCard";
+import { DJSongActions } from "@/components/DJSongActions";
 import { AwardPointsDialog } from "@/components/AwardPointsDialog";
+import { ArchivedEventSummary } from "@/components/ArchivedEventSummary";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
@@ -28,6 +31,8 @@ interface EventInfo {
   is_active: boolean;
   dj_id: string;
   requests_status: "live" | "paused" | "ended";
+  created_at: string;
+  ended_at: string | null;
 }
 
 type Status = SongRequestRow["status"];
@@ -56,6 +61,7 @@ const DJEventManage = () => {
   const [removeTarget, setRemoveTarget] = useState<SongRequestRow | null>(null);
   const [endConfirmOpen, setEndConfirmOpen] = useState(false);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
 
   useEffect(() => {
     if (!authLoading && (!user || !isDJ)) navigate("/auth", { replace: true });
@@ -105,7 +111,14 @@ const DJEventManage = () => {
   const queueSongs = useMemo(
     () => songs
       .filter((s) => s.status === "pending" || s.status === "approved")
-      .sort((a, b) => (b.upvotes - b.downvotes + b.boost) - (a.upvotes - a.downvotes + a.boost)),
+      .sort((a, b) => {
+        const ap = a.queue_position;
+        const bp = b.queue_position;
+        if (ap != null && bp != null) return ap - bp;
+        if (ap != null) return -1;
+        if (bp != null) return 1;
+        return (b.upvotes - b.downvotes + b.boost) - (a.upvotes - a.downvotes + a.boost);
+      }),
     [songs],
   );
 
@@ -147,6 +160,31 @@ const DJEventManage = () => {
     if (!next) return toast.info("Queue is empty");
     await updateStatus(next.id, "playing");
     toast.success(`Playing: ${next.title}`);
+  };
+
+  const setQueuePosition = async (songId: string, position: number) => {
+    const { error } = await supabase.from("song_requests").update({ queue_position: position }).eq("id", songId);
+    if (error) toast.error(error.message);
+  };
+
+  const moveTo = async (song: SongRequestRow, direction: "top" | "up" | "down") => {
+    const idx = queueSongs.findIndex((s) => s.id === song.id);
+    if (idx < 0) return;
+    if (direction === "top") {
+      const minPos = Math.min(...queueSongs.map((s) => s.queue_position ?? 9999));
+      await setQueuePosition(song.id, minPos - 1);
+      return;
+    }
+    const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+    const swap = queueSongs[swapIdx];
+    if (!swap) return;
+    // Assign explicit positions for both based on their current ordering index
+    const baseA = swap.queue_position ?? swapIdx;
+    const baseB = song.queue_position ?? idx;
+    await Promise.all([
+      setQueuePosition(song.id, baseA - 0.5 * (direction === "up" ? 1 : -1) - (direction === "up" ? 0 : 1)),
+      setQueuePosition(swap.id, baseB),
+    ]);
   };
 
   const remove = async (songId: string) => {
@@ -213,6 +251,21 @@ const DJEventManage = () => {
 
   const status = event.requests_status;
 
+  if (focusMode) {
+    return (
+      <FocusView
+        event={event}
+        nowPlaying={nowPlaying}
+        queue={queueSongs}
+        boosted={songs.filter((s) => s.boost > 0 && s.status !== "removed" && s.status !== "played" && s.status !== "skipped").sort((a, b) => b.boost - a.boost)}
+        onPlay={(id) => updateStatus(id, "playing")}
+        onPlayed={(id) => updateStatus(id, "played")}
+        onSkip={(id) => updateStatus(id, "skipped")}
+        onExit={() => setFocusMode(false)}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen">
       <AppHeader />
@@ -258,6 +311,9 @@ const DJEventManage = () => {
                   <Trophy className="mr-2 h-4 w-4" /> Leaderboard
                 </Link>
               </Button>
+              <Button variant="outline" onClick={() => setFocusMode(true)} disabled={status === "ended"}>
+                <Maximize2 className="mr-2 h-4 w-4" /> Focus mode
+              </Button>
             </div>
 
             {/* Lifecycle controls */}
@@ -296,6 +352,15 @@ const DJEventManage = () => {
             </div>
           </div>
         </div>
+
+        {status === "ended" && (
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-3 text-xs uppercase tracking-wider text-muted-foreground font-semibold">
+              <BarChart3 className="h-3.5 w-3.5" /> Event summary
+            </div>
+            <ArchivedEventSummary eventId={event.id} startedAt={event.created_at} endedAt={event.ended_at} />
+          </div>
+        )}
 
         {/* Now Playing + Next Up */}
         <div className="grid md:grid-cols-2 gap-4 mb-6">
@@ -380,37 +445,28 @@ const DJEventManage = () => {
                 <p className="text-sm text-muted-foreground">Requests will appear as guests submit them.</p>
               </div>
             ) : (
-              <div className="space-y-2">
-                {filtered.map((song) => (
-                  <div key={song.id} className="space-y-2">
-                    <SongRequestCard song={song} />
-                    <div className="flex flex-wrap gap-2 pl-2 sm:pl-4">
-                      {song.status !== "playing" && (
-                        <Button size="sm" onClick={() => updateStatus(song.id, "playing")} className="bg-primary text-primary-foreground h-9">
-                          <Play className="mr-1 h-4 w-4" /> Play now
-                        </Button>
-                      )}
-                      {song.status === "pending" && (
-                        <Button size="sm" variant="outline" onClick={() => updateStatus(song.id, "approved")} className="h-9">
-                          <Check className="mr-1 h-4 w-4" /> Approve
-                        </Button>
-                      )}
-                      {song.status !== "played" && song.status !== "skipped" && (
-                        <Button size="sm" variant="outline" onClick={() => updateStatus(song.id, "played")} className="h-9">
-                          Mark played
-                        </Button>
-                      )}
-                      {song.status !== "skipped" && song.status !== "played" && (
-                        <Button size="sm" variant="outline" onClick={() => updateStatus(song.id, "skipped")} className="h-9">
-                          <SkipForward className="mr-1 h-4 w-4" /> Skip
-                        </Button>
-                      )}
-                      <Button size="sm" variant="ghost" onClick={() => setRemoveTarget(song)} className="text-destructive hover:text-destructive h-9">
-                        <Trash2 className="mr-1 h-4 w-4" /> Remove
-                      </Button>
+              <div className="space-y-3">
+                {filtered.map((song) => {
+                  const queueIdx = queueSongs.findIndex((s) => s.id === song.id);
+                  const inQueue = queueIdx >= 0;
+                  return (
+                    <div key={song.id} className="space-y-2 p-2 rounded-xl bg-card/30 border border-border/30">
+                      <SongRequestCard song={song} />
+                      <DJSongActions
+                        song={song}
+                        isPlaying={song.status === "playing"}
+                        onMarkPlaying={() => updateStatus(song.id, "playing")}
+                        onMarkPlayed={() => updateStatus(song.id, "played")}
+                        onSkip={() => updateStatus(song.id, "skipped")}
+                        onRemove={() => setRemoveTarget(song)}
+                        canReorder={inQueue}
+                        onMoveTop={inQueue && queueIdx > 0 ? () => moveTo(song, "top") : undefined}
+                        onMoveUp={inQueue && queueIdx > 0 ? () => moveTo(song, "up") : undefined}
+                        onMoveDown={inQueue && queueIdx < queueSongs.length - 1 ? () => moveTo(song, "down") : undefined}
+                      />
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </TabsContent>
@@ -476,4 +532,141 @@ const DJEventManage = () => {
   );
 };
 
+interface FocusProps {
+  event: EventInfo;
+  nowPlaying: SongRequestRow | undefined;
+  queue: SongRequestRow[];
+  boosted: SongRequestRow[];
+  onPlay: (id: string) => void;
+  onPlayed: (id: string) => void;
+  onSkip: (id: string) => void;
+  onExit: () => void;
+}
+
+function FocusView({ event, nowPlaying, queue, boosted, onPlay, onPlayed, onSkip, onExit }: FocusProps) {
+  const top5 = queue.slice(0, 5);
+  const next = queue[0];
+  const copy = (s: SongRequestRow) => {
+    navigator.clipboard.writeText(`${s.title} - ${s.artist}`);
+    toast.success("Copied for DJ");
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="container max-w-5xl py-4 sm:py-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <div className="text-xs uppercase tracking-wider text-muted-foreground">Focus mode</div>
+            <h1 className="text-xl sm:text-2xl font-bold">{event.name}</h1>
+          </div>
+          <Button variant="outline" onClick={onExit}>
+            <Minimize2 className="mr-2 h-4 w-4" /> Exit focus
+          </Button>
+        </div>
+
+        {/* Now playing */}
+        <div className="rounded-2xl p-5 sm:p-6 bg-gradient-to-br from-primary/20 via-primary/5 to-card border border-primary/40 mb-4">
+          <div className="text-xs uppercase tracking-wider text-primary font-semibold mb-2 flex items-center gap-2">
+            <Music className="h-3.5 w-3.5" /> Now playing
+          </div>
+          {nowPlaying ? (
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex-1 min-w-0">
+                <div className="text-2xl sm:text-4xl font-bold truncate">{nowPlaying.title}</div>
+                <div className="text-base sm:text-xl text-muted-foreground truncate">{nowPlaying.artist}</div>
+              </div>
+              <div className="flex gap-2">
+                <Button size="lg" variant="outline" onClick={() => copy(nowPlaying)}>
+                  <Copy className="mr-2 h-5 w-5" /> Copy
+                </Button>
+                <Button size="lg" variant="outline" onClick={() => onPlayed(nowPlaying.id)}>
+                  <Check className="mr-2 h-5 w-5" /> Played
+                </Button>
+                <Button size="lg" variant="outline" onClick={() => onSkip(nowPlaying.id)}>
+                  <SkipForward className="mr-2 h-5 w-5" /> Skip
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="text-muted-foreground py-4">Nothing playing yet.</div>
+          )}
+        </div>
+
+        {/* Next up */}
+        <div className="rounded-2xl p-5 bg-card/60 border border-border mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-xs uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-2">
+              <ListMusic className="h-3.5 w-3.5" /> Next up
+            </div>
+            {next && (
+              <Button size="lg" onClick={() => onPlay(next.id)} className="bg-primary text-primary-foreground">
+                <Play className="mr-2 h-5 w-5" /> Play next
+              </Button>
+            )}
+          </div>
+          {next ? (
+            <div className="text-xl sm:text-2xl font-semibold truncate">
+              {next.title} <span className="text-muted-foreground font-normal">— {next.artist}</span>
+            </div>
+          ) : (
+            <div className="text-muted-foreground">Queue is empty.</div>
+          )}
+        </div>
+
+        {/* Top 5 + Boosted */}
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="rounded-2xl p-4 bg-card/40 border border-border/60">
+            <div className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-3 flex items-center gap-2">
+              <Trophy className="h-3.5 w-3.5" /> Top 5 requested
+            </div>
+            <div className="space-y-2">
+              {top5.length === 0 && <div className="text-sm text-muted-foreground">No requests yet.</div>}
+              {top5.map((s, i) => (
+                <FocusRow key={s.id} index={i + 1} song={s} onPlay={onPlay} onCopy={copy} />
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-2xl p-4 bg-card/40 border border-primary/30">
+            <div className="text-xs uppercase tracking-wider text-primary font-semibold mb-3 flex items-center gap-2">
+              <Rocket className="h-3.5 w-3.5" /> Boosted
+            </div>
+            <div className="space-y-2">
+              {boosted.length === 0 && <div className="text-sm text-muted-foreground">No boosted requests.</div>}
+              {boosted.slice(0, 5).map((s, i) => (
+                <FocusRow key={s.id} index={i + 1} song={s} onPlay={onPlay} onCopy={copy} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FocusRow({ index, song, onPlay, onCopy }: { index: number; song: SongRequestRow; onPlay: (id: string) => void; onCopy: (s: SongRequestRow) => void }) {
+  return (
+    <div className="flex items-center gap-3 p-2 rounded-lg bg-background/60">
+      <div className="text-lg font-bold text-muted-foreground w-6 text-center tabular-nums">{index}</div>
+      <div className="flex-1 min-w-0">
+        <div className="font-semibold truncate">{song.title}</div>
+        <div className="text-sm text-muted-foreground truncate">{song.artist}</div>
+      </div>
+      <Badge variant="secondary" className="gap-1">
+        {song.boost > 0 && <Rocket className="h-3 w-3 text-primary" />}
+        {song.upvotes - song.downvotes + song.boost}
+      </Badge>
+      <Button size="sm" variant="ghost" onClick={() => onCopy(song)} aria-label="Copy">
+        <Copy className="h-4 w-4" />
+      </Button>
+      {song.status !== "playing" && (
+        <Button size="sm" onClick={() => onPlay(song.id)} className="bg-primary text-primary-foreground">
+          <Play className="h-4 w-4" />
+        </Button>
+      )}
+    </div>
+  );
+}
+
 export default DJEventManage;
+
