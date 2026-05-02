@@ -589,6 +589,37 @@ const DJEventManage = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Confirm ban */}
+      <AlertDialog open={!!banTarget} onOpenChange={(o) => !o && setBanTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Mute this guest for the event?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {banTarget && <>{banTarget.requester_name} won&rsquo;t be able to submit new requests. You can unmute them anytime in Moderation.</>}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => banTarget && banGuest(banTarget)} className="bg-destructive hover:bg-destructive/90">
+              Mute guest
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <ModerationDialog
+        open={moderationOpen}
+        onOpenChange={setModerationOpen}
+        eventId={event.id}
+        initial={{
+          allow_explicit: event.allow_explicit,
+          require_approval: event.require_approval,
+          cooldown_seconds: event.cooldown_seconds,
+          rules_text: event.rules_text,
+        }}
+        onSaved={(next) => setEvent((p) => p ? { ...p, ...next } : p)}
+      />
     </div>
   );
 };
