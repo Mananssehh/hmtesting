@@ -202,7 +202,12 @@ const EventPage = () => {
         requester_name: prof?.nickname ?? "Guest",
         title: song.title,
         artist: song.artist,
+        album: song.album,
         album_art: song.album_art,
+        album_art_url: song.album_art,
+        duration_ms: song.duration_ms,
+        explicit: song.explicit,
+        source_platform: song.source_platform,
         external_url: song.external_url,
       })
       .select()
