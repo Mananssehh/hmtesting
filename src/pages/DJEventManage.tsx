@@ -348,6 +348,30 @@ const DJEventManage = () => {
               <Button variant="outline" onClick={() => setFocusMode(true)} disabled={status === "ended"}>
                 <Maximize2 className="mr-2 h-4 w-4" /> Focus mode
               </Button>
+              <Button variant="outline" onClick={() => setModerationOpen(true)}>
+                <Shield className="mr-2 h-4 w-4" /> Moderation
+              </Button>
+              <Button asChild variant="outline">
+                <Link to={`/dj/${event.id}/analytics`}>
+                  <BarChart3 className="mr-2 h-4 w-4" /> Analytics
+                </Link>
+              </Button>
+            </div>
+
+            {/* Moderation summary chips */}
+            <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
+              <Badge variant="secondary" className={event.allow_explicit ? "" : "bg-amber-500/15 text-amber-300 border-amber-500/30"}>
+                {event.allow_explicit ? "Explicit allowed" : "No explicit"}
+              </Badge>
+              <Badge variant="secondary" className={event.require_approval ? "bg-accent/15 text-accent border-accent/30" : ""}>
+                {event.require_approval ? "Approval required" : "Open requests"}
+              </Badge>
+              <Badge variant="secondary">{event.cooldown_seconds}s cooldown</Badge>
+              {pendingSongs.length > 0 && (
+                <Badge className="bg-primary/20 text-primary border-primary/40 gap-1">
+                  <Shield className="h-3 w-3" /> {pendingSongs.length} pending
+                </Badge>
+              )}
             </div>
 
             {/* Lifecycle controls */}
