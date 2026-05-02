@@ -251,6 +251,21 @@ const DJEventManage = () => {
 
   const status = event.requests_status;
 
+  if (focusMode) {
+    return (
+      <FocusView
+        event={event}
+        nowPlaying={nowPlaying}
+        queue={queueSongs}
+        boosted={songs.filter((s) => s.boost > 0 && s.status !== "removed" && s.status !== "played" && s.status !== "skipped").sort((a, b) => b.boost - a.boost)}
+        onPlay={(id) => updateStatus(id, "playing")}
+        onPlayed={(id) => updateStatus(id, "played")}
+        onSkip={(id) => updateStatus(id, "skipped")}
+        onExit={() => setFocusMode(false)}
+      />
+    );
+  }
+
   return (
     <div className="min-h-screen">
       <AppHeader />
