@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { CheckCircle2, Copy, RefreshCw, Sparkles } from "lucide-react";
+import { CheckCircle2, Copy, Link2, RefreshCw, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -92,7 +92,7 @@ const Testing = () => {
                   <Copy className="h-4 w-4" />
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => copy(`${window.location.origin}/join?code=${d.code}`)} title="Copy join link">
-                  <Sparkles className="h-4 w-4" />
+                  <Link2 className="h-4 w-4" />
                 </Button>
               </div>
             </div>
