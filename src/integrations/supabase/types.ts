@@ -384,14 +384,17 @@ export type Database = {
         Row: {
           id: string | null
           nickname: string | null
+          points: number | null
         }
         Insert: {
           id?: string | null
           nickname?: string | null
+          points?: number | null
         }
         Update: {
           id?: string | null
           nickname?: string | null
+          points?: number | null
         }
         Relationships: []
       }
