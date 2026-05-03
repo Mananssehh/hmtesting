@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { eventSchema, roomCodeSchema } from "@/lib/validation";
 import { generateRoomCode } from "@/lib/mockSongs";
+import { EventQR } from "@/components/EventQR";
 
 interface EventRow {
   id: string;
