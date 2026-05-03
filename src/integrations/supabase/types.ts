@@ -380,7 +380,24 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      public_profiles: {
+        Row: {
+          id: string | null
+          nickname: string | null
+          points: number | null
+        }
+        Insert: {
+          id?: string | null
+          nickname?: string | null
+          points?: number | null
+        }
+        Update: {
+          id?: string | null
+          nickname?: string | null
+          points?: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       award_points: {
@@ -462,6 +479,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      get_nickname: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
