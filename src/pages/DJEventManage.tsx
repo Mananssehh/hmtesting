@@ -14,6 +14,7 @@ import { DJSongActions } from "@/components/DJSongActions";
 import { AwardPointsDialog } from "@/components/AwardPointsDialog";
 import { ArchivedEventSummary } from "@/components/ArchivedEventSummary";
 import { ModerationDialog } from "@/components/ModerationDialog";
+import { EventQR } from "@/components/EventQR";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
