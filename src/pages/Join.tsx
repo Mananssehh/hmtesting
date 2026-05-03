@@ -99,9 +99,9 @@ const Join = () => {
             <Input
               id="code"
               value={code}
-              onChange={(e) => setCode(e.target.value.toUpperCase().slice(0, 6))}
+              onChange={(e) => setCode(e.target.value.replace(/\s+/g, "").toUpperCase().slice(0, 10))}
               placeholder="ABC123"
-              className="text-center font-mono text-2xl tracking-[0.4em] h-16 uppercase"
+              className="text-center font-mono text-2xl tracking-widest h-16 uppercase"
               autoFocus
               required
             />
