@@ -16,7 +16,7 @@ const Auth = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const djIntent = searchParams.get("role") === "dj" || searchParams.get("mode") === "dj";
-  const { user, isDJ, loading: authLoading } = useAuth();
+  const { user, isDJ, loading: authLoading, refreshProfile } = useAuth();
   const [mode, setMode] = useState<"login" | "signup">(djIntent ? "signup" : "login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -25,10 +25,22 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && user) {
-      navigate(isDJ || djIntent ? "/dj" : "/", { replace: true });
+    if (authLoading || !user) return;
+    if (djIntent && !isDJ) {
+      (async () => {
+        const { error } = await supabase.rpc("claim_dj_role");
+        if (error) {
+          toast.error("Couldn't enable DJ access");
+          navigate("/", { replace: true });
+          return;
+        }
+        await refreshProfile();
+        navigate("/dj", { replace: true });
+      })();
+    } else {
+      navigate(isDJ ? "/dj" : "/", { replace: true });
     }
-  }, [user, isDJ, authLoading, navigate, djIntent]);
+  }, [user, isDJ, authLoading, navigate, djIntent, refreshProfile]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,18 +66,21 @@ const Auth = () => {
         });
         if (error) throw error;
 
-        if (becomeDJ && data.user) {
-          // Promote to DJ
-          await supabase.from("user_roles").insert({ user_id: data.user.id, role: "dj" });
+        if ((becomeDJ || djIntent) && data.user) {
+          await supabase.rpc("claim_dj_role");
         }
         toast.success("Account created! Welcome to Decks.");
-        navigate(becomeDJ ? "/dj" : "/", { replace: true });
+        navigate(becomeDJ || djIntent ? "/dj" : "/", { replace: true });
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email: emailParse.data,
           password: passParse.data,
         });
         if (error) throw error;
+        if (djIntent) {
+          await supabase.rpc("claim_dj_role");
+          await refreshProfile();
+        }
         toast.success("Welcome back!");
       }
     } catch (err) {

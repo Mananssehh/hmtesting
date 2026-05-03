@@ -444,6 +444,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      claim_dj_role: { Args: never; Returns: undefined }
       dj_award_points: {
         Args: {
           _amount: number
