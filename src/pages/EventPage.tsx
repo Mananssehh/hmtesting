@@ -368,6 +368,7 @@ const EventPage = () => {
             <DialogTrigger asChild>
               <Button
                 disabled={!isLive}
+                title={isPaused ? "Requests are paused by the DJ" : isEnded ? "Event has ended" : undefined}
                 className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground shrink-0"
               >
                 <Plus className="mr-1 h-4 w-4" /> Request
