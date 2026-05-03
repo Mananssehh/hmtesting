@@ -10,7 +10,9 @@ export const roomCodeSchema = z
   .string()
   .trim()
   .toUpperCase()
-  .length(6, "Room code is 6 characters");
+  .min(5, "Room code is too short")
+  .max(10, "Room code is too long")
+  .regex(/^[A-Z0-9]+$/, "Use letters and numbers only");
 
 export const emailSchema = z.string().trim().email("Invalid email").max(255);
 export const passwordSchema = z.string().min(8, "Password must be at least 8 characters").max(72);
