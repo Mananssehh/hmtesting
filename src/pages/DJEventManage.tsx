@@ -14,6 +14,7 @@ import { DJSongActions } from "@/components/DJSongActions";
 import { AwardPointsDialog } from "@/components/AwardPointsDialog";
 import { ArchivedEventSummary } from "@/components/ArchivedEventSummary";
 import { ModerationDialog } from "@/components/ModerationDialog";
+import { EventQR } from "@/components/EventQR";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
@@ -279,10 +280,6 @@ const DJEventManage = () => {
     );
   }
 
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&bgcolor=0a0a0c&color=ec4899&margin=10&data=${encodeURIComponent(
-    `${window.location.origin}/join?code=${event.room_code}`,
-  )}`;
-
   const status = event.requests_status;
 
   if (focusMode) {
@@ -404,8 +401,8 @@ const DJEventManage = () => {
           </div>
 
           <div className="flex justify-center lg:justify-end">
-            <div className="p-2 rounded-xl bg-background border">
-              <img src={qrUrl} alt="Event QR code" width={160} height={160} className="rounded-lg" />
+            <div className="p-3 rounded-xl bg-background border">
+              <EventQR roomCode={event.room_code} size={160} showActions={false} />
               <p className="text-xs text-center text-muted-foreground mt-2">Scan to join</p>
             </div>
           </div>

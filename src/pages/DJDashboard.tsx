@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { eventSchema, roomCodeSchema } from "@/lib/validation";
 import { generateRoomCode } from "@/lib/mockSongs";
+import { EventQR } from "@/components/EventQR";
 
 interface EventRow {
   id: string;
@@ -253,21 +254,7 @@ const DJDashboard = () => {
           <DialogHeader>
             <DialogTitle>Scan to join</DialogTitle>
           </DialogHeader>
-          {qrEvent && (
-            <div className="flex flex-col items-center gap-3">
-              <img
-                alt="Event QR code"
-                className="rounded-lg border bg-background p-2"
-                width={260}
-                height={260}
-                src={`https://api.qrserver.com/v1/create-qr-code/?size=260x260&bgcolor=0a0a0c&color=ec4899&margin=10&data=${encodeURIComponent(`${window.location.origin}/join?code=${qrEvent.room_code}`)}`}
-              />
-              <div className="font-mono font-bold tracking-widest text-xl">{qrEvent.room_code}</div>
-              <Button variant="outline" onClick={() => copyJoinLink(qrEvent.room_code)}>
-                <Copy className="mr-2 h-4 w-4" /> Copy join link
-              </Button>
-            </div>
-          )}
+          {qrEvent && <EventQR roomCode={qrEvent.room_code} size={260} />}
         </DialogContent>
       </Dialog>
     </div>
