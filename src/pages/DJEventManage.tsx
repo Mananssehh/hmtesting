@@ -279,10 +279,6 @@ const DJEventManage = () => {
     );
   }
 
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&bgcolor=0a0a0c&color=ec4899&margin=10&data=${encodeURIComponent(
-    `${window.location.origin}/join?code=${event.room_code}`,
-  )}`;
-
   const status = event.requests_status;
 
   if (focusMode) {
