@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useSearchParams } from "react-router-dom";
 import { Disc3, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,8 +14,10 @@ import { emailSchema, nicknameSchema, passwordSchema } from "@/lib/validation";
 
 const Auth = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const djIntent = searchParams.get("role") === "dj" || searchParams.get("mode") === "dj";
   const { user, isDJ, loading: authLoading } = useAuth();
-  const [mode, setMode] = useState<"login" | "signup">("login");
+  const [mode, setMode] = useState<"login" | "signup">(djIntent ? "signup" : "login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [nickname, setNickname] = useState("");
@@ -24,9 +26,9 @@ const Auth = () => {
 
   useEffect(() => {
     if (!authLoading && user) {
-      navigate(isDJ ? "/dj" : "/", { replace: true });
+      navigate(isDJ || djIntent ? "/dj" : "/", { replace: true });
     }
-  }, [user, isDJ, authLoading, navigate]);
+  }, [user, isDJ, authLoading, navigate, djIntent]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
