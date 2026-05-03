@@ -17,12 +17,12 @@ const audiences = [
   {
     icon: Disc3, title: "For DJs",
     points: ["Live queue ranked by the crowd", "Approve, play, skip in one tap", "Stay in control — never auto-played"],
-    cta: { to: "/auth", label: "Start as DJ" },
+    cta: { to: "/auth?role=dj", label: "Start as DJ" },
   },
   {
     icon: Building2, title: "For Clubs",
     points: ["Print one QR for the night", "Reward top fans with points", "Real engagement data per event"],
-    cta: { to: "/auth", label: "Set up your venue" },
+    cta: { to: "/auth?role=dj", label: "Set up your venue" },
   },
   {
     icon: Users, title: "For Guests",
@@ -54,7 +54,7 @@ const Landing = () => {
           </p>
           <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row gap-3 justify-center px-4">
             <Button asChild size="lg" className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground glow-primary hover:opacity-95 h-12 px-8 text-base">
-              <Link to="/auth">
+              <Link to="/auth?role=dj">
                 <Disc3 className="mr-2 h-5 w-5" />
                 Start as DJ
               </Link>
@@ -156,7 +156,7 @@ const Landing = () => {
               </p>
               <div className="flex flex-col sm:flex-row gap-3">
                 <Button asChild className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground">
-                  <Link to="/auth">Start as DJ</Link>
+                  <Link to="/auth?role=dj">Start as DJ</Link>
                 </Button>
                 <Button asChild variant="outline">
                   <Link to="/leaderboard">See the leaderboard</Link>
@@ -187,7 +187,7 @@ const Landing = () => {
         <p className="text-muted-foreground mb-8">Spin up a live event in 30 seconds.</p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Button asChild size="lg" className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground glow-primary h-12 px-8">
-            <Link to="/auth">Start as DJ</Link>
+            <Link to="/auth?role=dj">Start as DJ</Link>
           </Button>
           <Button asChild size="lg" variant="outline" className="h-12 px-8 border-primary/30 hover:bg-primary/10">
             <Link to="/join">Join an event</Link>
