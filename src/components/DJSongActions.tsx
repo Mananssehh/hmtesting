@@ -55,10 +55,15 @@ export function DJSongActions({
           <ShieldCheck className="mr-1 h-4 w-4" /> Approve
         </Button>
       )}
-      {/* Primary action */}
+      {/* Primary action — most prominent */}
       {!isPlaying && onMarkPlaying && song.status !== "pending" && (
-        <Button size="sm" onClick={onMarkPlaying} className="bg-primary text-primary-foreground h-9">
-          <Play className="mr-1 h-4 w-4" /> Now playing
+        <Button
+          size="sm"
+          onClick={onMarkPlaying}
+          className="h-9 bg-gradient-to-r from-primary to-primary-glow text-primary-foreground font-semibold shadow-md glow-primary hover:opacity-95"
+          title="Set this as the song you just started playing in your DJ software"
+        >
+          <Play className="mr-1 h-4 w-4 fill-current" /> Mark Now Playing
         </Button>
       )}
       {(isPlaying || song.status === "approved" || song.status === "pending") && onMarkPlayed && (
@@ -159,7 +164,7 @@ export function DJSongActions({
             )}
             {onMarkPlaying && (
               <DropdownMenuItem onClick={onMarkPlaying}>
-                <Play className="mr-2 h-4 w-4" /> Play next
+                <Play className="mr-2 h-4 w-4" /> Set as Now Playing
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>

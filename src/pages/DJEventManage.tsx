@@ -175,6 +175,10 @@ const DJEventManage = () => {
     if (error) {
       toast.error(error.message);
       logCritical("DJEventManage.updateStatus", error.message, { songId, status, eventId: event?.id });
+      return;
+    }
+    if (status === "playing") {
+      toast.success("Now Playing updated for guests 🎶");
     }
   };
 
@@ -182,7 +186,6 @@ const DJEventManage = () => {
     const next = queueSongs[0];
     if (!next) return toast.info("Queue is empty");
     await updateStatus(next.id, "playing");
-    toast.success(`Playing: ${next.title}`);
   };
 
   const setQueuePosition = async (songId: string, position: number) => {
@@ -424,6 +427,17 @@ const DJEventManage = () => {
           </div>
         )}
 
+        {/* Helper text for DJ */}
+        {status !== "ended" && (
+          <div className="mb-4 p-3 rounded-xl bg-primary/5 border border-primary/20 text-sm text-muted-foreground flex items-start gap-2">
+            <Music className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+            <span>
+              When you start playing a track in your DJ software, tap{" "}
+              <strong className="text-primary">Mark Now Playing</strong> so guests see the update.
+            </span>
+          </div>
+        )}
+
         {/* Now Playing + Next Up */}
         <div className="grid md:grid-cols-2 gap-4 mb-6">
           <div className="p-4 rounded-2xl bg-primary/5 border border-primary/30">
@@ -444,19 +458,25 @@ const DJEventManage = () => {
               </div>
             ) : (
               <div className="text-center py-8 text-sm text-muted-foreground">
-                Nothing playing yet. Tap <strong className="text-primary">Play next</strong> to start.
+                Nothing marked yet. Tap <strong className="text-primary">Mark Top as Now Playing</strong> when you start a track.
               </div>
             )}
           </div>
 
           <div className="p-4 rounded-2xl bg-card/60 border border-border/60">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
               <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-muted-foreground font-semibold">
                 <ListMusic className="h-3.5 w-3.5" /> Next up
                 <Badge variant="secondary" className="text-[10px]">{queueSongs.length}</Badge>
               </div>
-              <Button size="sm" onClick={playNext} disabled={!queueSongs.length} className="bg-primary text-primary-foreground">
-                <Play className="mr-1.5 h-4 w-4" /> Play next
+              <Button
+                size="sm"
+                onClick={playNext}
+                disabled={!queueSongs.length}
+                className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground"
+                title="Set the top-of-queue track as Now Playing for guests"
+              >
+                <Play className="mr-1.5 h-4 w-4 fill-current" /> Mark Top as Now Playing
               </Button>
             </div>
             {queueSongs.length === 0 ? (
@@ -696,7 +716,7 @@ function FocusView({ event, nowPlaying, queue, boosted, onPlay, onPlayed, onSkip
             </div>
             {next && (
               <Button size="lg" onClick={() => onPlay(next.id)} className="bg-primary text-primary-foreground">
-                <Play className="mr-2 h-5 w-5" /> Play next
+                <Play className="mr-2 h-5 w-5 fill-current" /> Mark Top as Now Playing
               </Button>
             )}
           </div>
