@@ -458,7 +458,7 @@ const DJEventManage = () => {
               </div>
             ) : (
               <div className="text-center py-8 text-sm text-muted-foreground">
-                Nothing marked yet. Tap <strong className="text-primary">Mark Top as Now Playing</strong> when you start a track.
+                No song is playing yet.
               </div>
             )}
           </div>
@@ -474,13 +474,16 @@ const DJEventManage = () => {
                 onClick={playNext}
                 disabled={!queueSongs.length}
                 className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground"
-                title="Set the top-of-queue track as Now Playing for guests"
+                title={queueSongs.length ? "Set the top-of-queue track as Now Playing for guests" : "No requests yet"}
               >
-                <Play className="mr-1.5 h-4 w-4 fill-current" /> Mark Top as Now Playing
+                <Play className="mr-1.5 h-4 w-4 fill-current" />
+                {queueSongs.length ? "Mark Next Up as Now Playing" : "Waiting for requests"}
               </Button>
             </div>
             {queueSongs.length === 0 ? (
-              <div className="text-center py-8 text-sm text-muted-foreground">Queue is empty.</div>
+              <div className="text-center py-8 text-sm text-muted-foreground">
+                No requests yet. Share the QR code or join link so guests can request songs.
+              </div>
             ) : (
               <div className="space-y-2 max-h-72 overflow-y-auto scrollbar-thin pr-1">
                 {queueSongs.slice(0, 3).map((s) => (
