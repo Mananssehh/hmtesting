@@ -432,7 +432,7 @@ const DJEventManage = () => {
           <div className="mb-4 p-3 rounded-xl bg-primary/5 border border-primary/20 text-sm text-muted-foreground flex items-start gap-2">
             <Music className="h-4 w-4 text-primary shrink-0 mt-0.5" />
             <span>
-              When you start playing a track in your DJ software, tap{" "}
+            When you start playing a requested track in djay, tap{" "}
               <strong className="text-primary">Mark Now Playing</strong> so guests see the update.
             </span>
           </div>
@@ -458,7 +458,7 @@ const DJEventManage = () => {
               </div>
             ) : (
               <div className="text-center py-8 text-sm text-muted-foreground">
-                Nothing marked yet. Tap <strong className="text-primary">Mark Top as Now Playing</strong> when you start a track.
+                No song is playing yet.
               </div>
             )}
           </div>
@@ -474,13 +474,16 @@ const DJEventManage = () => {
                 onClick={playNext}
                 disabled={!queueSongs.length}
                 className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground"
-                title="Set the top-of-queue track as Now Playing for guests"
+                title={queueSongs.length ? "Set the top-of-queue track as Now Playing for guests" : "No requests yet"}
               >
-                <Play className="mr-1.5 h-4 w-4 fill-current" /> Mark Top as Now Playing
+                <Play className="mr-1.5 h-4 w-4 fill-current" />
+                {queueSongs.length ? "Mark Next Up as Now Playing" : "Waiting for requests"}
               </Button>
             </div>
             {queueSongs.length === 0 ? (
-              <div className="text-center py-8 text-sm text-muted-foreground">Queue is empty.</div>
+              <div className="text-center py-8 text-sm text-muted-foreground">
+                No requests yet. Share the QR code or join link so guests can request songs.
+              </div>
             ) : (
               <div className="space-y-2 max-h-72 overflow-y-auto scrollbar-thin pr-1">
                 {queueSongs.slice(0, 3).map((s) => (
@@ -704,28 +707,34 @@ function FocusView({ event, nowPlaying, queue, boosted, onPlay, onPlayed, onSkip
               </div>
             </div>
           ) : (
-            <div className="text-muted-foreground py-4">Nothing playing yet.</div>
+            <div className="text-muted-foreground py-4">No song is playing yet.</div>
           )}
         </div>
 
         {/* Next up */}
         <div className="rounded-2xl p-5 bg-card/60 border border-border mb-4">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
             <div className="text-xs uppercase tracking-wider text-muted-foreground font-semibold flex items-center gap-2">
               <ListMusic className="h-3.5 w-3.5" /> Next up
             </div>
-            {next && (
-              <Button size="lg" onClick={() => onPlay(next.id)} className="bg-primary text-primary-foreground">
-                <Play className="mr-2 h-5 w-5 fill-current" /> Mark Top as Now Playing
-              </Button>
-            )}
+            <Button
+              size="lg"
+              onClick={() => next && onPlay(next.id)}
+              disabled={!next}
+              className="bg-primary text-primary-foreground"
+            >
+              <Play className="mr-2 h-5 w-5 fill-current" />
+              {next ? "Mark Next Up as Now Playing" : "Waiting for requests"}
+            </Button>
           </div>
           {next ? (
             <div className="text-xl sm:text-2xl font-semibold truncate">
               {next.title} <span className="text-muted-foreground font-normal">— {next.artist}</span>
             </div>
           ) : (
-            <div className="text-muted-foreground">Queue is empty.</div>
+            <div className="text-muted-foreground">
+              No requests yet. Share the QR code or join link so guests can request songs.
+            </div>
           )}
         </div>
 
