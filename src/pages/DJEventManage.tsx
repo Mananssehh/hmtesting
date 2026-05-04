@@ -175,6 +175,10 @@ const DJEventManage = () => {
     if (error) {
       toast.error(error.message);
       logCritical("DJEventManage.updateStatus", error.message, { songId, status, eventId: event?.id });
+      return;
+    }
+    if (status === "playing") {
+      toast.success("Now Playing updated for guests 🎶");
     }
   };
 
@@ -182,7 +186,6 @@ const DJEventManage = () => {
     const next = queueSongs[0];
     if (!next) return toast.info("Queue is empty");
     await updateStatus(next.id, "playing");
-    toast.success(`Playing: ${next.title}`);
   };
 
   const setQueuePosition = async (songId: string, position: number) => {
