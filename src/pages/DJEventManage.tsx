@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { seedDemoEvent, resetDemoEvent } from "@/lib/demoSeed";
+import { logCritical } from "@/lib/errorLogger";
 
 interface EventInfo {
   id: string;
