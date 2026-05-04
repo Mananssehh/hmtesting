@@ -111,7 +111,10 @@ const DJDashboard = () => {
       })
       .select()
       .single();
-    if (error) throw error;
+    if (error) {
+      logCritical("DJDashboard.createEvent", error.message, { djId: user.id, code });
+      throw error;
+    }
 
     setEvents((prev) => [data, ...prev]);
     setCreateOpen(false);
