@@ -342,14 +342,22 @@ const EventPage = () => {
         {/* Now Playing */}
         {nowPlaying && (
           <div className="mb-4">
-            <div className="flex items-center gap-2 mb-2 text-xs uppercase tracking-wider text-primary font-medium">
-              <Music className="h-3.5 w-3.5" /> Now playing
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-primary font-medium">
+                <Music className="h-3.5 w-3.5" /> Now playing
+              </div>
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                DJ marked this as playing
+              </span>
             </div>
             <SongRequestCard
               song={nowPlaying}
               myVote={myVotes[nowPlaying.id] ?? 0}
               onVote={(v) => handleVote(nowPlaying.id, v)}
             />
+            <p className="mt-1.5 text-xs text-muted-foreground italic">
+              Updated by DJ — the next track appears here when they tap Mark Now Playing.
+            </p>
           </div>
         )}
 
