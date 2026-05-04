@@ -16,6 +16,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { eventSchema, roomCodeSchema } from "@/lib/validation";
 import { generateRoomCode } from "@/lib/mockSongs";
 import { EventQR } from "@/components/EventQR";
+import { logCritical } from "@/lib/errorLogger";
 
 interface EventRow {
   id: string;
