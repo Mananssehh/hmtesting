@@ -28,21 +28,24 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            <Route path="/" element={<Landing />} />
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/join" element={<Join />} />
-            <Route path="/event/:code" element={<EventPage />} />
-            <Route path="/dj" element={<DJDashboard />} />
-            <Route path="/dj/:id" element={<DJEventManage />} />
-            <Route path="/dj/:id/analytics" element={<Analytics />} />
-            <Route path="/dj/archive" element={<Archive />} />
-            <Route path="/leaderboard" element={<Leaderboard />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/testing" element={<Testing />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <ErrorBoundary>
+            <Routes>
+              <Route path="/" element={<Landing />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/join" element={<Join />} />
+              <Route path="/event/:code" element={<EventPage />} />
+              <Route path="/dj" element={<DJDashboard />} />
+              <Route path="/dj/:id" element={<DJEventManage />} />
+              <Route path="/dj/:id/analytics" element={<Analytics />} />
+              <Route path="/dj/archive" element={<Archive />} />
+              <Route path="/dj/errors" element={<ErrorMonitor />} />
+              <Route path="/leaderboard" element={<Leaderboard />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/testing" element={<Testing />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </ErrorBoundary>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
