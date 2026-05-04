@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      error_logs: {
+        Row: {
+          context: Json | null
+          created_at: string
+          id: string
+          message: string
+          reviewed: boolean
+          route: string | null
+          severity: Database["public"]["Enums"]["error_severity"]
+          source: string
+          stack: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          context?: Json | null
+          created_at?: string
+          id?: string
+          message: string
+          reviewed?: boolean
+          route?: string | null
+          severity?: Database["public"]["Enums"]["error_severity"]
+          source: string
+          stack?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          context?: Json | null
+          created_at?: string
+          id?: string
+          message?: string
+          reviewed?: boolean
+          route?: string | null
+          severity?: Database["public"]["Enums"]["error_severity"]
+          source?: string
+          stack?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       event_banned_guests: {
         Row: {
           created_at: string
@@ -496,6 +538,7 @@ export type Database = {
     }
     Enums: {
       app_role: "dj" | "guest"
+      error_severity: "critical" | "warning" | "info"
       point_tx_type: "earned" | "spent" | "manual_adjustment"
       request_status:
         | "pending"
@@ -632,6 +675,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["dj", "guest"],
+      error_severity: ["critical", "warning", "info"],
       point_tx_type: ["earned", "spent", "manual_adjustment"],
       request_status: [
         "pending",
