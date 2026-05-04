@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { seedDemoEvent, resetDemoEvent } from "@/lib/demoSeed";
+import { logCritical } from "@/lib/errorLogger";
 
 interface EventInfo {
   id: string;
@@ -171,7 +172,10 @@ const DJEventManage = () => {
       }
     }
     const { error } = await supabase.from("song_requests").update({ status }).eq("id", songId);
-    if (error) toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      logCritical("DJEventManage.updateStatus", error.message, { songId, status, eventId: event?.id });
+    }
   };
 
   const playNext = async () => {
@@ -231,7 +235,10 @@ const DJEventManage = () => {
   const setLifecycle = async (next: "live" | "paused" | "ended") => {
     if (!event) return;
     const { error } = await supabase.from("events").update({ requests_status: next }).eq("id", event.id);
-    if (error) return toast.error(error.message);
+    if (error) {
+      logCritical("DJEventManage.setLifecycle", error.message, { eventId: event.id, next });
+      return toast.error(error.message);
+    }
     setEvent((p) => p ? { ...p, requests_status: next, is_active: next !== "ended" } : p);
     toast.success(
       next === "live" ? "Requests reopened 🎶" : next === "paused" ? "Requests paused" : "Event ended",

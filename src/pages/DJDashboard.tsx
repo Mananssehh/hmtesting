@@ -16,6 +16,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { eventSchema, roomCodeSchema } from "@/lib/validation";
 import { generateRoomCode } from "@/lib/mockSongs";
 import { EventQR } from "@/components/EventQR";
+import { logCritical } from "@/lib/errorLogger";
 
 interface EventRow {
   id: string;
@@ -111,7 +112,10 @@ const DJDashboard = () => {
       })
       .select()
       .single();
-    if (error) throw error;
+    if (error) {
+      logCritical("DJDashboard.createEvent", error.message, { djId: user.id, code });
+      throw error;
+    }
 
     setEvents((prev) => [data, ...prev]);
     setCreateOpen(false);
@@ -177,6 +181,9 @@ const DJDashboard = () => {
             </Button>
             <Button asChild variant="outline">
               <Link to="/dj/archive"><ArchiveIcon className="mr-1 h-4 w-4" /> Archive</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link to="/dj/errors"><Settings className="mr-1 h-4 w-4" /> Error monitor</Link>
             </Button>
             <Button variant="outline" onClick={launchDemoRoom}>
               <Sparkles className="mr-1 h-4 w-4 text-accent" /> Demo room
