@@ -716,7 +716,7 @@ function FocusView({ event, nowPlaying, queue, boosted, onPlay, onPlayed, onSkip
             </div>
             {next && (
               <Button size="lg" onClick={() => onPlay(next.id)} className="bg-primary text-primary-foreground">
-                <Play className="mr-2 h-5 w-5" /> Play next
+                <Play className="mr-2 h-5 w-5 fill-current" /> Mark Top as Now Playing
               </Button>
             )}
           </div>
