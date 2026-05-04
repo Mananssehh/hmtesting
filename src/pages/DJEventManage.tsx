@@ -171,7 +171,10 @@ const DJEventManage = () => {
       }
     }
     const { error } = await supabase.from("song_requests").update({ status }).eq("id", songId);
-    if (error) toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      logCritical("DJEventManage.updateStatus", error.message, { songId, status, eventId: event?.id });
+    }
   };
 
   const playNext = async () => {
