@@ -432,7 +432,7 @@ const DJEventManage = () => {
           <div className="mb-4 p-3 rounded-xl bg-primary/5 border border-primary/20 text-sm text-muted-foreground flex items-start gap-2">
             <Music className="h-4 w-4 text-primary shrink-0 mt-0.5" />
             <span>
-              When you start playing a track in your DJ software, tap{" "}
+            When you start playing a requested track in djay, tap{" "}
               <strong className="text-primary">Mark Now Playing</strong> so guests see the update.
             </span>
           </div>
