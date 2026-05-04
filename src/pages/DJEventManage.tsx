@@ -235,7 +235,10 @@ const DJEventManage = () => {
   const setLifecycle = async (next: "live" | "paused" | "ended") => {
     if (!event) return;
     const { error } = await supabase.from("events").update({ requests_status: next }).eq("id", event.id);
-    if (error) return toast.error(error.message);
+    if (error) {
+      logCritical("DJEventManage.setLifecycle", error.message, { eventId: event.id, next });
+      return toast.error(error.message);
+    }
     setEvent((p) => p ? { ...p, requests_status: next, is_active: next !== "ended" } : p);
     toast.success(
       next === "live" ? "Requests reopened 🎶" : next === "paused" ? "Requests paused" : "Event ended",
