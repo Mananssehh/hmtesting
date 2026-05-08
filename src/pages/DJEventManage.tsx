@@ -452,6 +452,13 @@ const DJEventManage = () => {
                   : undefined
               }
             />
+            <button
+              type="button"
+              onClick={() => toast.info("Coming soon: automatic DJ software connection.")}
+              className="mt-2 w-full px-4 py-2.5 rounded-xl border border-dashed border-primary/40 bg-background/40 text-sm text-muted-foreground hover:bg-secondary/40 transition-colors"
+            >
+              🎚️ Connect DJ Software <span className="text-xs opacity-70">(coming soon)</span>
+            </button>
           </div>
         )}
 
