@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import { searchMusic, MusicSearchResult, normalizeKey } from "@/lib/musicSearch";
 import { formatDuration, platformLabel } from "@/lib/searchLinks";
 import { PreviewButton } from "@/components/PreviewButton";
+import { NowPlayingDisplay } from "@/components/NowPlayingDisplay";
 
 type SortMode = "top" | "new" | "trending";
 
@@ -339,7 +340,10 @@ const EventPage = () => {
           </div>
         )}
 
-        {/* Now Playing */}
+        {/* Live Now Playing (broadcast by DJ) */}
+        {eventInfo?.id && <NowPlayingDisplay eventId={eventInfo.id} />}
+
+        {/* Now Playing (from request queue) */}
         {nowPlaying && (
           <div className="mb-4">
             <div className="flex items-center justify-between gap-2 mb-2">

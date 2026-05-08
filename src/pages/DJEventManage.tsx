@@ -24,6 +24,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { seedDemoEvent, resetDemoEvent } from "@/lib/demoSeed";
 import { logCritical } from "@/lib/errorLogger";
+import { NowPlayingPanel } from "@/components/NowPlayingPanel";
 
 interface EventInfo {
   id: string;
@@ -435,6 +436,22 @@ const DJEventManage = () => {
             When you start playing a requested track in djay, tap{" "}
               <strong className="text-primary">Mark Now Playing</strong> so guests see the update.
             </span>
+          </div>
+        )}
+
+        {/* Live Now Playing control panel (broadcasts to guests) */}
+        {status !== "ended" && (
+          <div className="mb-4">
+            <NowPlayingPanel
+              eventId={event.id}
+              prefill={
+                nowPlaying
+                  ? { title: nowPlaying.title, artist: nowPlaying.artist, albumArt: nowPlaying.album_art ?? undefined }
+                  : queueSongs[0]
+                  ? { title: queueSongs[0].title, artist: queueSongs[0].artist, albumArt: queueSongs[0].album_art ?? undefined }
+                  : undefined
+              }
+            />
           </div>
         )}
 
