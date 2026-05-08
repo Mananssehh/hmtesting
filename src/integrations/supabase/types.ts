@@ -209,6 +209,50 @@ export type Database = {
         }
         Relationships: []
       }
+      now_playing: {
+        Row: {
+          album_art: string | null
+          artist: string | null
+          created_at: string
+          event_id: string
+          id: string
+          source: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          album_art?: string | null
+          artist?: string | null
+          created_at?: string
+          event_id: string
+          id?: string
+          source?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          album_art?: string | null
+          artist?: string | null
+          created_at?: string
+          event_id?: string
+          id?: string
+          source?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "now_playing_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: true
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       points_transactions: {
         Row: {
           amount: number
