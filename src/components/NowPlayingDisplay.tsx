@@ -10,7 +10,7 @@ const STATUS_META: Record<NowPlayingStatus, { label: string; className: string; 
   playing: {
     label: "Now Playing",
     className: "bg-primary/15 text-primary border-primary/40",
-    icon: <Disc3 className="h-3 w-3 animate-spin-slow" />,
+    icon: <Disc3 className="h-3 w-3 animate-spin [animation-duration:3s]" />,
   },
   mixing: {
     label: "Mixing Next",
