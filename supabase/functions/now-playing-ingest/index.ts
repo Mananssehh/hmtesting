@@ -13,9 +13,15 @@
 //   status?: "playing" | "mixing" | "paused",
 //   started_at?: string (ISO)
 // }
-import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
 import { z } from "https://esm.sh/zod@3.23.8";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-ingest-token",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
 
 const BodySchema = z.object({
   title: z.string().trim().min(1).max(300),
