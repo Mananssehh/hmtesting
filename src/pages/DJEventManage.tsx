@@ -433,13 +433,16 @@ const DJEventManage = () => {
           <div className="mb-4 p-3 rounded-xl bg-primary/5 border border-primary/20 text-sm text-muted-foreground flex items-start gap-2">
             <Music className="h-4 w-4 text-primary shrink-0 mt-0.5" />
             <span>
-            When you start playing a requested track in djay, tap{" "}
+              Use the leaderboard to choose your next track, then tap{" "}
               <strong className="text-primary">Mark Now Playing</strong> so guests see the update.
+              <span className="block mt-1 text-xs opacity-80">
+                Decks does not access or upload DJ music files.
+              </span>
             </span>
           </div>
         )}
 
-        {/* Live Now Playing control panel (broadcasts to guests) */}
+        {/* DJ-controlled Now Playing panel (broadcasts to guests) */}
         {status !== "ended" && (
           <div className="mb-4">
             <NowPlayingPanel
@@ -452,17 +455,6 @@ const DJEventManage = () => {
                   : undefined
               }
             />
-            <button
-              type="button"
-              onClick={() => toast.info("Coming soon: automatic DJ software connection.")}
-              className="mt-2 w-full px-4 py-2.5 rounded-xl border border-dashed border-primary/40 bg-background/40 text-sm text-muted-foreground hover:bg-secondary/40 transition-colors"
-            >
-              🎚️ Connect DJ Software <span className="text-xs opacity-70">(coming soon)</span>
-            </button>
-            <div className="mt-3 space-y-3">
-              <IngestTestPanel eventId={event.id} />
-              <StressTestPanel eventId={event.id} />
-            </div>
           </div>
         )}
 
