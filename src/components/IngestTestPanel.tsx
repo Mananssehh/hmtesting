@@ -20,12 +20,25 @@ const SAMPLE_PAYLOAD = {
   status: "playing",
 };
 
+const SMOKE_PAYLOAD = {
+  title: "FE!N",
+  artist: "Travis Scott",
+  album_art: "",
+  source: "smoke_test",
+  status: "playing" as const,
+};
+
+type StepStatus = "pending" | "running" | "pass" | "fail";
+interface SmokeStep { label: string; status: StepStatus; detail?: string }
+
 export function IngestTestPanel({ eventId }: Props) {
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [reveal, setReveal] = useState(false);
   const [lastResult, setLastResult] = useState<{ ok: boolean; message: string } | null>(null);
+  const [smokeRunning, setSmokeRunning] = useState(false);
+  const [smokeSteps, setSmokeSteps] = useState<SmokeStep[]>([]);
 
   const loadToken = async () => {
     setLoading(true);
