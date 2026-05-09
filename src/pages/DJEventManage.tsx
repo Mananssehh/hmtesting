@@ -25,8 +25,6 @@ import { Badge } from "@/components/ui/badge";
 import { seedDemoEvent, resetDemoEvent } from "@/lib/demoSeed";
 import { logCritical } from "@/lib/errorLogger";
 import { NowPlayingPanel } from "@/components/NowPlayingPanel";
-import { IngestTestPanel } from "@/components/IngestTestPanel";
-import { StressTestPanel } from "@/components/StressTestPanel";
 
 interface EventInfo {
   id: string;
