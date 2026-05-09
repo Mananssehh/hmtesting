@@ -25,6 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { seedDemoEvent, resetDemoEvent } from "@/lib/demoSeed";
 import { logCritical } from "@/lib/errorLogger";
 import { NowPlayingPanel } from "@/components/NowPlayingPanel";
+import { IngestTestPanel } from "@/components/IngestTestPanel";
 
 interface EventInfo {
   id: string;
@@ -459,6 +460,9 @@ const DJEventManage = () => {
             >
               🎚️ Connect DJ Software <span className="text-xs opacity-70">(coming soon)</span>
             </button>
+            <div className="mt-3">
+              <IngestTestPanel eventId={event.id} />
+            </div>
           </div>
         )}
 
