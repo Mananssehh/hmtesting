@@ -388,7 +388,7 @@ const EventPage = () => {
             </DialogTrigger>
             <DialogContent className="p-0 gap-0 w-[calc(100vw-1rem)] max-w-lg max-h-[90dvh] flex flex-col overflow-hidden sm:rounded-2xl">
               <DialogHeader className="px-4 pt-4 pb-2 shrink-0 text-left">
-                <DialogTitle>Request a song</DialogTitle>
+                <DialogTitle className="pr-8">Request a song</DialogTitle>
               </DialogHeader>
               <RequestPicker onPick={handleRequestSong} existing={songs} allowExplicit={eventInfo.allow_explicit} />
             </DialogContent>
