@@ -482,22 +482,27 @@ function RequestPicker({ onPick, existing, allowExplicit = true }: { onPick: (so
   const [q, setQ] = useState("");
   const [debounced, setDebounced] = useState("");
   const [results, setResults] = useState<MusicSearchResult[]>([]);
-  const [provider, setProvider] = useState<"spotify" | "itunes" | "mock" | "none">("mock");
+  const [provider, setProvider] = useState<"spotify" | "itunes" | "none">("none");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
 
-  // Debounce
   useEffect(() => {
-    const t = setTimeout(() => setDebounced(q), 350);
+    const t = setTimeout(() => setDebounced(q.trim()), 300);
     return () => clearTimeout(t);
   }, [q]);
 
-  // Fetch
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
+    if (!debounced) {
+      setResults([]);
+      setProvider("none");
+      setLoading(false);
       setError(false);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
+    setError(false);
+    (async () => {
       try {
         const res = await searchMusic(debounced);
         if (cancelled) return;
@@ -523,6 +528,11 @@ function RequestPicker({ onPick, existing, allowExplicit = true }: { onPick: (so
       },
     );
 
+  const showInitialEmpty = !debounced && !loading;
+  const showNoResults = !!debounced && !loading && !error && results.length === 0;
+  const showError = !!debounced && !loading && error;
+  const showLoadingSkeleton = loading && results.length === 0;
+
   return (
     <div className="flex flex-col flex-1 min-h-0">
       <div className="px-4 pb-2 shrink-0">
@@ -532,7 +542,7 @@ function RequestPicker({ onPick, existing, allowExplicit = true }: { onPick: (so
             autoFocus
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Search any song..."
+            placeholder="Search any song or artist..."
             className="pl-9 h-11"
           />
           {loading && (
@@ -542,13 +552,47 @@ function RequestPicker({ onPick, existing, allowExplicit = true }: { onPick: (so
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin px-2 space-y-1 overscroll-contain">
-        {!loading && results.length === 0 && debounced && (
-          <div className="text-center py-12">
-            <Search className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground">
-              {error ? "Search unavailable. Try again." : "No matches found"}
+        {showInitialEmpty && (
+          <div className="text-center py-12 px-6">
+            <Music className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
+            <p className="text-sm font-medium">Find a track to request</p>
+            <p className="text-xs text-muted-foreground/80 mt-1">
+              Search by song title or artist. Real catalog — no fake data.
             </p>
-            <p className="text-xs text-muted-foreground/70 mt-1">Try a different title or artist.</p>
+          </div>
+        )}
+
+        {showLoadingSkeleton && (
+          <div className="space-y-1">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-2.5 p-2">
+                <div className="h-11 w-11 rounded-md bg-muted animate-pulse shrink-0" />
+                <div className="flex-1 space-y-1.5">
+                  <div className="h-3 w-2/3 rounded bg-muted animate-pulse" />
+                  <div className="h-2.5 w-1/2 rounded bg-muted animate-pulse" />
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {showNoResults && (
+          <div className="text-center py-12 px-6">
+            <Search className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
+            <p className="text-sm font-medium">No matches for &ldquo;{debounced}&rdquo;</p>
+            <p className="text-xs text-muted-foreground/80 mt-1">
+              Try a different spelling, the artist name, or fewer words.
+            </p>
+          </div>
+        )}
+
+        {showError && (
+          <div className="text-center py-12 px-6">
+            <Search className="h-8 w-8 text-destructive/60 mx-auto mb-2" />
+            <p className="text-sm font-medium">Search is unavailable right now</p>
+            <p className="text-xs text-muted-foreground/80 mt-1">
+              Check your connection and try again in a moment.
+            </p>
           </div>
         )}
 
@@ -587,7 +631,7 @@ function RequestPicker({ onPick, existing, allowExplicit = true }: { onPick: (so
                 ) : !allowExplicit && s.explicit ? (
                   <Badge variant="secondary" className="text-[10px] bg-amber-500/15 text-amber-300 border-amber-500/30">Blocked</Badge>
                 ) : (
-                  <Button size="sm" onClick={() => onPick(s)} className="bg-primary text-primary-foreground h-9 w-9 p-0">
+                  <Button size="sm" onClick={() => onPick(s)} className="bg-primary text-primary-foreground h-9 w-9 p-0" aria-label={`Request ${s.title}`}>
                     <Plus className="h-4 w-4" />
                   </Button>
                 )}
@@ -601,10 +645,13 @@ function RequestPicker({ onPick, existing, allowExplicit = true }: { onPick: (so
         className="px-4 pt-2 text-[11px] text-muted-foreground border-t border-border/50 shrink-0"
         style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.625rem)" }}
       >
-        Powered by {platformLabel(provider === "none" ? "mock" : provider)} · DJ plays from their own setup.
+        {provider !== "none"
+          ? `Catalog: ${platformLabel(provider)} · DJ plays from their own setup.`
+          : "Live catalog · DJ plays from their own setup."}
       </p>
     </div>
   );
 }
 
 export default EventPage;
+
