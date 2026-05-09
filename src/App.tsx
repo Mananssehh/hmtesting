@@ -10,6 +10,7 @@ import Join from "./pages/Join";
 import EventPage from "./pages/EventPage";
 import DJDashboard from "./pages/DJDashboard";
 import DJEventManage from "./pages/DJEventManage";
+import DJDevTools from "./pages/DJDevTools";
 import Leaderboard from "./pages/Leaderboard";
 import Profile from "./pages/Profile";
 import Analytics from "./pages/Analytics";
