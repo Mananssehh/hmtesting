@@ -30,10 +30,10 @@ export const platformLabel = (p?: string | null): string => {
   if (!p) return "Catalog";
   const map: Record<string, string> = {
     spotify: "Spotify",
+    itunes: "Apple Music",
     apple_music: "Apple Music",
     youtube: "YouTube",
     soundcloud: "SoundCloud",
-    mock: "Demo catalog",
   };
   return map[p] ?? p;
 };
