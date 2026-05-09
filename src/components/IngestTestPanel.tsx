@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Copy, Loader2, Send, Terminal, RefreshCw, Eye, EyeOff } from "lucide-react";
+import { Copy, Loader2, Send, Terminal, RefreshCw, Eye, EyeOff, FlaskConical, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
