@@ -461,8 +461,9 @@ const DJEventManage = () => {
             >
               🎚️ Connect DJ Software <span className="text-xs opacity-70">(coming soon)</span>
             </button>
-            <div className="mt-3">
+            <div className="mt-3 space-y-3">
               <IngestTestPanel eventId={event.id} />
+              <StressTestPanel eventId={event.id} />
             </div>
           </div>
         )}
