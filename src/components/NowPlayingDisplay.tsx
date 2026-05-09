@@ -111,7 +111,7 @@ export function NowPlayingDisplay({ eventId }: Props) {
             )}
           </div>
         </div>
-        <p className="mt-2 text-[11px] text-muted-foreground text-right italic">Updated by DJ</p>
+        <p className="mt-2 text-[11px] text-muted-foreground text-right italic">DJ marked this as playing</p>
       </div>
     </div>
   );
