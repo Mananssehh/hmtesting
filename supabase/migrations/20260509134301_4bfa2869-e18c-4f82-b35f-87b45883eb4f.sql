@@ -1,0 +1,1 @@
+ALTER TABLE public.event_participants ADD COLUMN IF NOT EXISTS last_seen_at timestamp with time zone NOT NULL DEFAULT now();

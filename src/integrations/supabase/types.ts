@@ -169,6 +169,7 @@ export type Database = {
           event_id: string
           id: string
           joined_at: string
+          last_seen_at: string
           nickname: string
           user_id: string
         }
@@ -176,6 +177,7 @@ export type Database = {
           event_id: string
           id?: string
           joined_at?: string
+          last_seen_at?: string
           nickname?: string
           user_id: string
         }
@@ -183,6 +185,7 @@ export type Database = {
           event_id?: string
           id?: string
           joined_at?: string
+          last_seen_at?: string
           nickname?: string
           user_id?: string
         }
