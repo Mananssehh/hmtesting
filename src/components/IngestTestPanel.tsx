@@ -285,6 +285,51 @@ export function IngestTestPanel({ eventId }: Props) {
             </div>
           )}
         </div>
+
+        <div className="pt-2 border-t border-border/50">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs uppercase tracking-wider text-muted-foreground">End-to-end smoke test</span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={runSmokeTest}
+              disabled={smokeRunning}
+              className="h-8"
+            >
+              {smokeRunning ? (
+                <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <FlaskConical className="mr-2 h-3.5 w-3.5" />
+              )}
+              Run Ingest Smoke Test
+            </Button>
+          </div>
+          {smokeSteps.length > 0 && (
+            <ol className="space-y-1.5 text-xs">
+              {smokeSteps.map((s, i) => (
+                <li
+                  key={i}
+                  className="flex items-start gap-2 px-3 py-2 rounded-lg bg-background/60 border"
+                >
+                  <span className="mt-0.5 shrink-0">
+                    {s.status === "pass" && <Check className="h-3.5 w-3.5 text-primary" />}
+                    {s.status === "fail" && <X className="h-3.5 w-3.5 text-destructive" />}
+                    {s.status === "running" && <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />}
+                    {s.status === "pending" && <span className="block h-3.5 w-3.5 rounded-full border border-muted-foreground/40" />}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className={s.status === "fail" ? "text-destructive" : s.status === "pass" ? "text-foreground" : "text-muted-foreground"}>
+                      {i + 1}. {s.label}
+                    </div>
+                    {s.detail && (
+                      <div className="font-mono text-[11px] text-muted-foreground break-all">{s.detail}</div>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
       </div>
     </div>
   );
