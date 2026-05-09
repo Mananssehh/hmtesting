@@ -261,9 +261,9 @@ const EventPage = () => {
   const isEnded = status === "ended";
 
   return (
-    <div className="min-h-screen pb-24 sm:pb-10">
+    <div className="min-h-screen pb-28 sm:pb-10" style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 6rem)" }}>
       <AppHeader />
-      <div className="container max-w-3xl py-4 sm:py-8">
+      <div className="container max-w-3xl px-3 sm:px-6 py-4 sm:py-8">
         {/* Event header */}
         <div className="mb-4 sm:mb-6 p-4 sm:p-6 rounded-2xl bg-gradient-to-br from-primary/15 via-card to-card border border-primary/20">
           <div className="flex items-center justify-between gap-2 mb-2">
