@@ -80,9 +80,28 @@ const EventPage = () => {
       }
 
       const nick = profile?.nickname || "Guest";
+      const nowIso = new Date().toISOString();
+      // Upsert participant row: avoids 409 on revisit, preserves joined_at, refreshes last_seen_at.
       await supabase
         .from("event_participants")
-        .insert({ event_id: ev.id, user_id: user.id, nickname: nick })
+        .upsert(
+          {
+            event_id: ev.id,
+            user_id: user.id,
+            nickname: nick,
+            joined_at: nowIso,
+            last_seen_at: nowIso,
+          },
+          { onConflict: "event_id,user_id", ignoreDuplicates: true },
+        )
+        .then(() => null, () => null);
+
+      // Always bump last_seen_at for returning guests (ignoreDuplicates skips update on conflict).
+      await supabase
+        .from("event_participants")
+        .update({ last_seen_at: nowIso })
+        .eq("event_id", ev.id)
+        .eq("user_id", user.id)
         .then(() => null, () => null);
 
       const [{ data: reqs }, { data: votes }] = await Promise.all([
