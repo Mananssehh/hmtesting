@@ -123,6 +123,47 @@ export type Database = {
           },
         ]
       }
+      event_integrations: {
+        Row: {
+          created_at: string
+          event_id: string
+          id: string
+          ingest_token: string
+          last_seen_at: string | null
+          settings: Json
+          source_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          event_id: string
+          id?: string
+          ingest_token?: string
+          last_seen_at?: string | null
+          settings?: Json
+          source_type?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string
+          id?: string
+          ingest_token?: string
+          last_seen_at?: string | null
+          settings?: Json
+          source_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_integrations_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_participants: {
         Row: {
           event_id: string
@@ -217,6 +258,8 @@ export type Database = {
           event_id: string
           id: string
           source: string | null
+          source_track_id: string | null
+          started_at: string | null
           status: string
           title: string
           updated_at: string
@@ -228,6 +271,8 @@ export type Database = {
           event_id: string
           id?: string
           source?: string | null
+          source_track_id?: string | null
+          started_at?: string | null
           status?: string
           title: string
           updated_at?: string
@@ -239,6 +284,8 @@ export type Database = {
           event_id?: string
           id?: string
           source?: string | null
+          source_track_id?: string | null
+          started_at?: string | null
           status?: string
           title?: string
           updated_at?: string
