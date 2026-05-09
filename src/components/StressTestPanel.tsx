@@ -103,7 +103,7 @@ export function StressTestPanel({ eventId }: Props) {
 
   const trackEdge = async (action: string, body?: Record<string, unknown>) => {
     setEdgeCalls((c) => c + 1);
-    return callStress(action, body);
+    return callStress(action, { event_id: eventId, ...(body ?? {}) });
   };
 
   const start = async () => {
