@@ -110,6 +110,105 @@ export function IngestTestPanel({ eventId }: Props) {
     }
   };
 
+  const runSmokeTest = async () => {
+    setSmokeRunning(true);
+    const steps: SmokeStep[] = [
+      { label: "Find or create event_integrations row", status: "pending" },
+      { label: "Get ingest_token", status: "pending" },
+      { label: "POST /functions/v1/now-playing-ingest", status: "pending" },
+      { label: "Edge Function returned ok", status: "pending" },
+      { label: "Query now_playing by event_id", status: "pending" },
+      { label: "Validate title / artist / source / status", status: "pending" },
+    ];
+    const update = (i: number, patch: Partial<SmokeStep>) => {
+      steps[i] = { ...steps[i], ...patch };
+      setSmokeSteps([...steps]);
+    };
+    setSmokeSteps([...steps]);
+
+    try {
+      // 1. Ensure integration row
+      update(0, { status: "running" });
+      let { data: integ, error: integErr } = await supabase
+        .from("event_integrations")
+        .select("ingest_token")
+        .eq("event_id", eventId)
+        .maybeSingle();
+      if (integErr) throw new Error(`integrations select: ${integErr.message}`);
+      if (!integ) {
+        const { data: created, error: cErr } = await supabase
+          .from("event_integrations")
+          .insert({ event_id: eventId, source_type: "manual" })
+          .select("ingest_token")
+          .single();
+        if (cErr) throw new Error(`integrations insert: ${cErr.message}`);
+        integ = created;
+      }
+      update(0, { status: "pass", detail: "row ready" });
+
+      // 2. Token
+      update(1, { status: "running" });
+      const tk = integ?.ingest_token as string | undefined;
+      if (!tk) throw new Error("ingest_token missing");
+      setToken(tk);
+      update(1, { status: "pass", detail: `${tk.slice(0, 6)}…${tk.slice(-4)}` });
+
+      // 3. POST
+      update(2, { status: "running" });
+      const res = await fetch(ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Ingest-Token": tk },
+        body: JSON.stringify(SMOKE_PAYLOAD),
+      });
+      const json = await res.json().catch(() => ({}));
+      update(2, {
+        status: res.ok ? "pass" : "fail",
+        detail: `HTTP ${res.status}`,
+      });
+      if (!res.ok) throw new Error(typeof json?.error === "string" ? json.error : `HTTP ${res.status}`);
+
+      // 4. Function ok
+      update(3, {
+        status: json?.ok ? "pass" : "fail",
+        detail: json?.ok ? "{ ok: true }" : JSON.stringify(json),
+      });
+      if (!json?.ok) throw new Error("Edge Function did not return ok");
+
+      // 5. Query now_playing
+      update(4, { status: "running" });
+      const { data: np, error: npErr } = await supabase
+        .from("now_playing")
+        .select("title, artist, source, status")
+        .eq("event_id", eventId)
+        .maybeSingle();
+      if (npErr) throw new Error(`now_playing select: ${npErr.message}`);
+      if (!np) throw new Error("now_playing row not found");
+      update(4, { status: "pass", detail: `${np.title} — ${np.artist}` });
+
+      // 6. Validate fields
+      update(5, { status: "running" });
+      const mismatches: string[] = [];
+      if (np.title !== SMOKE_PAYLOAD.title) mismatches.push(`title=${np.title}`);
+      if (np.artist !== SMOKE_PAYLOAD.artist) mismatches.push(`artist=${np.artist}`);
+      if (np.source !== SMOKE_PAYLOAD.source) mismatches.push(`source=${np.source}`);
+      if (np.status !== SMOKE_PAYLOAD.status) mismatches.push(`status=${np.status}`);
+      if (mismatches.length) {
+        update(5, { status: "fail", detail: `mismatch: ${mismatches.join(", ")}` });
+        throw new Error(`Field mismatch: ${mismatches.join(", ")}`);
+      }
+      update(5, { status: "pass", detail: "all fields match" });
+      toast.success("Smoke test passed ✅");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      // Mark first non-pass as fail with detail
+      const idx = steps.findIndex((s) => s.status !== "pass");
+      if (idx >= 0) update(idx, { status: "fail", detail: msg });
+      toast.error(`Smoke test failed: ${msg}`);
+    } finally {
+      setSmokeRunning(false);
+    }
+  };
+
   const masked = token ? `${token.slice(0, 6)}••••••••${token.slice(-4)}` : "";
 
   return (
