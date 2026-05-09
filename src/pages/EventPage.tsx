@@ -261,9 +261,9 @@ const EventPage = () => {
   const isEnded = status === "ended";
 
   return (
-    <div className="min-h-screen pb-24 sm:pb-10">
+    <div className="min-h-screen pb-28 sm:pb-10" style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 6rem)" }}>
       <AppHeader />
-      <div className="container max-w-3xl py-4 sm:py-8">
+      <div className="container max-w-3xl px-3 sm:px-6 py-4 sm:py-8">
         {/* Event header */}
         <div className="mb-4 sm:mb-6 p-4 sm:p-6 rounded-2xl bg-gradient-to-br from-primary/15 via-card to-card border border-primary/20">
           <div className="flex items-center justify-between gap-2 mb-2">
@@ -386,9 +386,9 @@ const EventPage = () => {
                 <Plus className="mr-1 h-4 w-4" /> Request
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-lg">
-              <DialogHeader>
-                <DialogTitle>Request a song</DialogTitle>
+            <DialogContent className="p-0 gap-0 w-[calc(100vw-1rem)] max-w-lg max-h-[90dvh] flex flex-col overflow-hidden sm:rounded-2xl">
+              <DialogHeader className="px-4 pt-4 pb-2 shrink-0 text-left">
+                <DialogTitle className="pr-8">Request a song</DialogTitle>
               </DialogHeader>
               <RequestPicker onPick={handleRequestSong} existing={songs} allowExplicit={eventInfo.allow_explicit} />
             </DialogContent>
@@ -436,7 +436,7 @@ const EventPage = () => {
 
       {/* Mobile sticky request CTA */}
       {isLive && (
-        <div className="sm:hidden fixed bottom-4 inset-x-4 z-30">
+        <div className="sm:hidden fixed inset-x-3 z-30 bottom-safe">
           <Button
             onClick={() => setRequestOpen(true)}
             className="w-full h-12 bg-gradient-to-r from-primary to-primary-glow text-primary-foreground shadow-lg glow-primary"
@@ -524,22 +524,24 @@ function RequestPicker({ onPick, existing, allowExplicit = true }: { onPick: (so
     );
 
   return (
-    <div>
-      <div className="relative mb-3">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          autoFocus
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search any song..."
-          className="pl-9"
-        />
-        {loading && (
-          <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
-        )}
+    <div className="flex flex-col flex-1 min-h-0">
+      <div className="px-4 pb-2 shrink-0">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            autoFocus
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search any song..."
+            className="pl-9 h-11"
+          />
+          {loading && (
+            <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+          )}
+        </div>
       </div>
 
-      <div className="max-h-[55vh] overflow-y-auto scrollbar-thin space-y-1 pr-1">
+      <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin px-2 space-y-1 overscroll-contain">
         {!loading && results.length === 0 && debounced && (
           <div className="text-center py-12">
             <Search className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
@@ -557,9 +559,9 @@ function RequestPicker({ onPick, existing, allowExplicit = true }: { onPick: (so
           return (
             <div
               key={key}
-              className="flex items-center gap-3 p-2 rounded-lg hover:bg-secondary/60 transition-colors"
+              className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-secondary/60 active:bg-secondary/80 transition-colors"
             >
-              <div className="h-12 w-12 rounded-md overflow-hidden bg-muted shrink-0">
+              <div className="h-11 w-11 rounded-md overflow-hidden bg-muted shrink-0">
                 {s.album_art_url ? (
                   <img src={s.album_art_url} alt="" className="h-full w-full object-cover" loading="lazy" />
                 ) : (
@@ -567,25 +569,25 @@ function RequestPicker({ onPick, existing, allowExplicit = true }: { onPick: (so
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="font-medium truncate">{s.title}</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-medium truncate text-sm">{s.title}</span>
                   {s.explicit && (
-                    <span className="text-[9px] font-bold px-1 rounded bg-muted text-muted-foreground border border-border">E</span>
+                    <span className="text-[9px] font-bold px-1 rounded bg-muted text-muted-foreground border border-border shrink-0">E</span>
                   )}
                 </div>
-                <div className="text-sm text-muted-foreground truncate">{s.artist}</div>
-                <div className="text-xs text-muted-foreground/70 truncate">
+                <div className="text-xs text-muted-foreground truncate">{s.artist}</div>
+                <div className="text-[11px] text-muted-foreground/70 truncate">
                   {s.album}{dur && ` · ${dur}`} · {platformLabel(s.source_platform)}
                 </div>
               </div>
               <div className="flex items-center gap-1 shrink-0">
                 {s.preview_url && <PreviewButton src={s.preview_url} size="icon" />}
                 {already ? (
-                  <Badge variant="secondary" className="text-[10px]">Already requested</Badge>
+                  <Badge variant="secondary" className="text-[10px]">Added</Badge>
                 ) : !allowExplicit && s.explicit ? (
-                  <Badge variant="secondary" className="text-[10px] bg-amber-500/15 text-amber-300 border-amber-500/30">Explicit blocked</Badge>
+                  <Badge variant="secondary" className="text-[10px] bg-amber-500/15 text-amber-300 border-amber-500/30">Blocked</Badge>
                 ) : (
-                  <Button size="sm" onClick={() => onPick(s)} className="bg-primary text-primary-foreground h-8">
+                  <Button size="sm" onClick={() => onPick(s)} className="bg-primary text-primary-foreground h-9 w-9 p-0">
                     <Plus className="h-4 w-4" />
                   </Button>
                 )}
@@ -595,7 +597,10 @@ function RequestPicker({ onPick, existing, allowExplicit = true }: { onPick: (so
         })}
       </div>
 
-      <p className="text-xs text-muted-foreground mt-3">
+      <p
+        className="px-4 pt-2 text-[11px] text-muted-foreground border-t border-border/50 shrink-0"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.625rem)" }}
+      >
         Powered by {platformLabel(provider === "none" ? "mock" : provider)} · DJ plays from their own setup.
       </p>
     </div>
