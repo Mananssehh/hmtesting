@@ -22,25 +22,18 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [nickname, setNickname] = useState("");
   const [becomeDJ, setBecomeDJ] = useState(true);
+  const [inviteCode, setInviteCode] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (authLoading || !user) return;
-    if (djIntent && !isDJ) {
-      (async () => {
-        const { error } = await supabase.rpc("claim_dj_role");
-        if (error) {
-          toast.error("Couldn't enable DJ access");
-          navigate("/", { replace: true });
-          return;
-        }
-        await refreshProfile();
-        navigate("/dj", { replace: true });
-      })();
-    } else {
-      navigate(isDJ ? "/dj" : "/", { replace: true });
+    // Don't auto-claim DJ on mount anymore — invite code is required, handled in submit.
+    if (isDJ) {
+      navigate("/dj", { replace: true });
+    } else if (!djIntent) {
+      navigate("/", { replace: true });
     }
-  }, [user, isDJ, authLoading, navigate, djIntent, refreshProfile]);
+  }, [user, isDJ, authLoading, navigate, djIntent]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
