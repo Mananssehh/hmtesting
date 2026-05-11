@@ -123,34 +123,80 @@ const EventPage = () => {
     return () => { cancelled = true; };
   }, [code, user, navigate, profile?.nickname]);
 
-  // Realtime: songs + event lifecycle
+  // Realtime: songs + event lifecycle, with mobile-friendly reconnect
   useEffect(() => {
     if (!eventInfo) return;
-    const channel = supabase
-      .channel(`event-${eventInfo.id}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "song_requests", filter: `event_id=eq.${eventInfo.id}` },
-        (payload) => {
-          setSongs((prev) => {
-            if (payload.eventType === "INSERT") return [...prev, payload.new as SongRequestRow];
-            if (payload.eventType === "UPDATE")
-              return prev.map((s) => (s.id === (payload.new as SongRequestRow).id ? (payload.new as SongRequestRow) : s));
-            if (payload.eventType === "DELETE")
-              return prev.filter((s) => s.id !== (payload.old as { id: string }).id);
-            return prev;
-          });
-        },
-      )
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "events", filter: `id=eq.${eventInfo.id}` },
-        (payload) => setEventInfo((prev) => prev ? { ...prev, ...(payload.new as EventInfo) } : prev),
-      )
-      .subscribe();
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let backoff = 1000;
+    let reconnectTimer: number | null = null;
+    let cancelled = false;
 
-    return () => { supabase.removeChannel(channel); };
-  }, [eventInfo]);
+    const refetch = async () => {
+      const [{ data: reqs }] = await Promise.all([
+        supabase.from("song_requests").select("*").eq("event_id", eventInfo.id),
+      ]);
+      if (!cancelled && reqs) setSongs(reqs as SongRequestRow[]);
+    };
+
+    const subscribe = () => {
+      if (channel) supabase.removeChannel(channel);
+      channel = supabase
+        .channel(`event-${eventInfo.id}-${Date.now()}`)
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "song_requests", filter: `event_id=eq.${eventInfo.id}` },
+          (payload) => {
+            setSongs((prev) => {
+              if (payload.eventType === "INSERT") return [...prev, payload.new as SongRequestRow];
+              if (payload.eventType === "UPDATE")
+                return prev.map((s) => (s.id === (payload.new as SongRequestRow).id ? (payload.new as SongRequestRow) : s));
+              if (payload.eventType === "DELETE")
+                return prev.filter((s) => s.id !== (payload.old as { id: string }).id);
+              return prev;
+            });
+          },
+        )
+        .on(
+          "postgres_changes",
+          { event: "UPDATE", schema: "public", table: "events", filter: `id=eq.${eventInfo.id}` },
+          (payload) => setEventInfo((prev) => prev ? { ...prev, ...(payload.new as EventInfo) } : prev),
+        )
+        .subscribe((status) => {
+          if (status === "SUBSCRIBED") {
+            backoff = 1000;
+          } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+            if (reconnectTimer) window.clearTimeout(reconnectTimer);
+            reconnectTimer = window.setTimeout(() => {
+              if (!cancelled) {
+                refetch();
+                subscribe();
+                backoff = Math.min(backoff * 2, 30000);
+              }
+            }, backoff);
+          }
+        });
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === "visible" && !cancelled) {
+        refetch();
+        subscribe();
+      }
+    };
+    const onOnline = () => { if (!cancelled) { refetch(); subscribe(); } };
+
+    subscribe();
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("online", onOnline);
+
+    return () => {
+      cancelled = true;
+      if (reconnectTimer) window.clearTimeout(reconnectTimer);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("online", onOnline);
+      if (channel) supabase.removeChannel(channel);
+    };
+  }, [eventInfo?.id]);
 
   const nowPlaying = useMemo(() => songs.find((s) => s.status === "playing"), [songs]);
 
