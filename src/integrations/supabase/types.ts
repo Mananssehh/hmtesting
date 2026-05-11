@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      dj_invite_codes: {
+        Row: {
+          code: string
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          uses_remaining: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          uses_remaining?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          uses_remaining?: number
+        }
+        Relationships: []
+      }
+      dj_role_claims: {
+        Row: {
+          attempted_at: string
+          id: string
+          success: boolean
+          user_id: string
+        }
+        Insert: {
+          attempted_at?: string
+          id?: string
+          success?: boolean
+          user_id: string
+        }
+        Update: {
+          attempted_at?: string
+          id?: string
+          success?: boolean
+          user_id?: string
+        }
+        Relationships: []
+      }
       error_logs: {
         Row: {
           context: Json | null
@@ -580,7 +628,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      claim_dj_role: { Args: never; Returns: undefined }
+      claim_dj_role: { Args: { _invite_code: string }; Returns: undefined }
       dj_award_points: {
         Args: {
           _amount: number
@@ -624,6 +672,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      normalize_text: { Args: { _t: string }; Returns: string }
       recent_request_count: {
         Args: { _event_id: string; _seconds?: number }
         Returns: number

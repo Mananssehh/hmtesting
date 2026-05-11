@@ -4,10 +4,18 @@ const BAD_WORDS = [
   "nigger","nigga","faggot","retard","kike","spic","chink","tranny",
 ];
 
+/**
+ * Normalize text so simple bypasses ("F E I N", "F.E.I.N", "F-E-I-N") collapse
+ * to the same canonical form before we run any blocklist / profanity check.
+ */
+export function normalizeForMatch(text: string): string {
+  return (text ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+}
+
 export function containsProfanity(text: string): boolean {
   if (!text) return false;
-  const t = text.toLowerCase();
-  return BAD_WORDS.some((w) => new RegExp(`\\b${w}\\w*`, "i").test(t));
+  const normalized = normalizeForMatch(text);
+  return BAD_WORDS.some((w) => normalized.includes(w));
 }
 
 export function cleanText(text: string): string {

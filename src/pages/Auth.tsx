@@ -22,25 +22,18 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [nickname, setNickname] = useState("");
   const [becomeDJ, setBecomeDJ] = useState(true);
+  const [inviteCode, setInviteCode] = useState("");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (authLoading || !user) return;
-    if (djIntent && !isDJ) {
-      (async () => {
-        const { error } = await supabase.rpc("claim_dj_role");
-        if (error) {
-          toast.error("Couldn't enable DJ access");
-          navigate("/", { replace: true });
-          return;
-        }
-        await refreshProfile();
-        navigate("/dj", { replace: true });
-      })();
-    } else {
-      navigate(isDJ ? "/dj" : "/", { replace: true });
+    // Don't auto-claim DJ on mount anymore — invite code is required, handled in submit.
+    if (isDJ) {
+      navigate("/dj", { replace: true });
+    } else if (!djIntent) {
+      navigate("/", { replace: true });
     }
-  }, [user, isDJ, authLoading, navigate, djIntent, refreshProfile]);
+  }, [user, isDJ, authLoading, navigate, djIntent]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,6 +49,11 @@ const Auth = () => {
         const nickParse = nicknameSchema.safeParse(nickname);
         if (!nickParse.success) throw new Error(nickParse.error.issues[0].message);
 
+        const wantsDJ = becomeDJ || djIntent;
+        if (wantsDJ && !inviteCode.trim()) {
+          throw new Error("DJ invite code required");
+        }
+
         const { data, error } = await supabase.auth.signUp({
           email: emailParse.data,
           password: passParse.data,
@@ -66,19 +64,22 @@ const Auth = () => {
         });
         if (error) throw error;
 
-        if ((becomeDJ || djIntent) && data.user) {
-          await supabase.rpc("claim_dj_role");
+        if (wantsDJ && data.user) {
+          const { error: roleErr } = await supabase.rpc("claim_dj_role", { _invite_code: inviteCode.trim() });
+          if (roleErr) throw new Error(roleErr.message);
+          await refreshProfile();
         }
         toast.success("Account created! Welcome to Decks.");
-        navigate(becomeDJ || djIntent ? "/dj" : "/", { replace: true });
+        navigate(wantsDJ ? "/dj" : "/", { replace: true });
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email: emailParse.data,
           password: passParse.data,
         });
         if (error) throw error;
-        if (djIntent) {
-          await supabase.rpc("claim_dj_role");
+        if (djIntent && inviteCode.trim()) {
+          const { error: roleErr } = await supabase.rpc("claim_dj_role", { _invite_code: inviteCode.trim() });
+          if (roleErr) throw new Error(roleErr.message);
           await refreshProfile();
         }
         toast.success("Welcome back!");
@@ -160,6 +161,22 @@ const Auth = () => {
                     <div className="text-muted-foreground text-xs">Get access to create events and manage queues.</div>
                   </div>
                 </label>
+              )}
+
+              {((mode === "signup" && becomeDJ) || (mode === "login" && djIntent)) && (
+                <div className="space-y-2">
+                  <Label htmlFor="invite">DJ invite code</Label>
+                  <Input
+                    id="invite"
+                    value={inviteCode}
+                    onChange={(e) => setInviteCode(e.target.value)}
+                    placeholder="Paste your invite code"
+                    autoComplete="off"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Don't have one? Email us — DJ access is invite-only during launch.
+                  </p>
+                </div>
               )}
 
               <TabsContent value="login" className="m-0">
