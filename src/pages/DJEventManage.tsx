@@ -226,13 +226,26 @@ const DJEventManage = () => {
       setBanTarget(null);
       return;
     }
+    const { data: existing } = await supabase
+      .from("event_banned_guests")
+      .select("id")
+      .eq("event_id", event.id)
+      .eq("user_id", song.requested_by)
+      .maybeSingle();
+    if (existing) {
+      toast.info(`${song.requester_name} is already muted for this event`);
+      setBanTarget(null);
+      return;
+    }
     const { error } = await supabase.from("event_banned_guests").insert({
       event_id: event.id,
       user_id: song.requested_by,
       reason: `Banned from "${song.title}"`,
     });
-    if (error) toast.error(error.message);
-    else toast.success(`${song.requester_name} muted for this event`);
+    if (error) {
+      if (error.code === "23505") toast.info(`${song.requester_name} is already muted`);
+      else toast.error(error.message);
+    } else toast.success(`${song.requester_name} muted for this event`);
     setBanTarget(null);
   };
 
