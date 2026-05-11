@@ -40,7 +40,21 @@ const Join = () => {
       const DEMO_CODES = ["DEMO123", "EMPTY123", "PAUSED123", "ENDED123", "MOD123"];
       const isDemo = DEMO_CODES.includes(codeParse.data);
 
-      // For demo codes, ensure the corresponding demo event exists (idempotent)
+      // Sign in first (anonymous if needed) so demo RPCs and inserts work under RLS.
+      if (!user) {
+        const { error: anonError } = await supabase.auth.signInAnonymously({
+          options: { data: { nickname: nickParse.data } },
+        });
+        if (anonError) throw anonError;
+        const { data: { user: newUser } } = await supabase.auth.getUser();
+        if (newUser) {
+          await supabase.from("profiles").update({ nickname: nickParse.data }).eq("id", newUser.id);
+        }
+      } else if (profile?.nickname !== nickParse.data) {
+        await supabase.from("profiles").update({ nickname: nickParse.data }).eq("id", user.id);
+      }
+
+      // For demo codes, ensure the corresponding demo event exists (idempotent, requires auth)
       if (isDemo) {
         await supabase.rpc("ensure_demo_event", { _code: codeParse.data });
       }
@@ -54,24 +68,8 @@ const Join = () => {
 
       if (eventError) throw eventError;
       if (!event) throw new Error("No event with that code. Double-check with the DJ.");
-      // Allow ENDED demo room through so guests can see the ended recap state
       if (!isDemo && (event.requests_status === "ended" || !event.is_active)) {
         throw new Error("This event has ended");
-      }
-
-      // If not signed in, create anonymous session so the user can vote
-      if (!user) {
-        const { error: anonError } = await supabase.auth.signInAnonymously({
-          options: { data: { nickname: nickParse.data } },
-        });
-        if (anonError) throw anonError;
-        // The trigger will create profile with default 'Guest' — update it
-        const { data: { user: newUser } } = await supabase.auth.getUser();
-        if (newUser) {
-          await supabase.from("profiles").update({ nickname: nickParse.data }).eq("id", newUser.id);
-        }
-      } else if (profile?.nickname !== nickParse.data) {
-        await supabase.from("profiles").update({ nickname: nickParse.data }).eq("id", user.id);
       }
 
       toast.success(`Joining as ${nickParse.data}`);
