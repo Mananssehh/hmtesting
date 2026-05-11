@@ -49,6 +49,11 @@ const Auth = () => {
         const nickParse = nicknameSchema.safeParse(nickname);
         if (!nickParse.success) throw new Error(nickParse.error.issues[0].message);
 
+        const wantsDJ = becomeDJ || djIntent;
+        if (wantsDJ && !inviteCode.trim()) {
+          throw new Error("DJ invite code required");
+        }
+
         const { data, error } = await supabase.auth.signUp({
           email: emailParse.data,
           password: passParse.data,
@@ -59,19 +64,22 @@ const Auth = () => {
         });
         if (error) throw error;
 
-        if ((becomeDJ || djIntent) && data.user) {
-          await supabase.rpc("claim_dj_role");
+        if (wantsDJ && data.user) {
+          const { error: roleErr } = await supabase.rpc("claim_dj_role", { _invite_code: inviteCode.trim() });
+          if (roleErr) throw new Error(roleErr.message);
+          await refreshProfile();
         }
         toast.success("Account created! Welcome to Decks.");
-        navigate(becomeDJ || djIntent ? "/dj" : "/", { replace: true });
+        navigate(wantsDJ ? "/dj" : "/", { replace: true });
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email: emailParse.data,
           password: passParse.data,
         });
         if (error) throw error;
-        if (djIntent) {
-          await supabase.rpc("claim_dj_role");
+        if (djIntent && inviteCode.trim()) {
+          const { error: roleErr } = await supabase.rpc("claim_dj_role", { _invite_code: inviteCode.trim() });
+          if (roleErr) throw new Error(roleErr.message);
           await refreshProfile();
         }
         toast.success("Welcome back!");
