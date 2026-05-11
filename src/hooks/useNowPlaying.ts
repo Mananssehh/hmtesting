@@ -9,8 +9,11 @@ export function useNowPlaying(eventId: string | undefined) {
   useEffect(() => {
     if (!eventId) return;
     let cancelled = false;
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let backoff = 1000;
+    let reconnectTimer: number | null = null;
 
-    (async () => {
+    const refresh = async () => {
       try {
         const row = await fetchNowPlaying(eventId);
         if (!cancelled) setNowPlaying(row);
@@ -19,31 +22,68 @@ export function useNowPlaying(eventId: string | undefined) {
       } finally {
         if (!cancelled) setLoading(false);
       }
-    })();
+    };
 
-    const channel = supabase
-      .channel(`now-playing-${eventId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "now_playing",
-          filter: `event_id=eq.${eventId}`,
-        },
-        (payload) => {
-          if (payload.eventType === "DELETE") {
-            setNowPlaying(null);
-          } else {
-            setNowPlaying(payload.new as NowPlayingRow);
+    const subscribe = () => {
+      if (channel) supabase.removeChannel(channel);
+      channel = supabase
+        .channel(`now-playing-${eventId}-${Date.now()}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "*",
+            schema: "public",
+            table: "now_playing",
+            filter: `event_id=eq.${eventId}`,
+          },
+          (payload) => {
+            if (payload.eventType === "DELETE") setNowPlaying(null);
+            else setNowPlaying(payload.new as NowPlayingRow);
+          },
+        )
+        .subscribe((status) => {
+          if (status === "SUBSCRIBED") {
+            backoff = 1000;
+          } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+            // Exponential backoff, capped at 30s
+            if (reconnectTimer) window.clearTimeout(reconnectTimer);
+            reconnectTimer = window.setTimeout(() => {
+              if (!cancelled) {
+                refresh();
+                subscribe();
+                backoff = Math.min(backoff * 2, 30000);
+              }
+            }, backoff);
           }
-        }
-      )
-      .subscribe();
+        });
+    };
+
+    const onVisibility = () => {
+      if (document.visibilityState === "visible" && !cancelled) {
+        // Mobile may have killed the socket while backgrounded — pull fresh + resubscribe.
+        refresh();
+        subscribe();
+      }
+    };
+
+    const onOnline = () => {
+      if (!cancelled) {
+        refresh();
+        subscribe();
+      }
+    };
+
+    refresh();
+    subscribe();
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("online", onOnline);
 
     return () => {
       cancelled = true;
-      supabase.removeChannel(channel);
+      if (reconnectTimer) window.clearTimeout(reconnectTimer);
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("online", onOnline);
+      if (channel) supabase.removeChannel(channel);
     };
   }, [eventId]);
 
