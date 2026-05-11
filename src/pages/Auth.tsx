@@ -163,6 +163,22 @@ const Auth = () => {
                 </label>
               )}
 
+              {((mode === "signup" && becomeDJ) || (mode === "login" && djIntent)) && (
+                <div className="space-y-2">
+                  <Label htmlFor="invite">DJ invite code</Label>
+                  <Input
+                    id="invite"
+                    value={inviteCode}
+                    onChange={(e) => setInviteCode(e.target.value)}
+                    placeholder="Paste your invite code"
+                    autoComplete="off"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Don't have one? Email us — DJ access is invite-only during launch.
+                  </p>
+                </div>
+              )}
+
               <TabsContent value="login" className="m-0">
                 <Button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-primary to-primary-glow text-primary-foreground h-11">
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
