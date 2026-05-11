@@ -65,11 +65,14 @@ const EventPage = () => {
         .maybeSingle();
 
       if (!ev) {
-        toast.error("That event doesn't exist anymore");
+        toast.error("That event code doesn't exist. Double-check the code on the QR poster.");
         navigate("/join", { replace: true });
         return;
       }
       if (cancelled) return;
+      if (ev.requests_status === "ended") {
+        toast.info("This event has ended — you can still browse the played tracks.");
+      }
       setEventInfo(ev as EventInfo);
 
       // Show welcome hint once per event per browser
