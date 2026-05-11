@@ -297,7 +297,10 @@ const EventPage = () => {
 
     if (error) {
       if (error.code === "23505") toast.error("Already requested — vote for it!");
-      else toast.error(error.message);
+      else if (error.code === "42501" || /row-level security|violates row-level/i.test(error.message)) {
+        const cd = eventInfo.cooldown_seconds ?? 30;
+        toast.error(`Hold on — you can request again in ${cd}s, or this song may be blocked by the DJ.`);
+      } else toast.error(error.message);
       return;
     }
 
