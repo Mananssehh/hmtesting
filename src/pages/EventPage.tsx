@@ -226,6 +226,9 @@ const EventPage = () => {
       toast.error("Voting closed — this event has ended");
       return;
     }
+    // Per-song debounce: ignore taps while a vote request is in flight
+    if (pendingVotes[songId]) return;
+
     const prevVote = myVotes[songId];
     const isToggleOff = prevVote === value;
 
@@ -234,6 +237,9 @@ const EventPage = () => {
       (value === 1 && !isToggleOff ? 1 : 0) - (prevVote === 1 ? 1 : 0);
     const downDelta =
       (value === -1 && !isToggleOff ? 1 : 0) - (prevVote === -1 ? 1 : 0);
+
+    // Lock this song's vote buttons
+    setPendingVotes((p) => ({ ...p, [songId]: true }));
 
     // Optimistic UI: vote button + score
     setMyVotes((prev) => {
@@ -284,6 +290,12 @@ const EventPage = () => {
       );
       const msg = (err as { message?: string })?.message ?? "Vote failed";
       toast.error(`Vote failed: ${msg}`);
+    } finally {
+      setPendingVotes((p) => {
+        const n = { ...p };
+        delete n[songId];
+        return n;
+      });
     }
   };
 
