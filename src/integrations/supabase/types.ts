@@ -629,6 +629,10 @@ export type Database = {
         }
       }
       claim_dj_role: { Args: { _invite_code: string }; Returns: undefined }
+      create_dj_invite_code: {
+        Args: { _expires_at?: string; _uses?: number }
+        Returns: string
+      }
       dj_award_points: {
         Args: {
           _amount: number
