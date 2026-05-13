@@ -36,6 +36,7 @@ const EventPage = () => {
   const [eventInfo, setEventInfo] = useState<EventInfo | null>(null);
   const [songs, setSongs] = useState<SongRequestRow[]>([]);
   const [myVotes, setMyVotes] = useState<Record<string, 1 | -1>>({});
+  const [pendingVotes, setPendingVotes] = useState<Record<string, boolean>>({});
   const [sort, setSort] = useState<SortMode>("top");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -225,6 +226,9 @@ const EventPage = () => {
       toast.error("Voting closed — this event has ended");
       return;
     }
+    // Per-song debounce: ignore taps while a vote request is in flight
+    if (pendingVotes[songId]) return;
+
     const prevVote = myVotes[songId];
     const isToggleOff = prevVote === value;
 
@@ -233,6 +237,9 @@ const EventPage = () => {
       (value === 1 && !isToggleOff ? 1 : 0) - (prevVote === 1 ? 1 : 0);
     const downDelta =
       (value === -1 && !isToggleOff ? 1 : 0) - (prevVote === -1 ? 1 : 0);
+
+    // Lock this song's vote buttons
+    setPendingVotes((p) => ({ ...p, [songId]: true }));
 
     // Optimistic UI: vote button + score
     setMyVotes((prev) => {
@@ -283,6 +290,12 @@ const EventPage = () => {
       );
       const msg = (err as { message?: string })?.message ?? "Vote failed";
       toast.error(`Vote failed: ${msg}`);
+    } finally {
+      setPendingVotes((p) => {
+        const n = { ...p };
+        delete n[songId];
+        return n;
+      });
     }
   };
 
@@ -477,6 +490,7 @@ const EventPage = () => {
               song={nowPlaying}
               myVote={myVotes[nowPlaying.id] ?? 0}
               onVote={(v) => handleVote(nowPlaying.id, v)}
+              disabled={!!pendingVotes[nowPlaying.id]}
             />
             <p className="mt-1.5 text-xs text-muted-foreground italic">
               Updated by DJ — the next track appears here when they tap Mark Now Playing.
@@ -547,6 +561,7 @@ const EventPage = () => {
                 myVote={myVotes[s.id] ?? 0}
                 onVote={(v) => handleVote(s.id, v)}
                 onBoost={isLive ? () => setBoostTarget(s) : undefined}
+                disabled={!!pendingVotes[s.id]}
               />
             ))}
           </div>
