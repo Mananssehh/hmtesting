@@ -225,16 +225,64 @@ const EventPage = () => {
       toast.error("Voting closed — this event has ended");
       return;
     }
-    const current = myVotes[songId];
-    if (current === value) {
-      setMyVotes((prev) => { const n = { ...prev }; delete n[songId]; return n; });
-      await supabase.from("votes").delete().eq("song_request_id", songId).eq("user_id", user.id);
-    } else {
-      setMyVotes((prev) => ({ ...prev, [songId]: value }));
-      await supabase.from("votes").upsert(
-        { song_request_id: songId, user_id: user.id, value },
-        { onConflict: "song_request_id,user_id" },
+    const prevVote = myVotes[songId];
+    const isToggleOff = prevVote === value;
+
+    // Compute optimistic delta for upvotes/downvotes counters
+    const upDelta =
+      (value === 1 && !isToggleOff ? 1 : 0) - (prevVote === 1 ? 1 : 0);
+    const downDelta =
+      (value === -1 && !isToggleOff ? 1 : 0) - (prevVote === -1 ? 1 : 0);
+
+    // Optimistic UI: vote button + score
+    setMyVotes((prev) => {
+      const n = { ...prev };
+      if (isToggleOff) delete n[songId];
+      else n[songId] = value;
+      return n;
+    });
+    setSongs((prev) =>
+      prev.map((s) =>
+        s.id === songId
+          ? { ...s, upvotes: Math.max(0, s.upvotes + upDelta), downvotes: Math.max(0, s.downvotes + downDelta) }
+          : s,
+      ),
+    );
+
+    try {
+      if (isToggleOff) {
+        const { error } = await supabase
+          .from("votes")
+          .delete()
+          .eq("song_request_id", songId)
+          .eq("user_id", user.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("votes")
+          .upsert(
+            { song_request_id: songId, user_id: user.id, value },
+            { onConflict: "song_request_id,user_id" },
+          );
+        if (error) throw error;
+      }
+    } catch (err) {
+      // Rollback optimistic state on failure
+      setMyVotes((prev) => {
+        const n = { ...prev };
+        if (prevVote) n[songId] = prevVote;
+        else delete n[songId];
+        return n;
+      });
+      setSongs((prev) =>
+        prev.map((s) =>
+          s.id === songId
+            ? { ...s, upvotes: Math.max(0, s.upvotes - upDelta), downvotes: Math.max(0, s.downvotes - downDelta) }
+            : s,
+        ),
       );
+      const msg = (err as { message?: string })?.message ?? "Vote failed";
+      toast.error(`Vote failed: ${msg}`);
     }
   };
 
