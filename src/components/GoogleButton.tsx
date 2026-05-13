@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { lovable } from "@/integrations/lovable";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
@@ -9,17 +9,18 @@ export function GoogleButton({ label = "Continue with Google" }: { label?: strin
 
   const handleClick = async () => {
     setLoading(true);
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: window.location.origin,
+      },
     });
-    if (result.error) {
-      toast.error(result.error.message ?? "Google sign-in failed");
+    if (error) {
+      toast.error(error.message ?? "Google sign-in failed");
       setLoading(false);
       return;
     }
-    if (result.redirected) return;
-    // Tokens captured — AuthContext listener handles the rest
-    setLoading(false);
+    // Browser will redirect to Google; AuthContext listener handles the return.
   };
 
   return (
