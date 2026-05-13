@@ -23,6 +23,8 @@ export async function logError({ severity, source, message, context, stack }: Lo
     recent.set(key, now);
 
     const { data: { user } } = await supabase.auth.getUser().catch(() => ({ data: { user: null } }));
+    // Anonymous users cannot insert error logs (RLS), drop silently.
+    if (!user) return;
 
     await supabase.from("error_logs").insert({
       severity,
