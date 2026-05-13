@@ -629,6 +629,10 @@ export type Database = {
         }
       }
       claim_dj_role: { Args: { _invite_code: string }; Returns: undefined }
+      create_dj_invite_code: {
+        Args: { _expires_at?: string; _uses?: number }
+        Returns: string
+      }
       dj_award_points: {
         Args: {
           _amount: number
@@ -680,7 +684,7 @@ export type Database = {
       reset_demo_events: { Args: never; Returns: undefined }
     }
     Enums: {
-      app_role: "dj" | "guest"
+      app_role: "dj" | "guest" | "admin"
       error_severity: "critical" | "warning" | "info"
       point_tx_type: "earned" | "spent" | "manual_adjustment"
       request_status:
@@ -817,7 +821,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["dj", "guest"],
+      app_role: ["dj", "guest", "admin"],
       error_severity: ["critical", "warning", "info"],
       point_tx_type: ["earned", "spent", "manual_adjustment"],
       request_status: [

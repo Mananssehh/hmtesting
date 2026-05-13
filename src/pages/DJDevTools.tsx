@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/ui/button";
 import { IngestTestPanel } from "@/components/IngestTestPanel";
-import { StressTestPanel } from "@/components/StressTestPanel";
+
 
 const DJDevTools = () => {
   const { id } = useParams<{ id: string }>();
@@ -50,7 +50,7 @@ const DJDevTools = () => {
         <div className="flex items-center justify-between">
           <div>
             <div className="text-xs uppercase tracking-wider text-muted-foreground">Developer tools</div>
-            <h1 className="text-2xl font-bold">Ingest &amp; stress testing</h1>
+            <h1 className="text-2xl font-bold">Ingest testing</h1>
             <p className="text-sm text-muted-foreground mt-1">
               Hidden dev-only panel. Not visible to guests or on the main DJ dashboard.
             </p>
@@ -61,7 +61,6 @@ const DJDevTools = () => {
         </div>
 
         <IngestTestPanel eventId={id} />
-        <StressTestPanel eventId={id} />
       </div>
     </div>
   );
