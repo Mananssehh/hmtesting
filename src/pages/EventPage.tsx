@@ -490,6 +490,7 @@ const EventPage = () => {
               song={nowPlaying}
               myVote={myVotes[nowPlaying.id] ?? 0}
               onVote={(v) => handleVote(nowPlaying.id, v)}
+              disabled={!!pendingVotes[nowPlaying.id]}
             />
             <p className="mt-1.5 text-xs text-muted-foreground italic">
               Updated by DJ — the next track appears here when they tap Mark Now Playing.
