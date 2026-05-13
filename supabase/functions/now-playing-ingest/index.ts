@@ -88,10 +88,16 @@ Deno.serve(async (req) => {
 
   if (existing?.id) {
     const { error } = await supabase.from("now_playing").update(row).eq("id", existing.id);
-    if (error) return jsonResponse({ error: error.message }, 500);
+    if (error) {
+      console.error("now_playing update failed:", error);
+      return jsonResponse({ error: "Internal server error" }, 500);
+    }
   } else {
     const { error } = await supabase.from("now_playing").insert(row);
-    if (error) return jsonResponse({ error: error.message }, 500);
+    if (error) {
+      console.error("now_playing insert failed:", error);
+      return jsonResponse({ error: "Internal server error" }, 500);
+    }
   }
 
   await supabase
