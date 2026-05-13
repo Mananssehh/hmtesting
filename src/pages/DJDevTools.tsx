@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/ui/button";
 import { IngestTestPanel } from "@/components/IngestTestPanel";
-import { StressTestPanel } from "@/components/StressTestPanel";
+
 
 const DJDevTools = () => {
   const { id } = useParams<{ id: string }>();
