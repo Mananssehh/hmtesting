@@ -561,6 +561,7 @@ const EventPage = () => {
                 myVote={myVotes[s.id] ?? 0}
                 onVote={(v) => handleVote(s.id, v)}
                 onBoost={isLive ? () => setBoostTarget(s) : undefined}
+                disabled={!!pendingVotes[s.id]}
               />
             ))}
           </div>
