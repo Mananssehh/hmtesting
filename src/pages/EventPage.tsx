@@ -36,6 +36,7 @@ const EventPage = () => {
   const [eventInfo, setEventInfo] = useState<EventInfo | null>(null);
   const [songs, setSongs] = useState<SongRequestRow[]>([]);
   const [myVotes, setMyVotes] = useState<Record<string, 1 | -1>>({});
+  const [pendingVotes, setPendingVotes] = useState<Record<string, boolean>>({});
   const [sort, setSort] = useState<SortMode>("top");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
