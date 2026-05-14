@@ -576,10 +576,11 @@ const EventPage = () => {
 
       {/* Mobile sticky request CTA */}
       {isLive && (
-        <div className="sm:hidden fixed inset-x-3 z-30 bottom-safe">
+        <div className="sm:hidden fixed inset-x-4 z-30 bottom-safe">
           <Button
             onClick={() => setRequestOpen(true)}
-            className="w-full h-12 bg-gradient-to-r from-primary to-primary-glow text-primary-foreground shadow-lg glow-primary"
+            variant="premium"
+            className="w-full h-12 shadow-elevated"
           >
             <Plus className="mr-2 h-5 w-5" /> Request a song
           </Button>
