@@ -169,51 +169,47 @@ const Leaderboard = () => {
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
-      <main className="container max-w-3xl py-8 space-y-6">
+      <main className="container max-w-3xl py-8 sm:py-10 space-y-6">
         <div>
-          <Button asChild variant="ghost" size="sm" className="mb-2 -ml-3">
+          <Button asChild variant="ghost" size="sm" className="mb-3 -ml-3">
             <Link to="/"><ArrowLeft className="h-4 w-4 mr-1" />Back</Link>
           </Button>
-          <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
-            <Trophy className="h-7 w-7 text-primary" />
+          <h1 className="text-[28px] sm:text-3xl font-semibold tracking-tight flex items-center gap-2.5">
+            <Trophy className="h-7 w-7 text-primary" strokeWidth={1.75} />
             Leaderboard
           </h1>
-          <p className="text-muted-foreground text-sm mt-1">Hot 100 of the dance floor</p>
+          <p className="text-muted-foreground text-[15px] mt-1.5">Hot 100 of the dance floor</p>
         </div>
 
-        <Card className="glass">
-          <CardContent className="p-4">
-            <Select value={selectedEventId ?? undefined} onValueChange={handleEventChange}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select an event" />
-              </SelectTrigger>
-              <SelectContent>
-                {events.map((e) => (
-                  <SelectItem key={e.id} value={e.id}>
-                    {e.name} {e.venue ? `· ${e.venue}` : ""} ({e.room_code})
-                  </SelectItem>
-                ))}
-                {!events.length && <SelectItem value="none" disabled>No events yet</SelectItem>}
-              </SelectContent>
-            </Select>
-          </CardContent>
-        </Card>
+        <div className="surface-1 p-4">
+          <Select value={selectedEventId ?? undefined} onValueChange={handleEventChange}>
+            <SelectTrigger>
+              <SelectValue placeholder="Select an event" />
+            </SelectTrigger>
+            <SelectContent>
+              {events.map((e) => (
+                <SelectItem key={e.id} value={e.id}>
+                  {e.name} {e.venue ? `· ${e.venue}` : ""} ({e.room_code})
+                </SelectItem>
+              ))}
+              {!events.length && <SelectItem value="none" disabled>No events yet</SelectItem>}
+            </SelectContent>
+          </Select>
+        </div>
 
         {myRank && tab !== "boosted" && (
-          <Card className="glass border-primary/40">
-            <CardContent className="py-3 flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Your rank</span>
-              <Badge className="bg-primary/20 text-primary border-primary/40">#{myRank}</Badge>
-            </CardContent>
-          </Card>
+          <div className="surface-1 px-4 py-3 flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Your rank</span>
+            <Badge className="bg-primary/15 text-primary border-primary/25 rounded-full">#{myRank}</Badge>
+          </div>
         )}
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
-          <TabsList className="grid grid-cols-4 w-full">
-            <TabsTrigger value="points"><Trophy className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">Points</span></TabsTrigger>
-            <TabsTrigger value="upvotes"><ThumbsUp className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">Upvotes</span></TabsTrigger>
-            <TabsTrigger value="requests"><Music2 className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">Requesters</span></TabsTrigger>
-            <TabsTrigger value="boosted"><Sparkles className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">Boosted</span></TabsTrigger>
+          <TabsList className="grid grid-cols-4 w-full rounded-full bg-secondary/60 p-1 h-10">
+            <TabsTrigger value="points" className="rounded-full"><Trophy className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">Points</span></TabsTrigger>
+            <TabsTrigger value="upvotes" className="rounded-full"><ThumbsUp className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">Upvotes</span></TabsTrigger>
+            <TabsTrigger value="requests" className="rounded-full"><Music2 className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">Requesters</span></TabsTrigger>
+            <TabsTrigger value="boosted" className="rounded-full"><Sparkles className="h-3.5 w-3.5 sm:mr-1" /><span className="hidden sm:inline">Boosted</span></TabsTrigger>
           </TabsList>
 
           <TabsContent value={tab} className="mt-4">
