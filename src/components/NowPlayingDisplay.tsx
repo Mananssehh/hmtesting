@@ -2,6 +2,7 @@ import { Music, Pause, Disc3 } from "lucide-react";
 import { useNowPlaying } from "@/hooks/useNowPlaying";
 import { NowPlayingStatus } from "@/lib/nowPlaying";
 import { cn } from "@/lib/utils";
+import { PlatformLinks } from "@/components/PlatformLinks";
 
 interface Props {
   eventId: string;
@@ -85,6 +86,13 @@ export function NowPlayingDisplay({ eventId }: Props) {
             {nowPlaying.artist && (
               <div className="text-[13px] sm:text-sm text-muted-foreground truncate mt-0.5">{nowPlaying.artist}</div>
             )}
+            <div className="mt-2">
+              <PlatformLinks
+                title={nowPlaying.title}
+                artist={nowPlaying.artist ?? ""}
+                size="md"
+              />
+            </div>
           </div>
         </div>
       </div>
