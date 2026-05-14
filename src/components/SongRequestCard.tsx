@@ -2,7 +2,7 @@ import { ArrowBigDown, ArrowBigUp, Sparkles, ExternalLink, Rocket, Clock } from 
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatDuration, platformLabel } from "@/lib/searchLinks";
+import { formatDuration, platformLabel, resolveExternalUrl } from "@/lib/searchLinks";
 
 export interface SongRequestRow {
   id: string;
