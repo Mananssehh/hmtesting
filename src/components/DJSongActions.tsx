@@ -9,7 +9,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
   DropdownMenuLabel, DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { searchLinks, djCopyText, platformLabel } from "@/lib/searchLinks";
+import { searchLinks, djCopyText, platformLabel, resolveExternalUrl } from "@/lib/searchLinks";
 import { SongRequestRow } from "@/components/SongRequestCard";
 import { PreviewButton } from "@/components/PreviewButton";
 
