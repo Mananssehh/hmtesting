@@ -86,6 +86,13 @@ export function NowPlayingDisplay({ eventId }: Props) {
             {nowPlaying.artist && (
               <div className="text-[13px] sm:text-sm text-muted-foreground truncate mt-0.5">{nowPlaying.artist}</div>
             )}
+            <div className="mt-2">
+              <PlatformLinks
+                title={nowPlaying.title}
+                artist={nowPlaying.artist ?? ""}
+                size="md"
+              />
+            </div>
           </div>
         </div>
       </div>
