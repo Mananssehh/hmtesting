@@ -397,28 +397,31 @@ const EventPage = () => {
   return (
     <div className="min-h-screen pb-28 sm:pb-10" style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 6rem)" }}>
       <AppHeader />
-      <div className="container max-w-3xl px-3 sm:px-6 py-4 sm:py-8">
+      <div className="container max-w-3xl px-4 sm:px-6 py-5 sm:py-10">
         {/* Event header */}
-        <div className="mb-4 sm:mb-6 p-4 sm:p-6 rounded-2xl bg-gradient-to-br from-primary/15 via-card to-card border border-primary/20">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <StatusBadge status={status} />
-            <div className="flex items-center gap-1.5">
-              <Badge variant="secondary" className="bg-primary/15 text-primary border-primary/30 gap-1">
-                <Sparkles className="h-3 w-3" />{profile?.points ?? 0} pts
-              </Badge>
-              <Button asChild size="sm" variant="ghost" className="h-7 px-2">
-                <Link to={`/leaderboard?event=${eventInfo.id}`} aria-label="Top fans">
-                  <Trophy className="h-3.5 w-3.5" />
-                </Link>
-              </Button>
+        <div className="mb-5 sm:mb-7 p-5 sm:p-7 rounded-3xl glass-strong relative overflow-hidden">
+          <div aria-hidden className="absolute inset-0 bg-gradient-to-br from-primary/8 via-transparent to-accent/4 pointer-events-none" />
+          <div className="relative">
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <StatusBadge status={status} />
+              <div className="flex items-center gap-1.5">
+                <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 rounded-full gap-1">
+                  <Sparkles className="h-3 w-3" />{profile?.points ?? 0} pts
+                </Badge>
+                <Button asChild size="sm" variant="ghost" className="h-7 px-2">
+                  <Link to={`/leaderboard?event=${eventInfo.id}`} aria-label="Top fans">
+                    <Trophy className="h-3.5 w-3.5" />
+                  </Link>
+                </Button>
+              </div>
             </div>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-bold leading-tight">{eventInfo.name}</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {eventInfo.venue ? `${eventInfo.venue} · ` : ""}with DJ {eventInfo.dj_name}
-          </p>
-          <div className="mt-3 inline-block px-3 py-1 rounded-full bg-secondary text-xs font-mono">
-            Code: {code}
+            <h1 className="text-[26px] sm:text-3xl font-semibold leading-tight tracking-tight">{eventInfo.name}</h1>
+            <p className="text-[14px] text-muted-foreground mt-1.5">
+              {eventInfo.venue ? `${eventInfo.venue} · ` : ""}with DJ {eventInfo.dj_name}
+            </p>
+            <div className="mt-4 inline-flex items-center px-3 py-1 rounded-full bg-secondary/70 text-[11px] font-mono tracking-wider text-muted-foreground">
+              {code}
+            </div>
           </div>
         </div>
 
