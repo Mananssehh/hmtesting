@@ -166,7 +166,7 @@ export function AwardPointsDialog({ open, onOpenChange, eventId }: Props) {
           <Button
             onClick={submit}
             disabled={loading || !selected}
-            className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground"
+            variant="premium"
           >
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Award {amount} pts

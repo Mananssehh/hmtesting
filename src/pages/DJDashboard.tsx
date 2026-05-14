@@ -407,7 +407,7 @@ function CreateEventForm({ defaultDJ, onCreate }: { defaultDJ: string; onCreate:
         <Textarea id="rules" rows={3} value={form.rules_text} onChange={(e) => update("rules_text", e.target.value)} placeholder="e.g. House &amp; techno only — no top 40." />
       </div>
 
-      <Button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-primary to-primary-glow text-primary-foreground">
+      <Button type="submit" disabled={loading} variant="premium" className="w-full">
         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
         Create event
       </Button>

@@ -60,7 +60,7 @@ export function DJSongActions({
         <Button
           size="sm"
           onClick={onMarkPlaying}
-          className="h-9 bg-gradient-to-r from-primary to-primary-glow text-primary-foreground font-semibold shadow-md glow-primary hover:opacity-95"
+          variant="premium" className="h-9"
           title="Set this as the song you just started playing in your DJ software"
         >
           <Play className="mr-1 h-4 w-4 fill-current" /> Mark Now Playing
