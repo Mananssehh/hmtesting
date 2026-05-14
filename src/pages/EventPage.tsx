@@ -536,10 +536,10 @@ const EventPage = () => {
 
         {/* Sort tabs */}
         <Tabs value={sort} onValueChange={(v) => setSort(v as SortMode)} className="mb-4">
-          <TabsList className="grid grid-cols-3 w-full">
-            <TabsTrigger value="top"><Sparkles className="h-3.5 w-3.5 mr-1.5" />Top</TabsTrigger>
-            <TabsTrigger value="trending">Trending</TabsTrigger>
-            <TabsTrigger value="new">Newest</TabsTrigger>
+          <TabsList className="grid grid-cols-3 w-full rounded-full bg-secondary/60 p-1 h-10">
+            <TabsTrigger value="top" className="rounded-full"><Sparkles className="h-3.5 w-3.5 mr-1.5" />Top</TabsTrigger>
+            <TabsTrigger value="trending" className="rounded-full">Trending</TabsTrigger>
+            <TabsTrigger value="new" className="rounded-full">Newest</TabsTrigger>
           </TabsList>
         </Tabs>
 
