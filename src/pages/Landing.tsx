@@ -53,7 +53,7 @@ const Landing = () => {
             Guests vote, DJs deliver, the dancefloor decides.
           </p>
           <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row gap-3 justify-center px-4">
-            <Button asChild size="lg" className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground glow-primary hover:opacity-95 h-12 px-8 text-base">
+            <Button asChild size="lg" variant="premium" size="lg">
               <Link to="/auth?role=dj">
                 <Disc3 className="mr-2 h-5 w-5" />
                 Start as DJ
@@ -144,7 +144,7 @@ const Landing = () => {
 
       {/* Points explainer */}
       <section className="container py-12 sm:py-16 max-w-5xl">
-        <div className="rounded-3xl p-6 sm:p-10 bg-gradient-to-br from-primary/15 via-card to-card border border-primary/20">
+        <div className="rounded-3xl p-6 sm:p-10 glass-strong">
           <div className="grid md:grid-cols-2 gap-8 items-center">
             <div>
               <p className="text-xs uppercase tracking-[0.2em] text-primary mb-2">Points &amp; rewards</p>
@@ -155,7 +155,7 @@ const Landing = () => {
                 of the DJ&rsquo;s queue.
               </p>
               <div className="flex flex-col sm:flex-row gap-3">
-                <Button asChild className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground">
+                <Button asChild variant="premium">
                   <Link to="/auth?role=dj">Start as DJ</Link>
                 </Button>
                 <Button asChild variant="outline">
@@ -186,7 +186,7 @@ const Landing = () => {
         <h2 className="text-3xl sm:text-4xl font-bold mb-3">Ready to read the room?</h2>
         <p className="text-muted-foreground mb-8">Spin up a live event in 30 seconds.</p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Button asChild size="lg" className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground glow-primary h-12 px-8">
+          <Button asChild size="lg" variant="premium" size="lg">
             <Link to="/auth?role=dj">Start as DJ</Link>
           </Button>
           <Button asChild size="lg" variant="outline" className="h-12 px-8 border-primary/30 hover:bg-primary/10">

@@ -196,7 +196,7 @@ const DJDashboard = () => {
             </Button>
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground">
+                <Button variant="premium">
                   <Plus className="mr-1 h-4 w-4" /> New event
                 </Button>
               </DialogTrigger>
@@ -223,7 +223,7 @@ const DJDashboard = () => {
             <h2 className="text-xl font-semibold">No events yet</h2>
             <p className="text-muted-foreground mt-1 mb-6">Create your first session to start receiving requests.</p>
             <div className="flex flex-col sm:flex-row gap-2 justify-center">
-              <Button onClick={() => setCreateOpen(true)} className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground">
+              <Button onClick={() => setCreateOpen(true)} variant="premium">
                 <Plus className="mr-1 h-4 w-4" /> New event
               </Button>
               <Button variant="outline" onClick={launchDemoRoom}>
