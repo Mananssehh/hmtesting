@@ -351,7 +351,9 @@ const EventPage = () => {
         explicit: song.explicit,
         source_platform: song.source_platform,
         source_song_id: song.source_song_id,
-        external_url: song.external_url,
+        external_url:
+          (song.external_url && song.external_url.trim()) ||
+          `https://music.apple.com/us/search?term=${encodeURIComponent(`${song.title} ${song.artist}`.trim())}`,
       })
       .select()
       .single();
