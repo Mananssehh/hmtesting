@@ -1,8 +1,8 @@
-import { Flame, X, Sparkles, ExternalLink, Rocket, Clock } from "lucide-react";
+import { ChevronUp, ChevronDown, Sparkles, Rocket, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { formatDuration, platformLabel, resolveExternalUrl } from "@/lib/searchLinks";
+import { formatDuration, platformLabel } from "@/lib/searchLinks";
+import { PlatformLinks } from "@/components/PlatformLinks";
 
 export interface SongRequestRow {
   id: string;
