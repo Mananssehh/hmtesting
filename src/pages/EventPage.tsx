@@ -772,7 +772,7 @@ function RequestPicker({ onPick, existing, allowExplicit = true }: { onPick: (so
                 ) : !allowExplicit && s.explicit ? (
                   <Badge variant="secondary" className="text-[10px] bg-amber-500/15 text-amber-300 border-amber-500/30">Blocked</Badge>
                 ) : (
-                  <Button size="sm" onClick={() => onPick(s)} className="bg-primary text-primary-foreground h-9 w-9 p-0" aria-label={`Request ${s.title}`}>
+                  <Button size="sm" onClick={() => onPick(s)} variant="premium" className="h-9 w-9 p-0" aria-label={`Request ${s.title}`}>
                     <Plus className="h-4 w-4" />
                   </Button>
                 )}
