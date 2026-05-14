@@ -213,8 +213,8 @@ const Leaderboard = () => {
           </TabsList>
 
           <TabsContent value={tab} className="mt-4">
-            <Card>
-              <CardContent className="p-0 divide-y">
+            <div className="surface-1 overflow-hidden">
+              <div className="divide-y divide-white/[0.05]">
                 {loading ? (
                   <div className="py-16 flex justify-center">
                     <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -224,18 +224,18 @@ const Leaderboard = () => {
                     <div className="py-16 text-center text-muted-foreground">No boosted songs yet.</div>
                   ) : (
                     boostedSongs.map((s, i) => (
-                      <div key={s.id} className="flex items-center gap-4 px-4 py-3">
+                      <div key={s.id} className="flex items-center gap-4 px-4 py-3.5">
                         <div className="w-8 flex justify-center">{rankIcon(i + 1)}</div>
                         {s.album_art ? (
-                          <img src={s.album_art} alt="" className="h-12 w-12 rounded-md object-cover" loading="lazy" />
+                          <img src={s.album_art} alt="" className="h-12 w-12 rounded-xl object-cover" loading="lazy" />
                         ) : (
-                          <div className="h-12 w-12 rounded-md bg-gradient-to-br from-primary/40 to-accent/40" />
+                          <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary/30 to-accent/30" />
                         )}
                         <div className="flex-1 min-w-0">
                           <div className="font-medium truncate">{s.title}</div>
                           <div className="text-xs text-muted-foreground truncate">{s.artist} · by {s.requester_name}</div>
                         </div>
-                        <Badge className="bg-primary/20 text-primary border-primary/40 gap-1">
+                        <Badge className="bg-primary/15 text-primary border-primary/25 rounded-full gap-1">
                           <Sparkles className="h-3 w-3" /> +{s.boost}
                         </Badge>
                       </div>
@@ -253,9 +253,8 @@ const Leaderboard = () => {
                       <div
                         key={(r.user_id ?? r.nickname) + i}
                         className={cn(
-                          "flex items-center gap-4 px-4 py-3",
-                          isMe && "bg-primary/5",
-                          rank === 1 && "bg-gradient-to-r from-primary/10 via-transparent to-transparent",
+                          "flex items-center gap-4 px-4 py-3.5 transition-colors",
+                          isMe && "bg-primary/[0.04]",
                         )}
                       >
                         <div className="w-8 flex justify-center">{rankIcon(rank)}</div>
@@ -269,15 +268,15 @@ const Leaderboard = () => {
                             {r.boost > 0 && <> · {r.boost} boost</>}
                           </div>
                         </div>
-                        <Badge variant="secondary" className="bg-primary/15 text-primary border-primary/30 tabular-nums">
+                        <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 rounded-full tabular-nums">
                           {metricValue(r)} {metricLabel}
                         </Badge>
                       </div>
                     );
                   })
                 )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
       </main>
