@@ -152,9 +152,9 @@ export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, disab
             <span className="hidden sm:inline text-xs">Boost</span>
           </Button>
         )}
-        {song.external_url && (
+        {externalUrl && (
           <Button asChild size="icon" variant="ghost" className="opacity-0 group-hover:opacity-100 transition-opacity">
-            <a href={song.external_url} target="_blank" rel="noreferrer" aria-label="Open in Spotify">
+            <a href={externalUrl} target="_blank" rel="noreferrer" aria-label={`Open in ${platformLabel(song.source_platform)}`}>
               <ExternalLink className="h-4 w-4" />
             </a>
           </Button>
