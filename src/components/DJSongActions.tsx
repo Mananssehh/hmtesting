@@ -102,13 +102,16 @@ export function DJSongActions({
 
       {song.preview_url && <PreviewButton src={song.preview_url} />}
 
-      {song.external_url && (
-        <Button asChild size="sm" variant="outline" className="h-9">
-          <a href={song.external_url} target="_blank" rel="noreferrer">
-            <ExternalLink className="mr-1 h-4 w-4" /> Open {platformLabel(song.source_platform).split(" ")[0]}
-          </a>
-        </Button>
-      )}
+      {(() => {
+        const externalUrl = resolveExternalUrl(song);
+        return externalUrl ? (
+          <Button asChild size="sm" variant="outline" className="h-9">
+            <a href={externalUrl} target="_blank" rel="noreferrer">
+              <ExternalLink className="mr-1 h-4 w-4" /> Open {platformLabel(song.source_platform).split(" ")[0]}
+            </a>
+          </Button>
+        ) : null;
+      })()}
 
       {/* External search menu */}
       <DropdownMenu>
