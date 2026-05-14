@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
+import AuthCallback from "./pages/AuthCallback";
 import Join from "./pages/Join";
 import EventPage from "./pages/EventPage";
 import DJDashboard from "./pages/DJDashboard";
@@ -33,6 +34,8 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Landing />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
+              <Route path="/auth/v1/callback" element={<AuthCallback />} />
               <Route path="/join" element={<Join />} />
               <Route path="/event/:code" element={<EventPage />} />
               <Route path="/dj" element={<DJDashboard />} />
