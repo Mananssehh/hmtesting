@@ -47,9 +47,8 @@ interface Props {
 
 export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, disabled }: Props) {
   const score = song.upvotes - song.downvotes + song.boost;
-  const externalUrl = resolveExternalUrl(song);
-  const hyped = myVote === 1;
-  const passed = myVote === -1;
+  const upvoted = myVote === 1;
+  const downvoted = myVote === -1;
 
   return (
     <div
@@ -60,8 +59,50 @@ export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, disab
         song.boost > 0 && "ring-1 ring-primary/20",
       )}
     >
+      {/* Reddit-style vote column */}
+      <div className="flex flex-col items-center gap-0.5 shrink-0 -ml-0.5">
+        <button
+          onClick={() => onVote?.(1)}
+          disabled={disabled || !onVote}
+          aria-label="Upvote"
+          aria-pressed={upvoted}
+          className={cn(
+            "h-7 w-7 rounded-full flex items-center justify-center transition-all duration-200 active:scale-90 tap-target",
+            upvoted
+              ? "bg-primary text-primary-foreground shadow-glow-sm"
+              : "text-foreground/60 hover:bg-white/[0.06] hover:text-primary",
+            (disabled || !onVote) && "opacity-50 cursor-not-allowed",
+          )}
+        >
+          <ChevronUp className="h-5 w-5" strokeWidth={upvoted ? 2.5 : 2.25} />
+        </button>
+        <span
+          className={cn(
+            "text-[12px] font-semibold tabular-nums leading-none px-1",
+            upvoted ? "text-primary" : downvoted ? "text-muted-foreground" : "text-foreground/80",
+          )}
+        >
+          {score > 0 ? `+${score}` : score}
+        </span>
+        <button
+          onClick={() => onVote?.(-1)}
+          disabled={disabled || !onVote}
+          aria-label="Downvote"
+          aria-pressed={downvoted}
+          className={cn(
+            "h-7 w-7 rounded-full flex items-center justify-center transition-all duration-200 active:scale-90 tap-target",
+            downvoted
+              ? "bg-secondary text-muted-foreground"
+              : "text-foreground/50 hover:bg-white/[0.06] hover:text-foreground/80",
+            (disabled || !onVote) && "opacity-50 cursor-not-allowed",
+          )}
+        >
+          <ChevronDown className="h-5 w-5" strokeWidth={downvoted ? 2.5 : 2.25} />
+        </button>
+      </div>
+
       {rank !== undefined && (
-        <div className="hidden sm:flex items-center justify-center w-6 text-sm font-semibold text-muted-foreground/70 tabular-nums">
+        <div className="hidden sm:flex items-center justify-center w-5 text-sm font-semibold text-muted-foreground/70 tabular-nums">
           {rank}
         </div>
       )}
@@ -99,95 +140,36 @@ export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, disab
           )}
         </div>
         <p className="text-[13px] text-muted-foreground truncate">{song.artist}</p>
-        <p className="text-[11px] text-muted-foreground/60 truncate flex items-center gap-2 mt-0.5">
-          <span className="truncate">{song.requester_name}</span>
-          {formatDuration(song.duration_ms) && (
-            <span className="inline-flex items-center gap-0.5">
-              <Clock className="h-2.5 w-2.5" />{formatDuration(song.duration_ms)}
-            </span>
-          )}
-          {song.source_platform && song.source_platform !== "mock" && (
-            <span className="hidden sm:inline">· {platformLabel(song.source_platform)}</span>
-          )}
-        </p>
-      </div>
-
-      {/* Action column — Hype / Pass / Boost as iOS-style pill group */}
-      <div className="flex flex-col items-end gap-2 shrink-0">
-        <div className="flex items-center gap-1.5">
-          {/* Score chip */}
-          <div className={cn(
-            "min-w-[2.25rem] h-8 px-2 rounded-full flex items-center justify-center text-[13px] font-semibold tabular-nums border transition-colors",
-            score > 0 ? "bg-primary/10 text-primary border-primary/20" :
-            score < 0 ? "bg-secondary/60 text-muted-foreground border-transparent" :
-            "bg-secondary/40 text-foreground/70 border-transparent",
-          )}>
-            {score > 0 ? `+${score}` : score}
-          </div>
-
-          {/* Hype */}
-          <button
-            onClick={() => onVote?.(1)}
-            disabled={disabled || !onVote}
-            aria-label="Hype"
-            aria-pressed={hyped}
-            title="Hype"
-            className={cn(
-              "h-8 w-8 rounded-full flex items-center justify-center border transition-all duration-200 active:scale-90 tap-target",
-              hyped
-                ? "bg-primary text-primary-foreground border-primary shadow-glow-sm"
-                : "bg-white/[0.04] text-foreground/70 border-white/[0.06] hover:bg-white/[0.08] hover:text-primary",
-              (disabled || !onVote) && "opacity-50 cursor-not-allowed",
+        <div className="mt-1 flex items-center gap-2 flex-wrap">
+          <PlatformLinks
+            title={song.title}
+            artist={song.artist}
+            externalUrl={song.external_url}
+            sourcePlatform={song.source_platform}
+          />
+          <p className="text-[11px] text-muted-foreground/60 truncate flex items-center gap-2">
+            <span className="truncate max-w-[8rem]">{song.requester_name}</span>
+            {formatDuration(song.duration_ms) && (
+              <span className="inline-flex items-center gap-0.5">
+                <Clock className="h-2.5 w-2.5" />{formatDuration(song.duration_ms)}
+              </span>
             )}
-          >
-            <Flame className="h-4 w-4" fill={hyped ? "currentColor" : "none"} strokeWidth={hyped ? 1.5 : 2} />
-          </button>
-
-          {/* Pass */}
-          <button
-            onClick={() => onVote?.(-1)}
-            disabled={disabled || !onVote}
-            aria-label="Pass"
-            aria-pressed={passed}
-            title="Pass"
-            className={cn(
-              "h-8 w-8 rounded-full flex items-center justify-center border transition-all duration-200 active:scale-90 tap-target",
-              passed
-                ? "bg-secondary text-foreground border-border"
-                : "bg-white/[0.04] text-foreground/60 border-white/[0.06] hover:bg-white/[0.08] hover:text-foreground",
-              (disabled || !onVote) && "opacity-50 cursor-not-allowed",
-            )}
-          >
-            <X className="h-4 w-4" strokeWidth={2.25} />
-          </button>
-
-          {/* Boost */}
-          {onBoost && song.status !== "played" && song.status !== "skipped" && (
-            <button
-              onClick={onBoost}
-              aria-label="Boost"
-              title="Boost"
-              className="h-8 px-3 rounded-full flex items-center gap-1 text-[12px] font-semibold border transition-all duration-200 active:scale-95 tap-target bg-primary/10 text-primary border-primary/25 hover:bg-primary/15"
-            >
-              <Rocket className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Boost</span>
-            </button>
-          )}
+          </p>
         </div>
-
-        {externalUrl && (
-          <Button
-            asChild
-            size="sm"
-            variant="ghost"
-            className="h-7 px-2 text-[11px] text-muted-foreground/70 hover:text-foreground opacity-0 sm:group-hover:opacity-100 transition-opacity"
-          >
-            <a href={externalUrl} target="_blank" rel="noreferrer" aria-label={`Open in ${platformLabel(song.source_platform)}`}>
-              <ExternalLink className="h-3 w-3" />
-            </a>
-          </Button>
-        )}
       </div>
+
+      {/* Boost */}
+      {onBoost && song.status !== "played" && song.status !== "skipped" && (
+        <button
+          onClick={onBoost}
+          aria-label="Boost"
+          title="Boost"
+          className="shrink-0 h-8 px-3 rounded-full flex items-center gap-1 text-[12px] font-semibold border transition-all duration-200 active:scale-95 tap-target bg-primary/10 text-primary border-primary/25 hover:bg-primary/15"
+        >
+          <Rocket className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Boost</span>
+        </button>
+      )}
     </div>
   );
 }
