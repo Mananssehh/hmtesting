@@ -519,12 +519,13 @@ const EventPage = () => {
               <Button
                 disabled={!isLive}
                 title={isPaused ? "Requests are paused by the DJ" : isEnded ? "Event has ended" : undefined}
-                className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground shrink-0"
+                variant="premium"
+                className="shrink-0"
               >
                 <Plus className="mr-1 h-4 w-4" /> Request
               </Button>
             </DialogTrigger>
-            <DialogContent className="p-0 gap-0 w-[calc(100vw-1rem)] max-w-lg max-h-[90dvh] flex flex-col overflow-hidden sm:rounded-2xl">
+            <DialogContent className="p-0 gap-0 w-[calc(100vw-1rem)] max-w-lg max-h-[90dvh] flex flex-col overflow-hidden sm:rounded-3xl border-white/[0.08]">
               <DialogHeader className="px-4 pt-4 pb-2 shrink-0 text-left">
                 <DialogTitle className="pr-8">Request a song</DialogTitle>
               </DialogHeader>
