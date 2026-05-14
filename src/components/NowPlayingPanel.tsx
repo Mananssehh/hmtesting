@@ -66,10 +66,10 @@ export function NowPlayingPanel({ eventId, prefill }: Props) {
   };
 
   return (
-    <div className="p-4 rounded-2xl bg-gradient-to-br from-primary/10 to-accent/5 border border-primary/30 space-y-3">
+    <div className="p-4 sm:p-5 rounded-2xl glass-strong space-y-4">
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-primary font-semibold">
-          <Radio className="h-3.5 w-3.5" /> Now Playing control
+        <div className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+          <Radio className="h-3.5 w-3.5 text-primary" /> Now Playing
         </div>
         {prefill?.title && (
           <Button size="sm" variant="ghost" type="button" onClick={useTopRequest} className="h-7 text-xs">
@@ -80,22 +80,22 @@ export function NowPlayingPanel({ eventId, prefill }: Props) {
 
       <div className="grid sm:grid-cols-2 gap-3">
         <div className="space-y-1.5">
-          <Label htmlFor="np-title" className="text-xs">Title</Label>
+          <Label htmlFor="np-title" className="text-xs text-muted-foreground">Title</Label>
           <Input id="np-title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Track title" />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="np-artist" className="text-xs">Artist</Label>
+          <Label htmlFor="np-artist" className="text-xs text-muted-foreground">Artist</Label>
           <Input id="np-artist" value={artist} onChange={(e) => setArtist(e.target.value)} placeholder="Artist name" />
         </div>
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="np-art" className="text-xs">Album art URL</Label>
+        <Label htmlFor="np-art" className="text-xs text-muted-foreground">Album art URL</Label>
         <Input id="np-art" value={albumArt} onChange={(e) => setAlbumArt(e.target.value)} placeholder="https://..." />
       </div>
 
       <div className="space-y-1.5">
-        <Label className="text-xs">Status</Label>
+        <Label className="text-xs text-muted-foreground">Status</Label>
         <div className="flex flex-wrap gap-1.5">
           {STATUS_OPTIONS.map((opt) => (
             <button
@@ -103,10 +103,10 @@ export function NowPlayingPanel({ eventId, prefill }: Props) {
               type="button"
               onClick={() => setStatus(opt.value)}
               className={
-                "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors " +
+                "px-3.5 py-1.5 rounded-full text-xs font-medium border transition-all duration-200 active:scale-95 " +
                 (status === opt.value
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-background/40 border-border/60 text-muted-foreground hover:bg-secondary/60")
+                  ? "bg-primary text-primary-foreground border-primary shadow-glow-sm"
+                  : "bg-white/[0.04] border-white/[0.06] text-muted-foreground hover:bg-white/[0.08] hover:text-foreground")
               }
             >
               {opt.label}
@@ -115,13 +115,13 @@ export function NowPlayingPanel({ eventId, prefill }: Props) {
         </div>
       </div>
 
-      <Button onClick={submit} disabled={saving || !title.trim()} className="w-full bg-gradient-to-r from-primary to-primary-glow text-primary-foreground">
+      <Button onClick={submit} disabled={saving || !title.trim()} variant="premium" className="w-full h-11">
         {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Music className="h-4 w-4 mr-2" />}
         Update Now Playing
       </Button>
 
       {nowPlaying && (
-        <p className="text-[11px] text-muted-foreground text-center">
+        <p className="text-[11px] text-muted-foreground/70 text-center">
           Last update {new Date(nowPlaying.updated_at).toLocaleTimeString()} — guests see this live.
         </p>
       )}

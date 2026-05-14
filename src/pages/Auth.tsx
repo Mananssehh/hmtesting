@@ -95,18 +95,18 @@ const Auth = () => {
   return (
     <div className="min-h-screen">
       <AppHeader />
-      <div className="container max-w-md py-12">
+      <div className="container max-w-md py-10 sm:py-16">
         <div className="text-center mb-8">
-          <Disc3 className="h-12 w-12 text-primary mx-auto mb-3 animate-float" />
-          <h1 className="text-3xl font-bold">Welcome to Decks</h1>
-          <p className="text-muted-foreground mt-1">DJ login & guest accounts</p>
+          <Disc3 className="h-12 w-12 text-primary mx-auto mb-4 animate-float" strokeWidth={1.5} />
+          <h1 className="text-[28px] sm:text-3xl font-semibold tracking-tight">Welcome to Decks</h1>
+          <p className="text-muted-foreground mt-2 text-[15px]">Sign in to vote, request, and boost.</p>
         </div>
 
-        <div className="p-6 rounded-2xl glass">
+        <div className="p-6 sm:p-7 rounded-3xl glass-strong">
           <Tabs value={mode} onValueChange={(v) => setMode(v as "login" | "signup")}>
-            <TabsList className="grid grid-cols-2 w-full">
-              <TabsTrigger value="login">Sign in</TabsTrigger>
-              <TabsTrigger value="signup">Sign up</TabsTrigger>
+            <TabsList className="grid grid-cols-2 w-full rounded-full bg-secondary/60 p-1 h-10">
+              <TabsTrigger value="login" className="rounded-full">Sign in</TabsTrigger>
+              <TabsTrigger value="signup" className="rounded-full">Sign up</TabsTrigger>
             </TabsList>
 
             <form onSubmit={handleSubmit} className="space-y-4 mt-6">
@@ -180,13 +180,13 @@ const Auth = () => {
               )}
 
               <TabsContent value="login" className="m-0">
-                <Button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-primary to-primary-glow text-primary-foreground h-11">
+                <Button type="submit" disabled={loading} variant="premium" className="w-full h-11">
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Sign in
                 </Button>
               </TabsContent>
               <TabsContent value="signup" className="m-0">
-                <Button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-primary to-primary-glow text-primary-foreground h-11">
+                <Button type="submit" disabled={loading} variant="premium" className="w-full h-11">
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Create account
                 </Button>

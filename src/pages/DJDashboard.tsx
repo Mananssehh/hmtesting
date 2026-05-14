@@ -196,7 +196,7 @@ const DJDashboard = () => {
             </Button>
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground">
+                <Button variant="premium">
                   <Plus className="mr-1 h-4 w-4" /> New event
                 </Button>
               </DialogTrigger>
@@ -223,7 +223,7 @@ const DJDashboard = () => {
             <h2 className="text-xl font-semibold">No events yet</h2>
             <p className="text-muted-foreground mt-1 mb-6">Create your first session to start receiving requests.</p>
             <div className="flex flex-col sm:flex-row gap-2 justify-center">
-              <Button onClick={() => setCreateOpen(true)} className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground">
+              <Button onClick={() => setCreateOpen(true)} variant="premium">
                 <Plus className="mr-1 h-4 w-4" /> New event
               </Button>
               <Button variant="outline" onClick={launchDemoRoom}>
@@ -407,7 +407,7 @@ function CreateEventForm({ defaultDJ, onCreate }: { defaultDJ: string; onCreate:
         <Textarea id="rules" rows={3} value={form.rules_text} onChange={(e) => update("rules_text", e.target.value)} placeholder="e.g. House &amp; techno only — no top 40." />
       </div>
 
-      <Button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-primary to-primary-glow text-primary-foreground">
+      <Button type="submit" disabled={loading} variant="premium" className="w-full">
         {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
         Create event
       </Button>

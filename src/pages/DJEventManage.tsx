@@ -326,7 +326,7 @@ const DJEventManage = () => {
       <AppHeader />
       <div className="container max-w-6xl py-6 sm:py-8">
         {/* Header card */}
-        <div className="grid lg:grid-cols-[1fr_auto] gap-6 mb-6 p-5 sm:p-6 rounded-2xl bg-gradient-to-br from-primary/15 via-card to-card border border-primary/20">
+        <div className="grid lg:grid-cols-[1fr_auto] gap-6 mb-6 p-5 sm:p-6 rounded-2xl glass-strong">
           <div>
             <div className="flex items-center gap-2 mb-2">
               {status === "live" && (
@@ -506,7 +506,7 @@ const DJEventManage = () => {
                 size="sm"
                 onClick={playNext}
                 disabled={!queueSongs.length}
-                className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground"
+                variant="premium"
                 title={queueSongs.length ? "Set the top-of-queue track as Now Playing for guests" : "No requests yet"}
               >
                 <Play className="mr-1.5 h-4 w-4 fill-current" />
@@ -717,7 +717,7 @@ function FocusView({ event, nowPlaying, queue, boosted, onPlay, onPlayed, onSkip
         </div>
 
         {/* Now playing */}
-        <div className="rounded-2xl p-5 sm:p-6 bg-gradient-to-br from-primary/20 via-primary/5 to-card border border-primary/40 mb-4">
+        <div className="rounded-2xl p-5 sm:p-6 glass-strong ring-1 ring-primary/20 mb-4">
           <div className="text-xs uppercase tracking-wider text-primary font-semibold mb-2 flex items-center gap-2">
             <Music className="h-3.5 w-3.5" /> Now playing
           </div>

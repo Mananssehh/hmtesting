@@ -116,7 +116,7 @@ const Join = () => {
             />
           </div>
 
-          <Button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-primary to-primary-glow text-primary-foreground h-11">
+          <Button type="submit" disabled={loading} variant="premium" className="w-full h-11">
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Join event
           </Button>

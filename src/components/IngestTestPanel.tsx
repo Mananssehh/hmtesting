@@ -268,7 +268,7 @@ export function IngestTestPanel({ eventId }: Props) {
           <Button
             onClick={sendTest}
             disabled={!token || sending}
-            className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground"
+            variant="premium"
           >
             {sending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Send className="mr-2 h-4 w-4" />}
             Send Test Track

@@ -397,28 +397,31 @@ const EventPage = () => {
   return (
     <div className="min-h-screen pb-28 sm:pb-10" style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 6rem)" }}>
       <AppHeader />
-      <div className="container max-w-3xl px-3 sm:px-6 py-4 sm:py-8">
+      <div className="container max-w-3xl px-4 sm:px-6 py-5 sm:py-10">
         {/* Event header */}
-        <div className="mb-4 sm:mb-6 p-4 sm:p-6 rounded-2xl bg-gradient-to-br from-primary/15 via-card to-card border border-primary/20">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <StatusBadge status={status} />
-            <div className="flex items-center gap-1.5">
-              <Badge variant="secondary" className="bg-primary/15 text-primary border-primary/30 gap-1">
-                <Sparkles className="h-3 w-3" />{profile?.points ?? 0} pts
-              </Badge>
-              <Button asChild size="sm" variant="ghost" className="h-7 px-2">
-                <Link to={`/leaderboard?event=${eventInfo.id}`} aria-label="Top fans">
-                  <Trophy className="h-3.5 w-3.5" />
-                </Link>
-              </Button>
+        <div className="mb-5 sm:mb-7 p-5 sm:p-7 rounded-3xl glass-strong relative overflow-hidden">
+          <div aria-hidden className="absolute inset-0 bg-gradient-to-br from-primary/8 via-transparent to-accent/4 pointer-events-none" />
+          <div className="relative">
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <StatusBadge status={status} />
+              <div className="flex items-center gap-1.5">
+                <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 rounded-full gap-1">
+                  <Sparkles className="h-3 w-3" />{profile?.points ?? 0} pts
+                </Badge>
+                <Button asChild size="sm" variant="ghost" className="h-7 px-2">
+                  <Link to={`/leaderboard?event=${eventInfo.id}`} aria-label="Top fans">
+                    <Trophy className="h-3.5 w-3.5" />
+                  </Link>
+                </Button>
+              </div>
             </div>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-bold leading-tight">{eventInfo.name}</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {eventInfo.venue ? `${eventInfo.venue} · ` : ""}with DJ {eventInfo.dj_name}
-          </p>
-          <div className="mt-3 inline-block px-3 py-1 rounded-full bg-secondary text-xs font-mono">
-            Code: {code}
+            <h1 className="text-[26px] sm:text-3xl font-semibold leading-tight tracking-tight">{eventInfo.name}</h1>
+            <p className="text-[14px] text-muted-foreground mt-1.5">
+              {eventInfo.venue ? `${eventInfo.venue} · ` : ""}with DJ {eventInfo.dj_name}
+            </p>
+            <div className="mt-4 inline-flex items-center px-3 py-1 rounded-full bg-secondary/70 text-[11px] font-mono tracking-wider text-muted-foreground">
+              {code}
+            </div>
           </div>
         </div>
 
@@ -516,12 +519,13 @@ const EventPage = () => {
               <Button
                 disabled={!isLive}
                 title={isPaused ? "Requests are paused by the DJ" : isEnded ? "Event has ended" : undefined}
-                className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground shrink-0"
+                variant="premium"
+                className="shrink-0"
               >
                 <Plus className="mr-1 h-4 w-4" /> Request
               </Button>
             </DialogTrigger>
-            <DialogContent className="p-0 gap-0 w-[calc(100vw-1rem)] max-w-lg max-h-[90dvh] flex flex-col overflow-hidden sm:rounded-2xl">
+            <DialogContent className="p-0 gap-0 w-[calc(100vw-1rem)] max-w-lg max-h-[90dvh] flex flex-col overflow-hidden sm:rounded-3xl border-white/[0.08]">
               <DialogHeader className="px-4 pt-4 pb-2 shrink-0 text-left">
                 <DialogTitle className="pr-8">Request a song</DialogTitle>
               </DialogHeader>
@@ -532,10 +536,10 @@ const EventPage = () => {
 
         {/* Sort tabs */}
         <Tabs value={sort} onValueChange={(v) => setSort(v as SortMode)} className="mb-4">
-          <TabsList className="grid grid-cols-3 w-full">
-            <TabsTrigger value="top"><Sparkles className="h-3.5 w-3.5 mr-1.5" />Top</TabsTrigger>
-            <TabsTrigger value="trending">Trending</TabsTrigger>
-            <TabsTrigger value="new">Newest</TabsTrigger>
+          <TabsList className="grid grid-cols-3 w-full rounded-full bg-secondary/60 p-1 h-10">
+            <TabsTrigger value="top" className="rounded-full"><Sparkles className="h-3.5 w-3.5 mr-1.5" />Top</TabsTrigger>
+            <TabsTrigger value="trending" className="rounded-full">Trending</TabsTrigger>
+            <TabsTrigger value="new" className="rounded-full">Newest</TabsTrigger>
           </TabsList>
         </Tabs>
 
@@ -572,10 +576,11 @@ const EventPage = () => {
 
       {/* Mobile sticky request CTA */}
       {isLive && (
-        <div className="sm:hidden fixed inset-x-3 z-30 bottom-safe">
+        <div className="sm:hidden fixed inset-x-4 z-30 bottom-safe">
           <Button
             onClick={() => setRequestOpen(true)}
-            className="w-full h-12 bg-gradient-to-r from-primary to-primary-glow text-primary-foreground shadow-lg glow-primary"
+            variant="premium"
+            className="w-full h-12 shadow-elevated"
           >
             <Plus className="mr-2 h-5 w-5" /> Request a song
           </Button>
@@ -767,7 +772,7 @@ function RequestPicker({ onPick, existing, allowExplicit = true }: { onPick: (so
                 ) : !allowExplicit && s.explicit ? (
                   <Badge variant="secondary" className="text-[10px] bg-amber-500/15 text-amber-300 border-amber-500/30">Blocked</Badge>
                 ) : (
-                  <Button size="sm" onClick={() => onPick(s)} className="bg-primary text-primary-foreground h-9 w-9 p-0" aria-label={`Request ${s.title}`}>
+                  <Button size="sm" onClick={() => onPick(s)} variant="premium" className="h-9 w-9 p-0" aria-label={`Request ${s.title}`}>
                     <Plus className="h-4 w-4" />
                   </Button>
                 )}

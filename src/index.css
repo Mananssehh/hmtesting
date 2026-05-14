@@ -2,93 +2,96 @@
 @tailwind components;
 @tailwind utilities;
 
-/* DJ Club Request App — dark club design system. All colors HSL. */
+/* Decks — refined iOS-inspired dark theme. All colors HSL. */
 
 @layer base {
   :root {
-    /* Default to dark club theme */
-    --background: 240 10% 4%;
+    /* Soft graphite background, not pure black */
+    --background: 240 10% 6%;
     --foreground: 0 0% 98%;
 
-    --card: 240 10% 7%;
+    /* Elevated surface — like iOS sheet */
+    --card: 240 8% 10%;
     --card-foreground: 0 0% 98%;
 
-    --popover: 240 10% 6%;
+    --popover: 240 9% 9%;
     --popover-foreground: 0 0% 98%;
 
-    /* Electric magenta */
-    --primary: 320 95% 58%;
+    /* Refined accent — desaturated magenta/violet, less neon */
+    --primary: 322 70% 60%;
     --primary-foreground: 0 0% 100%;
-    --primary-glow: 320 100% 70%;
+    --primary-glow: 320 80% 72%;
 
-    /* Subtle dark surface */
-    --secondary: 240 8% 12%;
+    --secondary: 240 6% 14%;
     --secondary-foreground: 0 0% 95%;
 
-    --muted: 240 8% 14%;
-    --muted-foreground: 240 5% 64%;
+    --muted: 240 5% 14%;
+    --muted-foreground: 240 4% 64%;
 
-    /* Cyan accent */
-    --accent: 190 95% 55%;
-    --accent-foreground: 240 10% 4%;
+    /* Soft cyan accent */
+    --accent: 190 60% 58%;
+    --accent-foreground: 240 10% 6%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 70% 58%;
     --destructive-foreground: 0 0% 98%;
 
-    --success: 142 76% 45%;
+    --success: 142 55% 50%;
     --success-foreground: 0 0% 100%;
 
-    --border: 240 6% 16%;
-    --input: 240 6% 14%;
-    --ring: 320 95% 58%;
+    --border: 240 5% 18%;
+    --input: 240 5% 14%;
+    --ring: 322 70% 60%;
 
-    --radius: 0.875rem;
+    /* iOS-like generous radius */
+    --radius: 1rem;
 
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(320 95% 58%), hsl(280 95% 60%));
-    --gradient-glow: radial-gradient(circle at 50% 0%, hsl(320 95% 58% / 0.25), transparent 60%);
-    --gradient-hero: linear-gradient(135deg, hsl(320 95% 58% / 0.15), hsl(190 95% 55% / 0.1) 60%, transparent);
-    --gradient-card: linear-gradient(180deg, hsl(240 8% 9%), hsl(240 10% 6%));
+    /* Subtle gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(322 70% 60%), hsl(280 70% 62%));
+    --gradient-glow: radial-gradient(circle at 50% 0%, hsl(322 70% 60% / 0.14), transparent 60%);
+    --gradient-hero: linear-gradient(180deg, hsl(322 70% 60% / 0.08), hsl(190 60% 58% / 0.04) 50%, transparent);
+    --gradient-card: linear-gradient(180deg, hsl(240 8% 12%), hsl(240 8% 9%));
+    --gradient-surface: linear-gradient(180deg, hsl(0 0% 100% / 0.04), hsl(0 0% 100% / 0));
 
-    /* Shadows / glows */
-    --shadow-glow: 0 0 40px hsl(320 95% 58% / 0.35);
-    --shadow-glow-sm: 0 0 20px hsl(320 95% 58% / 0.4);
-    --shadow-elegant: 0 10px 40px -10px hsl(320 95% 58% / 0.5);
-    --shadow-card: 0 4px 24px -8px hsl(0 0% 0% / 0.5);
+    /* Soft elegant shadows — Apple-like depth */
+    --shadow-sm: 0 1px 2px 0 hsl(0 0% 0% / 0.3);
+    --shadow-card: 0 4px 16px -6px hsl(0 0% 0% / 0.4), 0 1px 2px hsl(0 0% 0% / 0.3);
+    --shadow-elevated: 0 10px 32px -10px hsl(0 0% 0% / 0.5), 0 2px 6px hsl(0 0% 0% / 0.3);
+    --shadow-glow-sm: 0 0 16px hsl(322 70% 60% / 0.18);
+    --shadow-glow: 0 0 32px hsl(322 70% 60% / 0.22);
+    --shadow-elegant: 0 12px 40px -16px hsl(322 70% 60% / 0.3);
 
-    /* Motion */
-    --transition-base: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-spring: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    /* iOS-like motion */
+    --transition-base: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-spring: all 0.4s cubic-bezier(0.34, 1.4, 0.64, 1);
 
-    --sidebar-background: 240 10% 6%;
+    --sidebar-background: 240 9% 8%;
     --sidebar-foreground: 0 0% 95%;
-    --sidebar-primary: 320 95% 58%;
+    --sidebar-primary: 322 70% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 8% 12%;
+    --sidebar-accent: 240 6% 14%;
     --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 240 6% 16%;
-    --sidebar-ring: 320 95% 58%;
+    --sidebar-border: 240 5% 18%;
+    --sidebar-ring: 322 70% 60%;
   }
 
   .light {
-    /* Optional light fallback (not actively used) */
-    --background: 0 0% 100%;
-    --foreground: 240 10% 4%;
+    --background: 0 0% 99%;
+    --foreground: 240 10% 6%;
     --card: 0 0% 100%;
-    --card-foreground: 240 10% 4%;
+    --card-foreground: 240 10% 6%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 4%;
-    --primary: 320 90% 50%;
+    --popover-foreground: 240 10% 6%;
+    --primary: 322 65% 52%;
     --primary-foreground: 0 0% 100%;
     --secondary: 240 5% 96%;
-    --secondary-foreground: 240 10% 4%;
+    --secondary-foreground: 240 10% 6%;
     --muted: 240 5% 96%;
     --muted-foreground: 240 4% 46%;
-    --accent: 190 95% 45%;
+    --accent: 190 70% 45%;
     --accent-foreground: 0 0% 100%;
     --border: 240 6% 90%;
     --input: 240 6% 90%;
-    --ring: 320 90% 50%;
+    --ring: 322 65% 52%;
   }
 }
 
@@ -99,21 +102,42 @@
 
   html {
     color-scheme: dark;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "ss01", "cv11";
+    /* Subtle ambient — far less neon */
     background-image:
-      radial-gradient(ellipse 80% 50% at 50% -20%, hsl(320 95% 58% / 0.18), transparent),
-      radial-gradient(ellipse 60% 40% at 100% 100%, hsl(190 95% 55% / 0.08), transparent);
+      radial-gradient(ellipse 70% 40% at 50% -10%, hsl(322 70% 60% / 0.08), transparent 70%),
+      radial-gradient(ellipse 50% 30% at 100% 100%, hsl(190 60% 58% / 0.04), transparent 70%);
     background-attachment: fixed;
+    letter-spacing: -0.011em;
+  }
+
+  h1, h2, h3, h4 {
+    letter-spacing: -0.022em;
   }
 }
 
 @layer components {
+  /* iOS-style frosted glass */
   .glass {
-    @apply bg-card/60 backdrop-blur-xl border border-border/60;
+    @apply bg-card/70 backdrop-blur-xl border border-white/[0.06];
+    box-shadow: var(--shadow-card);
+  }
+
+  .glass-strong {
+    @apply bg-card/85 backdrop-blur-2xl border border-white/[0.08];
+    box-shadow: var(--shadow-elevated);
+  }
+
+  .surface-1 {
+    background: var(--gradient-surface), hsl(var(--card));
+    @apply border border-white/[0.06] rounded-2xl;
+    box-shadow: var(--shadow-card);
   }
 
   .glow-primary {
@@ -125,6 +149,16 @@
     background-image: var(--gradient-primary);
   }
 
+  /* iOS-style tappable pill */
+  .pill {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium
+           border border-white/[0.06] bg-white/[0.04] text-foreground/80
+           transition-all duration-200 active:scale-95;
+  }
+  .pill-active {
+    @apply bg-primary/15 text-primary border-primary/30;
+  }
+
   .scrollbar-thin {
     scrollbar-width: thin;
     scrollbar-color: hsl(var(--border)) transparent;
@@ -132,15 +166,9 @@
     scroll-behavior: smooth;
   }
 
-  .pb-safe {
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-  .pt-safe {
-    padding-top: env(safe-area-inset-top);
-  }
-  .bottom-safe {
-    bottom: calc(env(safe-area-inset-bottom) + 1rem);
-  }
+  .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+  .pt-safe { padding-top: env(safe-area-inset-top); }
+  .bottom-safe { bottom: calc(env(safe-area-inset-bottom) + 1rem); }
 }
 
 html, body {
@@ -149,11 +177,11 @@ html, body {
 
 @layer utilities {
   .animate-pulse-glow {
-    animation: pulse-glow 2.5s ease-in-out infinite;
+    animation: pulse-glow 3s ease-in-out infinite;
   }
   @keyframes pulse-glow {
-    0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.5); }
-    50% { box-shadow: 0 0 24px 6px hsl(var(--primary) / 0.4); }
+    0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.25); }
+    50% { box-shadow: 0 0 18px 4px hsl(var(--primary) / 0.2); }
   }
 
   .animate-float {
@@ -161,6 +189,14 @@ html, body {
   }
   @keyframes float {
     0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-8px); }
+    50% { transform: translateY(-6px); }
+  }
+
+  .animate-tap {
+    @apply transition-transform duration-150 active:scale-[0.97];
+  }
+
+  .tap-target {
+    -webkit-tap-highlight-color: transparent;
   }
 }

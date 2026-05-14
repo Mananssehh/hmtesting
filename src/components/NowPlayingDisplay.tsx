@@ -1,6 +1,7 @@
 import { Music, Pause, Disc3 } from "lucide-react";
 import { useNowPlaying } from "@/hooks/useNowPlaying";
 import { NowPlayingStatus } from "@/lib/nowPlaying";
+import { cn } from "@/lib/utils";
 
 interface Props {
   eventId: string;
@@ -8,28 +9,22 @@ interface Props {
 
 const STATUS_META: Record<
   NowPlayingStatus,
-  { label: string; pillClass: string; icon: React.ReactNode; ring: string; glow: string }
+  { label: string; pillClass: string; icon: React.ReactNode }
 > = {
   playing: {
     label: "Now Playing",
-    pillClass: "bg-primary/20 text-primary border-primary/50",
-    icon: <Disc3 className="h-3 w-3 animate-spin [animation-duration:3s]" />,
-    ring: "ring-2 ring-primary/60",
-    glow: "from-primary/25 via-card/60 to-accent/15",
+    pillClass: "bg-primary/15 text-primary border-primary/25",
+    icon: <Disc3 className="h-3 w-3 animate-spin [animation-duration:4s]" />,
   },
   mixing: {
     label: "Mixing Next",
-    pillClass: "bg-accent/20 text-accent border-accent/50",
-    icon: <Music className="h-3 w-3 animate-pulse" />,
-    ring: "ring-2 ring-accent/60 animate-pulse",
-    glow: "from-accent/25 via-card/60 to-primary/15",
+    pillClass: "bg-accent/15 text-accent border-accent/25",
+    icon: <Music className="h-3 w-3" />,
   },
   paused: {
     label: "Paused",
-    pillClass: "bg-muted text-muted-foreground border-border",
+    pillClass: "bg-secondary/60 text-muted-foreground border-transparent",
     icon: <Pause className="h-3 w-3" />,
-    ring: "ring-1 ring-border",
-    glow: "from-muted/40 via-card/60 to-muted/20",
   },
 };
 
@@ -40,22 +35,15 @@ export function NowPlayingDisplay({ eventId }: Props) {
 
   const status = (nowPlaying.status as NowPlayingStatus) ?? "playing";
   const meta = STATUS_META[status] ?? STATUS_META.playing;
-
-  // Re-mount inner content when track changes for smooth fade transition
   const trackKey = `${nowPlaying.title}-${nowPlaying.artist}-${status}`;
 
   return (
-    <div
-      className={
-        "relative mb-4 p-4 rounded-2xl border border-primary/30 shadow-xl backdrop-blur overflow-hidden transition-all duration-500 bg-gradient-to-br " +
-        meta.glow
-      }
-    >
-      {/* Blurred album art backdrop */}
+    <div className="relative mb-5 p-4 sm:p-5 rounded-2xl glass-strong overflow-hidden transition-all duration-500">
+      {/* Subtle blurred album art backdrop */}
       {nowPlaying.album_art && (
         <div
           aria-hidden
-          className="absolute inset-0 opacity-30 blur-2xl scale-110 transition-opacity duration-700"
+          className="absolute inset-0 opacity-25 blur-3xl scale-125 transition-opacity duration-700"
           style={{
             backgroundImage: `url(${nowPlaying.album_art})`,
             backgroundSize: "cover",
@@ -63,55 +51,42 @@ export function NowPlayingDisplay({ eventId }: Props) {
           }}
         />
       )}
+      <div aria-hidden className="absolute inset-0 bg-gradient-to-b from-transparent via-card/30 to-card/60" />
 
       <div key={trackKey} className="relative animate-fade-in">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           {nowPlaying.album_art ? (
             <img
               src={nowPlaying.album_art}
               alt=""
-              className={
-                "h-20 w-20 rounded-xl object-cover shadow-lg shrink-0 transition-all duration-500 " +
-                meta.ring +
-                (status === "playing" ? " animate-scale-in" : "")
-              }
+              className={cn(
+                "h-20 w-20 sm:h-24 sm:w-24 rounded-2xl object-cover shadow-elevated shrink-0 transition-all duration-500",
+                status === "playing" && "animate-scale-in",
+              )}
             />
           ) : (
-            <div
-              className={
-                "h-20 w-20 rounded-xl bg-gradient-to-br from-primary/40 to-accent/40 flex items-center justify-center shrink-0 " +
-                meta.ring
-              }
-            >
-              <Music className="h-8 w-8 text-primary-foreground/80" />
+            <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-2xl bg-gradient-to-br from-primary/30 to-accent/30 flex items-center justify-center shrink-0 shadow-elevated">
+              <Music className="h-8 w-8 text-foreground/60" />
             </div>
           )}
           <div className="flex-1 min-w-0">
             <span
-              className={
-                "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-widest border " +
-                meta.pillClass
-              }
+              className={cn(
+                "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider border",
+                meta.pillClass,
+              )}
             >
               {meta.icon}
               <span>{meta.label}</span>
-              {status === "mixing" && (
-                <span className="inline-flex gap-0.5 ml-0.5" aria-hidden>
-                  <span className="h-1 w-1 rounded-full bg-accent animate-bounce [animation-delay:-0.3s]" />
-                  <span className="h-1 w-1 rounded-full bg-accent animate-bounce [animation-delay:-0.15s]" />
-                  <span className="h-1 w-1 rounded-full bg-accent animate-bounce" />
-                </span>
-              )}
             </span>
-            <div className="mt-1.5 text-base sm:text-lg font-bold truncate tracking-tight">
+            <div className="mt-2 text-lg sm:text-xl font-semibold truncate tracking-tight">
               {nowPlaying.title}
             </div>
             {nowPlaying.artist && (
-              <div className="text-sm text-muted-foreground truncate">{nowPlaying.artist}</div>
+              <div className="text-[13px] sm:text-sm text-muted-foreground truncate mt-0.5">{nowPlaying.artist}</div>
             )}
           </div>
         </div>
-        <p className="mt-2 text-[11px] text-muted-foreground text-right italic">DJ marked this as playing</p>
       </div>
     </div>
   );

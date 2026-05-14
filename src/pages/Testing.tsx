@@ -85,7 +85,7 @@ const Testing = () => {
               <div className="text-sm font-semibold">{d.label}</div>
               <p className="text-xs text-muted-foreground mt-1 mb-3">{d.desc}</p>
               <div className="flex gap-1.5">
-                <Button size="sm" className="flex-1 bg-gradient-to-r from-primary to-primary-glow text-primary-foreground" onClick={() => ensureAndOpen(d.code)}>
+                <Button size="sm" variant="premium" className="flex-1" onClick={() => ensureAndOpen(d.code)}>
                   Open as guest
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => copy(d.code)} title="Copy code">
