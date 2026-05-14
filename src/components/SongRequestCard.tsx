@@ -48,6 +48,7 @@ interface Props {
 
 export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, disabled }: Props) {
   const score = song.upvotes - song.downvotes + song.boost;
+  const externalUrl = resolveExternalUrl(song);
 
   return (
     <div
