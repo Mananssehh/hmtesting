@@ -2,6 +2,7 @@ import { Music, Pause, Disc3 } from "lucide-react";
 import { useNowPlaying } from "@/hooks/useNowPlaying";
 import { NowPlayingStatus } from "@/lib/nowPlaying";
 import { cn } from "@/lib/utils";
+import { PlatformLinks } from "@/components/PlatformLinks";
 
 interface Props {
   eventId: string;
