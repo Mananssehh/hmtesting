@@ -55,25 +55,25 @@ export function BoostDialog({ open, onOpenChange, songRequestId, songTitle, onBo
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-w-sm rounded-2xl border-white/[0.08]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 text-lg tracking-tight">
             <Sparkles className="h-5 w-5 text-primary" /> Boost this request
           </DialogTitle>
           <DialogDescription className="truncate">{songTitle}</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 py-2">
+        <div className="space-y-5 py-2">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Your balance</span>
-            <Badge variant="secondary" className="bg-primary/15 text-primary border-primary/30">
+            <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 rounded-full">
               {balance} pts
             </Badge>
           </div>
 
-          <div className="text-center py-3 rounded-xl bg-primary/5 border border-primary/20">
-            <div className="text-xs text-muted-foreground uppercase tracking-wider">Boost</div>
-            <div className="text-4xl font-bold text-primary tabular-nums">+{amount}</div>
+          <div className="text-center py-5 rounded-2xl bg-gradient-to-b from-primary/8 to-transparent border border-primary/15">
+            <div className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">Boost</div>
+            <div className="text-5xl font-semibold text-primary tabular-nums mt-1 tracking-tight">+{amount}</div>
           </div>
 
           <Slider
@@ -107,12 +107,12 @@ export function BoostDialog({ open, onOpenChange, songRequestId, songTitle, onBo
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="gap-2 sm:gap-2">
           <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button
+            variant="premium"
             onClick={submit}
             disabled={loading || balance < amount || amount < 1}
-            className="bg-gradient-to-r from-primary to-primary-glow text-primary-foreground"
           >
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Spend {amount} pts
