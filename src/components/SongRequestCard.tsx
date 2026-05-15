@@ -69,8 +69,8 @@ export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, disab
           className={cn(
             "h-7 w-7 rounded-full flex items-center justify-center transition-all duration-150 active:scale-90 tap-target",
             upvoted
-              ? "bg-vote-up text-vote-up-foreground shadow-[0_0_14px_hsl(var(--vote-up)/0.45)]"
-              : "text-foreground/55 hover:bg-white/[0.06] hover:text-vote-up",
+              ? "bg-primary text-primary-foreground shadow-[0_0_14px_hsl(var(--primary)/0.45)]"
+              : "text-foreground/55 hover:bg-white/[0.06] hover:text-primary",
             (disabled || !onVote) && "opacity-50 cursor-not-allowed",
           )}
         >
@@ -80,7 +80,7 @@ export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, disab
           key={score}
           className={cn(
             "text-[12px] font-semibold tabular-nums leading-none px-1 transition-colors duration-150 animate-in fade-in zoom-in-95",
-            upvoted ? "text-vote-up" : downvoted ? "text-vote-down" : "text-foreground/80",
+            upvoted ? "text-primary" : downvoted ? "text-foreground/60" : "text-foreground/80",
           )}
         >
           {score > 0 ? `+${score}` : score}
