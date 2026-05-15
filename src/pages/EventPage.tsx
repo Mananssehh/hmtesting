@@ -206,15 +206,29 @@ const EventPage = () => {
     const q = search.trim().toLowerCase();
     if (q) list = list.filter((s) => s.title.toLowerCase().includes(q) || s.artist.toLowerCase().includes(q));
 
+    const score = (s: SongRequestRow) => s.upvotes - s.downvotes + s.boost;
+    const ts = (s: SongRequestRow) => +new Date(s.created_at);
+
     if (sort === "top") {
-      list = [...list].sort((a, b) => (b.upvotes - b.downvotes + b.boost) - (a.upvotes - a.downvotes + a.boost));
+      // Deterministic: score → boost → newest → id (final stable tiebreak)
+      list = [...list].sort((a, b) =>
+        score(b) - score(a) ||
+        b.boost - a.boost ||
+        ts(b) - ts(a) ||
+        a.id.localeCompare(b.id),
+      );
     } else if (sort === "new") {
-      list = [...list].sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at));
+      list = [...list].sort((a, b) => ts(b) - ts(a) || a.id.localeCompare(b.id));
     } else {
       list = [...list].sort((a, b) => {
-        const ageA = Math.max(0.25, (Date.now() - +new Date(a.created_at)) / 3600000);
-        const ageB = Math.max(0.25, (Date.now() - +new Date(b.created_at)) / 3600000);
-        return (b.upvotes - b.downvotes + b.boost) / ageB - (a.upvotes - a.downvotes + a.boost) / ageA;
+        const ageA = Math.max(0.25, (Date.now() - ts(a)) / 3600000);
+        const ageB = Math.max(0.25, (Date.now() - ts(b)) / 3600000);
+        return (
+          score(b) / ageB - score(a) / ageA ||
+          b.boost - a.boost ||
+          ts(b) - ts(a) ||
+          a.id.localeCompare(b.id)
+        );
       });
     }
     return list;
