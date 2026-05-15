@@ -38,6 +38,12 @@
     --success: 142 55% 50%;
     --success-foreground: 0 0% 100%;
 
+    /* Reddit-style vote colors */
+    --vote-up: 14 90% 56%;          /* warm orange/red — upvote */
+    --vote-up-foreground: 0 0% 100%;
+    --vote-down: 142 55% 50%;       /* green — downvote */
+    --vote-down-foreground: 0 0% 100%;
+
     --border: 240 5% 18%;
     --input: 240 5% 14%;
     --ring: 322 70% 60%;
