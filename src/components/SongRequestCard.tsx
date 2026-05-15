@@ -93,8 +93,8 @@ export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, disab
           className={cn(
             "h-7 w-7 rounded-full flex items-center justify-center transition-all duration-150 active:scale-90 tap-target",
             downvoted
-              ? "bg-vote-down text-vote-down-foreground shadow-[0_0_14px_hsl(var(--vote-down)/0.4)]"
-              : "text-foreground/55 hover:bg-white/[0.06] hover:text-vote-down",
+              ? "bg-secondary text-secondary-foreground border border-white/[0.08]"
+              : "text-foreground/55 hover:bg-white/[0.06] hover:text-foreground/80",
             (disabled || !onVote) && "opacity-50 cursor-not-allowed",
           )}
         >
