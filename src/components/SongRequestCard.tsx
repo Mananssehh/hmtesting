@@ -67,19 +67,20 @@ export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, disab
           aria-label="Upvote"
           aria-pressed={upvoted}
           className={cn(
-            "h-7 w-7 rounded-full flex items-center justify-center transition-all duration-200 active:scale-90 tap-target",
+            "h-7 w-7 rounded-full flex items-center justify-center transition-all duration-150 active:scale-90 tap-target",
             upvoted
-              ? "bg-primary text-primary-foreground shadow-glow-sm"
-              : "text-foreground/60 hover:bg-white/[0.06] hover:text-primary",
+              ? "bg-vote-up text-vote-up-foreground shadow-[0_0_14px_hsl(var(--vote-up)/0.45)]"
+              : "text-foreground/55 hover:bg-white/[0.06] hover:text-vote-up",
             (disabled || !onVote) && "opacity-50 cursor-not-allowed",
           )}
         >
-          <ChevronUp className="h-5 w-5" strokeWidth={upvoted ? 2.5 : 2.25} />
+          <ChevronUp className="h-5 w-5" strokeWidth={upvoted ? 2.75 : 2.25} />
         </button>
         <span
+          key={score}
           className={cn(
-            "text-[12px] font-semibold tabular-nums leading-none px-1",
-            upvoted ? "text-primary" : downvoted ? "text-muted-foreground" : "text-foreground/80",
+            "text-[12px] font-semibold tabular-nums leading-none px-1 transition-colors duration-150 animate-in fade-in zoom-in-95",
+            upvoted ? "text-vote-up" : downvoted ? "text-vote-down" : "text-foreground/80",
           )}
         >
           {score > 0 ? `+${score}` : score}
@@ -90,14 +91,14 @@ export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, disab
           aria-label="Downvote"
           aria-pressed={downvoted}
           className={cn(
-            "h-7 w-7 rounded-full flex items-center justify-center transition-all duration-200 active:scale-90 tap-target",
+            "h-7 w-7 rounded-full flex items-center justify-center transition-all duration-150 active:scale-90 tap-target",
             downvoted
-              ? "bg-secondary text-muted-foreground"
-              : "text-foreground/50 hover:bg-white/[0.06] hover:text-foreground/80",
+              ? "bg-vote-down text-vote-down-foreground shadow-[0_0_14px_hsl(var(--vote-down)/0.4)]"
+              : "text-foreground/55 hover:bg-white/[0.06] hover:text-vote-down",
             (disabled || !onVote) && "opacity-50 cursor-not-allowed",
           )}
         >
-          <ChevronDown className="h-5 w-5" strokeWidth={downvoted ? 2.5 : 2.25} />
+          <ChevronDown className="h-5 w-5" strokeWidth={downvoted ? 2.75 : 2.25} />
         </button>
       </div>
 
