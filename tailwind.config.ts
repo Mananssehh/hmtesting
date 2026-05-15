@@ -28,6 +28,14 @@ export default {
           DEFAULT: "hsl(var(--success))",
           foreground: "hsl(var(--success-foreground))",
         },
+        "vote-up": {
+          DEFAULT: "hsl(var(--vote-up))",
+          foreground: "hsl(var(--vote-up-foreground))",
+        },
+        "vote-down": {
+          DEFAULT: "hsl(var(--vote-down))",
+          foreground: "hsl(var(--vote-down-foreground))",
+        },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
           foreground: "hsl(var(--secondary-foreground))",
