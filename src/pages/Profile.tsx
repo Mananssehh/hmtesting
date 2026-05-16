@@ -178,6 +178,22 @@ const Profile = () => {
           </div>
         </Card>
 
+        {/* Privacy toggle */}
+        <Card>
+          <CardContent className="p-4 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <Lock className="h-4 w-4 text-muted-foreground shrink-0" />
+              <div className="min-w-0">
+                <div className="font-medium text-sm">Public profile</div>
+                <div className="text-xs text-muted-foreground">
+                  {isPublic ? "Anyone can view your stats and recent songs." : "Only your nickname will be visible."}
+                </div>
+              </div>
+            </div>
+            <Switch checked={isPublic} onCheckedChange={togglePrivacy} disabled={savingPrivacy} />
+          </CardContent>
+        </Card>
+
         {/* Stats grid */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <StatCard icon={<Trophy className="h-4 w-4" />} label="Points" value={profile.points} highlight />
