@@ -109,8 +109,9 @@ export function BridgePairing({ eventId }: Props) {
     }
   };
 
-  const rotateToken = async () => {
-    if (!confirm("Rotate ingest token? Decks Bridge will need to be re-paired.")) return;
+  const rotateToken = async (opts?: { silent?: boolean; confirmMsg?: string; successMsg?: string }) => {
+    const msg = opts?.confirmMsg ?? "Rotate ingest token? Decks Bridge will need to be re-paired.";
+    if (!opts?.silent && !confirm(msg)) return;
     setRotating(true);
     try {
       const { error } = await supabase.rpc("regenerate_ingest_token", { _event_id: eventId });
@@ -119,13 +120,19 @@ export function BridgePairing({ eventId }: Props) {
       setConnState("idle");
       baselineLastSeen.current = null;
       await loadIntegration();
-      toast.success("Ingest token rotated. Pair Bridge again to reconnect.");
+      toast.success(opts?.successMsg ?? "Ingest token rotated. Pair Bridge again to reconnect.");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not rotate token");
     } finally {
       setRotating(false);
     }
   };
+
+  const disconnectBridge = () =>
+    rotateToken({
+      confirmMsg: "Disconnect Decks Bridge? You'll need to pair again to reconnect.",
+      successMsg: "Decks Bridge disconnected.",
+    });
 
   const copyCode = () => {
     if (!pairing) return;
@@ -162,15 +169,28 @@ export function BridgePairing({ eventId }: Props) {
         Pair the Decks Bridge desktop app to push Now Playing track metadata into your event automatically.
       </p>
 
-      {!pairing && (
+      {!pairing && connState !== "connected" && (
         <div className="flex flex-col sm:flex-row gap-2">
           <Button onClick={generateCode} disabled={generating} variant="premium">
             {generating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Link2 className="mr-2 h-4 w-4" />}
             Connect Decks Bridge
           </Button>
-          <Button onClick={rotateToken} disabled={rotating} variant="outline">
+          <Button onClick={() => rotateToken()} disabled={rotating} variant="outline">
             {rotating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldAlert className="mr-2 h-4 w-4" />}
-            Rotate ingest token
+            Regenerate token
+          </Button>
+        </div>
+      )}
+
+      {!pairing && connState === "connected" && (
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Button onClick={disconnectBridge} disabled={rotating} variant="outline">
+            {rotating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Link2 className="mr-2 h-4 w-4" />}
+            Disconnect Bridge
+          </Button>
+          <Button onClick={() => rotateToken()} disabled={rotating} variant="ghost">
+            <ShieldAlert className="mr-2 h-4 w-4" />
+            Regenerate token
           </Button>
         </div>
       )}
