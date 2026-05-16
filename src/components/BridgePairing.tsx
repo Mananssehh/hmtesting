@@ -169,15 +169,28 @@ export function BridgePairing({ eventId }: Props) {
         Pair the Decks Bridge desktop app to push Now Playing track metadata into your event automatically.
       </p>
 
-      {!pairing && (
+      {!pairing && connState !== "connected" && (
         <div className="flex flex-col sm:flex-row gap-2">
           <Button onClick={generateCode} disabled={generating} variant="premium">
             {generating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Link2 className="mr-2 h-4 w-4" />}
             Connect Decks Bridge
           </Button>
-          <Button onClick={rotateToken} disabled={rotating} variant="outline">
+          <Button onClick={() => rotateToken()} disabled={rotating} variant="outline">
             {rotating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldAlert className="mr-2 h-4 w-4" />}
-            Rotate ingest token
+            Regenerate token
+          </Button>
+        </div>
+      )}
+
+      {!pairing && connState === "connected" && (
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Button onClick={disconnectBridge} disabled={rotating} variant="outline">
+            {rotating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Link2 className="mr-2 h-4 w-4" />}
+            Disconnect Bridge
+          </Button>
+          <Button onClick={() => rotateToken()} disabled={rotating} variant="ghost">
+            <ShieldAlert className="mr-2 h-4 w-4" />
+            Regenerate token
           </Button>
         </div>
       )}
