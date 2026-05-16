@@ -25,6 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { seedDemoEvent, resetDemoEvent } from "@/lib/demoSeed";
 import { logCritical } from "@/lib/errorLogger";
 import { NowPlayingPanel } from "@/components/NowPlayingPanel";
+import { BridgePairing } from "@/components/BridgePairing";
 
 interface EventInfo {
   id: string;
@@ -452,6 +453,13 @@ const DJEventManage = () => {
                 Decks does not access or upload DJ music files.
               </span>
             </span>
+          </div>
+        )}
+
+        {/* Decks Bridge pairing */}
+        {status !== "ended" && (
+          <div className="mb-4">
+            <BridgePairing eventId={event.id} />
           </div>
         )}
 
