@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      bridge_pairing_codes: {
+        Row: {
+          claimed_at: string | null
+          claimed_ip: string | null
+          code: string
+          created_at: string
+          created_by: string
+          event_id: string
+          expires_at: string
+          id: string
+        }
+        Insert: {
+          claimed_at?: string | null
+          claimed_ip?: string | null
+          code: string
+          created_at?: string
+          created_by: string
+          event_id: string
+          expires_at: string
+          id?: string
+        }
+        Update: {
+          claimed_at?: string | null
+          claimed_ip?: string | null
+          code?: string
+          created_at?: string
+          created_by?: string
+          event_id?: string
+          expires_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
       dj_invite_codes: {
         Row: {
           code: string
@@ -671,6 +704,13 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      generate_bridge_pairing_code: {
+        Args: { _event_id: string }
+        Returns: {
+          code: string
+          expires_at: string
+        }[]
+      }
       get_nickname: { Args: { _user_id: string }; Returns: string }
       get_public_profile: { Args: { _user_id: string }; Returns: Json }
       has_role: {
@@ -684,6 +724,10 @@ export type Database = {
       recent_request_count: {
         Args: { _event_id: string; _seconds?: number }
         Returns: number
+      }
+      regenerate_ingest_token: {
+        Args: { _event_id: string }
+        Returns: undefined
       }
       reset_demo_events: { Args: never; Returns: undefined }
     }
