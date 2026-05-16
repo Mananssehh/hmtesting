@@ -186,14 +186,22 @@ export function BridgePairing({ eventId }: Props) {
               <div className="text-xs text-muted-foreground mt-1">
                 Expires in <span className="text-foreground font-medium">{mmss(secondsLeft)}</span>
               </div>
+              <div className="flex gap-2 mt-3">
+                <Button variant="outline" size="sm" onClick={copyCode}>
+                  <Copy className="mr-1.5 h-3.5 w-3.5" /> Copy
+                </Button>
+                <Button variant="ghost" size="sm" onClick={generateCode} disabled={generating}>
+                  <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> New code
+                </Button>
+              </div>
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={copyCode}>
-                <Copy className="mr-1.5 h-3.5 w-3.5" /> Copy
-              </Button>
-              <Button variant="ghost" size="sm" onClick={generateCode} disabled={generating}>
-                <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> New code
-              </Button>
+            <div className="shrink-0 rounded-lg bg-white p-2.5">
+              <QRCodeSVG
+                value={`decksbridge://pair?code=${pairing.code}`}
+                size={128}
+                level="M"
+                includeMargin={false}
+              />
             </div>
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
