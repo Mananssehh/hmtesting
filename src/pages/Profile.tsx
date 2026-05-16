@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, LogOut, Music2, Pencil, Settings, ThumbsUp, Trophy, Sparkles, Award } from "lucide-react";
+import { ArrowLeft, Loader2, LogOut, Music2, Pencil, Settings, ThumbsUp, Trophy, Sparkles, Award, Lock } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,6 +44,8 @@ const Profile = () => {
   const [nickname, setNickname] = useState(profile?.nickname ?? "");
   const [savingName, setSavingName] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isPublic, setIsPublic] = useState<boolean>(true);
+  const [savingPrivacy, setSavingPrivacy] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth", { replace: true });
@@ -55,7 +58,7 @@ const Profile = () => {
   useEffect(() => {
     if (!user) return;
     (async () => {
-      const [reqRes, txRes, evRes] = await Promise.all([
+      const [reqRes, txRes, evRes, profRes] = await Promise.all([
         supabase.from("song_requests").select("upvotes").eq("requested_by", user.id),
         supabase.from("points_transactions").select("id, amount, type, reason, created_at")
           .eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
@@ -63,6 +66,7 @@ const Profile = () => {
           ? supabase.from("events").select("id, name, room_code, is_active")
               .eq("dj_id", user.id).order("created_at", { ascending: false }).limit(5)
           : Promise.resolve({ data: [] as MyEvent[] }),
+        supabase.from("profiles").select("is_public").eq("id", user.id).maybeSingle(),
       ]);
 
       const reqs = reqRes.data ?? [];
@@ -72,9 +76,25 @@ const Profile = () => {
       });
       setTxs((txRes.data ?? []) as TxRow[]);
       setMyEvents((evRes.data ?? []) as MyEvent[]);
+      if (profRes.data) setIsPublic((profRes.data as { is_public?: boolean }).is_public ?? true);
       setLoading(false);
     })();
   }, [user, isDJ]);
+
+  const togglePrivacy = async (next: boolean) => {
+    if (!user) return;
+    setSavingPrivacy(true);
+    const prev = isPublic;
+    setIsPublic(next);
+    const { error } = await supabase.from("profiles").update({ is_public: next }).eq("id", user.id);
+    setSavingPrivacy(false);
+    if (error) {
+      setIsPublic(prev);
+      toast.error(error.message);
+    } else {
+      toast.success(next ? "Profile is now public" : "Profile is now private");
+    }
+  };
 
   const saveName = async () => {
     const parsed = nicknameSchema.safeParse(nickname);
@@ -156,6 +176,22 @@ const Profile = () => {
               </div>
             </div>
           </div>
+        </Card>
+
+        {/* Privacy toggle */}
+        <Card>
+          <CardContent className="p-4 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <Lock className="h-4 w-4 text-muted-foreground shrink-0" />
+              <div className="min-w-0">
+                <div className="font-medium text-sm">Public profile</div>
+                <div className="text-xs text-muted-foreground">
+                  {isPublic ? "Anyone can view your stats and recent songs." : "Only your nickname will be visible."}
+                </div>
+              </div>
+            </div>
+            <Switch checked={isPublic} onCheckedChange={togglePrivacy} disabled={savingPrivacy} />
+          </CardContent>
         </Card>
 
         {/* Stats grid */}

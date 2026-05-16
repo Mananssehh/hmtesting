@@ -407,6 +407,7 @@ export type Database = {
           created_at: string
           id: string
           is_premium: boolean
+          is_public: boolean
           nickname: string
           points: number
           updated_at: string
@@ -415,6 +416,7 @@ export type Database = {
           created_at?: string
           id: string
           is_premium?: boolean
+          is_public?: boolean
           nickname?: string
           points?: number
           updated_at?: string
@@ -423,6 +425,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_premium?: boolean
+          is_public?: boolean
           nickname?: string
           points?: number
           updated_at?: string
@@ -669,6 +672,7 @@ export type Database = {
         }
       }
       get_nickname: { Args: { _user_id: string }; Returns: string }
+      get_public_profile: { Args: { _user_id: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
