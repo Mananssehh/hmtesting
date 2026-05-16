@@ -235,6 +235,7 @@ const Leaderboard = () => {
                           <div className="font-medium truncate">{s.title}</div>
                           <div className="text-xs text-muted-foreground truncate">{s.artist} · by {s.requester_name}</div>
                         </div>
+                        {/* requester link rendered in guest list below */}
                         <Badge className="bg-primary/15 text-primary border-primary/25 rounded-full gap-1">
                           <Sparkles className="h-3 w-3" /> +{s.boost}
                         </Badge>
@@ -260,7 +261,13 @@ const Leaderboard = () => {
                         <div className="w-8 flex justify-center">{rankIcon(rank)}</div>
                         <div className="flex-1 min-w-0">
                           <div className="font-medium truncate">
-                            {r.nickname}
+                            {r.user_id ? (
+                              <Link to={`/users/${r.user_id}`} className="hover:text-primary hover:underline underline-offset-2 transition-colors">
+                                {r.nickname}
+                              </Link>
+                            ) : (
+                              r.nickname
+                            )}
                             {isMe && <span className="ml-2 text-xs text-primary">(you)</span>}
                           </div>
                           <div className="text-xs text-muted-foreground">

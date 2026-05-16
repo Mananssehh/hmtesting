@@ -1,4 +1,5 @@
 import { ChevronUp, ChevronDown, Sparkles, Rocket, Clock } from "lucide-react";
+import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { formatDuration, platformLabel } from "@/lib/searchLinks";
@@ -149,7 +150,17 @@ export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, disab
             sourcePlatform={song.source_platform}
           />
           <p className="text-[11px] text-muted-foreground/60 truncate flex items-center gap-2">
-            <span className="truncate max-w-[8rem]">{song.requester_name}</span>
+            {song.requested_by ? (
+              <Link
+                to={`/users/${song.requested_by}`}
+                onClick={(e) => e.stopPropagation()}
+                className="truncate max-w-[8rem] hover:text-primary hover:underline underline-offset-2 transition-colors tap-target"
+              >
+                {song.requester_name}
+              </Link>
+            ) : (
+              <span className="truncate max-w-[8rem]">{song.requester_name}</span>
+            )}
             {formatDuration(song.duration_ms) && (
               <span className="inline-flex items-center gap-0.5">
                 <Clock className="h-2.5 w-2.5" />{formatDuration(song.duration_ms)}
