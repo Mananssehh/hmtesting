@@ -109,8 +109,9 @@ export function BridgePairing({ eventId }: Props) {
     }
   };
 
-  const rotateToken = async () => {
-    if (!confirm("Rotate ingest token? Decks Bridge will need to be re-paired.")) return;
+  const rotateToken = async (opts?: { silent?: boolean; confirmMsg?: string; successMsg?: string }) => {
+    const msg = opts?.confirmMsg ?? "Rotate ingest token? Decks Bridge will need to be re-paired.";
+    if (!opts?.silent && !confirm(msg)) return;
     setRotating(true);
     try {
       const { error } = await supabase.rpc("regenerate_ingest_token", { _event_id: eventId });
@@ -119,13 +120,19 @@ export function BridgePairing({ eventId }: Props) {
       setConnState("idle");
       baselineLastSeen.current = null;
       await loadIntegration();
-      toast.success("Ingest token rotated. Pair Bridge again to reconnect.");
+      toast.success(opts?.successMsg ?? "Ingest token rotated. Pair Bridge again to reconnect.");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Could not rotate token");
     } finally {
       setRotating(false);
     }
   };
+
+  const disconnectBridge = () =>
+    rotateToken({
+      confirmMsg: "Disconnect Decks Bridge? You'll need to pair again to reconnect.",
+      successMsg: "Decks Bridge disconnected.",
+    });
 
   const copyCode = () => {
     if (!pairing) return;
