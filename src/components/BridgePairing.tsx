@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Loader2, Link2, RefreshCw, Radio, ShieldAlert, Check, Copy } from "lucide-react";
+import { Loader2, Link2, RefreshCw, Radio, ShieldAlert, Check, Copy, QrCode } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
