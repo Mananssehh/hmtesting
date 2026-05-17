@@ -197,32 +197,58 @@ export function BridgePairing({ eventId }: Props) {
 
       {pairing && (
         <div className="space-y-3">
-          <div className="rounded-xl bg-background/60 border p-4 flex flex-col sm:flex-row sm:items-center gap-4">
-            <div className="flex-1">
-              <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1">
-                Enter this code in Decks Bridge
+          <div className="rounded-xl bg-background/60 border p-4 sm:p-5">
+            <div className="text-center sm:text-left">
+              <div className="text-sm font-medium mb-1">
+                Open Decks Bridge and enter this 6-digit code
               </div>
-              <div className="font-mono text-4xl font-bold tracking-[0.4em]">{pairing.code}</div>
-              <div className="text-xs text-muted-foreground mt-1">
+              <div className="text-xs text-muted-foreground mb-3">
+                No QR scan or link needed — just type the code into the Bridge app.
+              </div>
+            </div>
+
+            <button
+              onClick={copyCode}
+              className="group w-full rounded-lg bg-primary/5 hover:bg-primary/10 border border-primary/20 py-5 sm:py-6 transition-colors"
+              aria-label="Copy pairing code"
+            >
+              <div className="font-mono text-5xl sm:text-6xl font-bold tracking-[0.3em] sm:tracking-[0.5em] text-center text-foreground select-all">
+                {pairing.code}
+              </div>
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground mt-2 opacity-0 group-hover:opacity-100 transition-opacity text-center">
+                Tap to copy
+              </div>
+            </button>
+
+            <div className="flex flex-wrap items-center justify-between gap-3 mt-4">
+              <div className="text-xs text-muted-foreground">
                 Expires in <span className="text-foreground font-medium">{mmss(secondsLeft)}</span>
               </div>
-              <div className="flex gap-2 mt-3">
+              <div className="flex gap-2">
                 <Button variant="outline" size="sm" onClick={copyCode}>
                   <Copy className="mr-1.5 h-3.5 w-3.5" /> Copy
                 </Button>
                 <Button variant="ghost" size="sm" onClick={generateCode} disabled={generating}>
-                  <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> New code
+                  <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Generate new code
                 </Button>
               </div>
             </div>
-            <div className="shrink-0 rounded-lg bg-white p-2.5">
-              <QRCodeSVG
-                value={`decksbridge://pair?code=${pairing.code}`}
-                size={128}
-                level="M"
-                includeMargin={false}
-              />
-            </div>
+
+            <details className="mt-4 group">
+              <summary className="text-xs text-muted-foreground cursor-pointer inline-flex items-center gap-1.5 hover:text-foreground">
+                <QrCode className="h-3.5 w-3.5" /> Show QR (optional)
+              </summary>
+              <div className="mt-3 flex justify-center">
+                <div className="rounded-lg bg-white p-2.5">
+                  <QRCodeSVG
+                    value={`decksbridge://pair?code=${pairing.code}`}
+                    size={140}
+                    level="M"
+                    includeMargin={false}
+                  />
+                </div>
+              </div>
+            </details>
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
