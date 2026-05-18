@@ -94,6 +94,77 @@ Deno.serve(async (req) => {
     updated_at: new Date().toISOString(),
   };
 
+  // --- Auto-match against song_requests for this event ---
+  // Normalize text: lowercase, strip feat/ft, strip non-alphanumerics.
+  const normalize = (s: string | null | undefined) => {
+    if (!s) return "";
+    return s
+      .toLowerCase()
+      .replace(/\(feat\.?[^)]*\)|\[feat\.?[^\]]*\]/g, " ")
+      .replace(/\s+(feat\.?|ft\.?)\s+.*$/g, " ")
+      .replace(/[^a-z0-9]+/g, "");
+  };
+  const npTitleN = normalize(b.title);
+  const npArtistN = normalize(b.artist);
+  console.log("[bridge-match] now playing title/artist", { title: b.title, artist: b.artist });
+
+  let matchedRequestId: string | null = null;
+  try {
+    const { data: candidates } = await supabase
+      .from("song_requests")
+      .select("id, title, artist, status, upvotes, downvotes, boost, created_at")
+      .eq("event_id", integration.event_id)
+      .not("status", "in", "(removed,skipped)");
+
+    if (candidates && candidates.length) {
+      const matches = candidates.filter((c: any) => {
+        const t = normalize(c.title);
+        const a = normalize(c.artist);
+        if (!t) return false;
+        if (t !== npTitleN) return false;
+        // If both sides have artist, require artist match; otherwise title alone is enough.
+        if (npArtistN && a) return a === npArtistN;
+        return true;
+      });
+      if (matches.length) {
+        // Prefer not-yet-played; then highest score; then newest.
+        const statusRank = (s: string) =>
+          s === "played" ? 2 : 1; // active first
+        matches.sort((a: any, b: any) => {
+          const ra = statusRank(a.status);
+          const rb = statusRank(b.status);
+          if (ra !== rb) return ra - rb;
+          const sa = (a.upvotes ?? 0) - (a.downvotes ?? 0) + (a.boost ?? 0);
+          const sb = (b.upvotes ?? 0) - (b.downvotes ?? 0) + (b.boost ?? 0);
+          if (sa !== sb) return sb - sa;
+          return +new Date(b.created_at) - +new Date(a.created_at);
+        });
+        matchedRequestId = matches[0].id;
+        console.log("[bridge-match] matched request id", matchedRequestId);
+
+        if (matches[0].status !== "played") {
+          const { error: markErr } = await supabase
+            .from("song_requests")
+            .update({
+              status: "played",
+              played_at: new Date().toISOString(),
+              played_by_source: "bridge",
+            })
+            .eq("id", matchedRequestId);
+          if (markErr) console.error("[bridge-match] mark played failed:", markErr);
+        }
+      } else {
+        console.log("[bridge-match] no match found");
+      }
+    } else {
+      console.log("[bridge-match] no match found");
+    }
+  } catch (e) {
+    console.error("[bridge-match] error:", e);
+  }
+
+  const rowWithMatch = { ...row, now_playing_request_id: matchedRequestId };
+
   // Find existing now_playing row for this event (one row per event in practice).
   const { data: existing } = await supabase
     .from("now_playing")
@@ -102,13 +173,13 @@ Deno.serve(async (req) => {
     .maybeSingle();
 
   if (existing?.id) {
-    const { error } = await supabase.from("now_playing").update(row).eq("id", existing.id);
+    const { error } = await supabase.from("now_playing").update(rowWithMatch).eq("id", existing.id);
     if (error) {
       console.error("now_playing update failed:", error);
       return jsonResponse({ error: "Internal server error" }, 500);
     }
   } else {
-    const { error } = await supabase.from("now_playing").insert(row);
+    const { error } = await supabase.from("now_playing").insert(rowWithMatch);
     if (error) {
       console.error("now_playing insert failed:", error);
       return jsonResponse({ error: "Internal server error" }, 500);
@@ -120,5 +191,5 @@ Deno.serve(async (req) => {
     .update({ last_seen_at: new Date().toISOString() })
     .eq("id", integration.id);
 
-  return jsonResponse({ ok: true });
+  return jsonResponse({ ok: true, matched_request_id: matchedRequestId });
 });
