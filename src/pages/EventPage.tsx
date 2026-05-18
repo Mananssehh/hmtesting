@@ -599,6 +599,32 @@ const EventPage = () => {
             ))}
           </div>
         )}
+
+        {/* Played section */}
+        {playedSongs.length > 0 && (
+          <div className="mt-8">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-success font-medium">
+                <CheckCircle2 className="h-3.5 w-3.5" /> Played
+              </div>
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                Recently spun
+              </span>
+            </div>
+            <div className="space-y-2 opacity-90">
+              {playedSongs.map((s) => (
+                <div key={s.id} className="space-y-1">
+                  <SongRequestCard song={s} myVote={myVotes[s.id] ?? 0} />
+                  {s.played_by_source === "bridge" && (
+                    <p className="pl-2 text-[11px] text-muted-foreground/70 italic">
+                      Auto-marked played by Decks Bridge
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Mobile sticky request CTA */}
