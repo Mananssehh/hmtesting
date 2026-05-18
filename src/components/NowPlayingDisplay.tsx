@@ -1,4 +1,6 @@
+import { useEffect, useRef } from "react";
 import { Music, Pause, Disc3 } from "lucide-react";
+import { toast } from "sonner";
 import { useNowPlaying } from "@/hooks/useNowPlaying";
 import { NowPlayingStatus } from "@/lib/nowPlaying";
 import { cn } from "@/lib/utils";
@@ -31,12 +33,33 @@ const STATUS_META: Record<
 
 export function NowPlayingDisplay({ eventId }: Props) {
   const { nowPlaying, loading } = useNowPlaying(eventId);
+  const lastToastKey = useRef<string | null>(null);
+
+  const trackKey = nowPlaying
+    ? `${nowPlaying.title}-${nowPlaying.artist ?? ""}`
+    : null;
+
+  useEffect(() => {
+    if (!nowPlaying || !trackKey) return;
+    console.log("[now-playing render] row", nowPlaying);
+    if (lastToastKey.current === null) {
+      // Skip toast on initial mount; just remember current track
+      lastToastKey.current = trackKey;
+      return;
+    }
+    if (lastToastKey.current !== trackKey) {
+      lastToastKey.current = trackKey;
+      toast(`Now Playing: ${nowPlaying.title}${nowPlaying.artist ? ` — ${nowPlaying.artist}` : ""}`, {
+        icon: <Disc3 className="h-4 w-4 text-primary" />,
+        duration: 4000,
+      });
+    }
+  }, [trackKey, nowPlaying]);
 
   if (loading || !nowPlaying) return null;
 
   const status = (nowPlaying.status as NowPlayingStatus) ?? "playing";
   const meta = STATUS_META[status] ?? STATUS_META.playing;
-  const trackKey = `${nowPlaying.title}-${nowPlaying.artist}-${status}`;
 
   return (
     <div className="relative mb-5 p-4 sm:p-5 rounded-2xl glass-strong overflow-hidden transition-all duration-500">

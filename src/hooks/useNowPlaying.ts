@@ -16,6 +16,7 @@ export function useNowPlaying(eventId: string | undefined) {
     const refresh = async () => {
       try {
         const row = await fetchNowPlaying(eventId);
+        console.log("[now-playing hook] fetched row", { eventId, row });
         if (!cancelled) setNowPlaying(row);
       } catch (e) {
         console.error("fetchNowPlaying", e);
@@ -37,8 +38,11 @@ export function useNowPlaying(eventId: string | undefined) {
             filter: `event_id=eq.${eventId}`,
           },
           (payload) => {
+            console.log("[now-playing realtime] payload", payload);
             if (payload.eventType === "DELETE") setNowPlaying(null);
             else setNowPlaying(payload.new as NowPlayingRow);
+            // Safety refetch in case payload shape differs from row schema
+            refresh();
           },
         )
         .subscribe((status) => {
