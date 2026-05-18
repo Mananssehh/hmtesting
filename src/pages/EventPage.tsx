@@ -592,6 +592,14 @@ const EventPage = () => {
           </Dialog>
         </div>
 
+        {/* Boost social layer: dominator + live activity */}
+        {!isEnded && sort !== "played" && dominatingSong && (
+          <DominatingBanner song={dominatingSong} lead={dominatingLead} />
+        )}
+        {!isEnded && sort !== "played" && (
+          <BoostActivityStrip events={boostEvents} />
+        )}
+
         {/* Sort tabs */}
         <Tabs value={sort} onValueChange={(v) => setSort(v as SortMode)} className="mb-4">
           <TabsList className="grid grid-cols-3 w-full rounded-full bg-secondary/60 p-1 h-10">
@@ -647,11 +655,15 @@ const EventPage = () => {
                 onVote={(v) => handleVote(s.id, v)}
                 onBoost={isLive ? () => setBoostTarget(s) : undefined}
                 disabled={!!pendingVotes[s.id]}
+                battle={battleIds.has(s.id)}
               />
             ))}
           </div>
         )}
       </div>
+
+      {/* Live boost FX overlay (toasts + mega) */}
+      <BoostFX events={boostEvents} />
 
       {/* Mobile sticky request CTA */}
       {isLive && (
