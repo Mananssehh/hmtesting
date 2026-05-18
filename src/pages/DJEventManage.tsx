@@ -388,15 +388,6 @@ const DJEventManage = () => {
                   <XCircle className="mr-1.5 h-4 w-4" /> End event
                 </Button>
               )}
-              <div className="ml-auto flex gap-1">
-                <Button variant="ghost" size="sm" onClick={handleSeed} disabled={seeding} className="text-muted-foreground">
-                  {seeding ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Wand2 className="mr-1.5 h-4 w-4" />}
-                  Seed demo
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => setResetConfirmOpen(true)} className="text-muted-foreground">
-                  <RefreshCw className="mr-1.5 h-4 w-4" /> Reset
-                </Button>
-              </div>
             </div>
           </div>
 
@@ -615,23 +606,6 @@ const DJEventManage = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Confirm reset */}
-      <AlertDialog open={resetConfirmOpen} onOpenChange={setResetConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Reset all requests?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This deletes every song request &amp; vote in this event. Use it to start fresh between demos.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleReset} className="bg-destructive hover:bg-destructive/90">
-              Reset event
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* Confirm ban */}
       <AlertDialog open={!!banTarget} onOpenChange={(o) => !o && setBanTarget(null)}>
