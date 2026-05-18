@@ -56,10 +56,40 @@ export function NowPlayingDisplay({ eventId }: Props) {
     }
   }, [trackKey, nowPlaying]);
 
-  if (loading || !nowPlaying) return null;
+  if (loading) return null;
+
+  if (!nowPlaying) {
+    console.log("[now-playing render] empty", { eventId });
+    return (
+      <div className="relative mb-5 p-4 sm:p-5 rounded-2xl glass-strong overflow-hidden">
+        <div className="flex items-center gap-4">
+          <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-2xl bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center shrink-0">
+            <Music className="h-8 w-8 text-foreground/40" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider border bg-secondary/60 text-muted-foreground border-transparent">
+              <Disc3 className="h-3 w-3" />
+              <span>Now Playing</span>
+            </span>
+            <div className="mt-2 text-lg sm:text-xl font-semibold tracking-tight text-muted-foreground">
+              No track playing yet.
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const status = (nowPlaying.status as NowPlayingStatus) ?? "playing";
   const meta = STATUS_META[status] ?? STATUS_META.playing;
+  const sourceLabel = (() => {
+    const s = (nowPlaying.source ?? "").toLowerCase();
+    if (!s || s === "manual") return "DJ";
+    if (s === "bridge" || s === "decks_bridge") return "Bridge";
+    if (s.includes("apple")) return "Apple Music";
+    if (s.includes("spotify")) return "Spotify";
+    return nowPlaying.source;
+  })();
 
   return (
     <div className="relative mb-5 p-4 sm:p-5 rounded-2xl glass-strong overflow-hidden transition-all duration-500">
@@ -94,15 +124,22 @@ export function NowPlayingDisplay({ eventId }: Props) {
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <span
-              className={cn(
-                "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider border",
-                meta.pillClass,
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span
+                className={cn(
+                  "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider border",
+                  meta.pillClass,
+                )}
+              >
+                {meta.icon}
+                <span>{meta.label}</span>
+              </span>
+              {sourceLabel && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wider border border-border/60 bg-background/40 text-muted-foreground">
+                  {sourceLabel}
+                </span>
               )}
-            >
-              {meta.icon}
-              <span>{meta.label}</span>
-            </span>
+            </div>
             <div className="mt-2 text-lg sm:text-xl font-semibold truncate tracking-tight">
               {nowPlaying.title}
             </div>
