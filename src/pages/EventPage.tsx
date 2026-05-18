@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppHeader } from "@/components/AppHeader";
+import { SEO } from "@/components/SEO";
 import { SongRequestCard, SongRequestRow } from "@/components/SongRequestCard";
 import { BoostDialog } from "@/components/BoostDialog";
 import { Button } from "@/components/ui/button";
@@ -451,6 +452,7 @@ const EventPage = () => {
 
   return (
     <div className="min-h-screen pb-28 sm:pb-10" style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 6rem)" }}>
+      <SEO title="Live event" description="Request songs, vote, and boost your favorites in real time on Decks." path="/event" noindex />
       <AppHeader />
       <div className="container max-w-3xl px-4 sm:px-6 py-5 sm:py-10">
         {/* Event header */}
