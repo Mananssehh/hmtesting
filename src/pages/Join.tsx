@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AppHeader } from "@/components/AppHeader";
+import { SEO } from "@/components/SEO";
 import { nicknameSchema, roomCodeSchema } from "@/lib/validation";
 import { containsProfanity, looksSpammy } from "@/lib/profanity";
 
