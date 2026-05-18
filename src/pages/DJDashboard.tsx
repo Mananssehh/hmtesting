@@ -128,11 +128,6 @@ const DJDashboard = () => {
     toast.success("Join link copied");
   };
 
-  const copyJoinLink = (code: string) => {
-    navigator.clipboard.writeText(`${window.location.origin}/join?code=${code}`);
-    toast.success("Join link copied");
-  };
-
   const toggleActive = async (ev: EventRow) => {
     const next = ev.is_active ? "ended" : "live";
     const { error } = await supabase.from("events").update({ requests_status: next }).eq("id", ev.id);
@@ -163,22 +158,10 @@ const DJDashboard = () => {
           </div>
           <div className="flex flex-wrap gap-2">
             <Button asChild variant="outline">
-              <Link to="/testing"><ClipboardCheck className="mr-1 h-4 w-4" /> Testing</Link>
-            </Button>
-            <Button asChild variant="outline">
               <Link to="/dj/archive"><ArchiveIcon className="mr-1 h-4 w-4" /> Archive</Link>
             </Button>
             <Button asChild variant="outline">
               <Link to="/dj/errors"><Settings className="mr-1 h-4 w-4" /> Error monitor</Link>
-            </Button>
-            <Button variant="outline" onClick={launchDemoRoom}>
-              <Sparkles className="mr-1 h-4 w-4 text-accent" /> Demo room
-            </Button>
-            <Button variant="outline" size="icon" onClick={copyDemoLink} title="Copy demo join link">
-              <Copy className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={resetDemoRooms} title="Reset all demo rooms">
-              <RefreshCw className="h-4 w-4" />
             </Button>
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>
               <DialogTrigger asChild>
@@ -208,14 +191,9 @@ const DJDashboard = () => {
             <Radio className="h-12 w-12 text-primary mx-auto mb-3" />
             <h2 className="text-xl font-semibold">No events yet</h2>
             <p className="text-muted-foreground mt-1 mb-6">Create your first session to start receiving requests.</p>
-            <div className="flex flex-col sm:flex-row gap-2 justify-center">
-              <Button onClick={() => setCreateOpen(true)} variant="premium">
-                <Plus className="mr-1 h-4 w-4" /> New event
-              </Button>
-              <Button variant="outline" onClick={launchDemoRoom}>
-                <Wand2 className="mr-1 h-4 w-4" /> Open demo room
-              </Button>
-            </div>
+            <Button onClick={() => setCreateOpen(true)} variant="premium">
+              <Plus className="mr-1 h-4 w-4" /> New event
+            </Button>
           </div>
         ) : (
           <>
