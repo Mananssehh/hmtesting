@@ -49,6 +49,11 @@ export function DJSongActions({
 
   return (
     <div className="flex flex-wrap gap-1.5 pl-2 sm:pl-4">
+      {song.status === "played" && song.played_by_source === "bridge" && (
+        <div className="w-full text-[11px] text-muted-foreground italic">
+          Marked played by Bridge.
+        </div>
+      )}
       {/* Approval */}
       {onApprove && song.status === "pending" && (
         <Button size="sm" onClick={onApprove} className="bg-accent text-accent-foreground h-9">

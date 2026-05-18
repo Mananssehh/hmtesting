@@ -341,6 +341,7 @@ export type Database = {
           created_at: string
           event_id: string
           id: string
+          now_playing_request_id: string | null
           source: string | null
           source_track_id: string | null
           started_at: string | null
@@ -354,6 +355,7 @@ export type Database = {
           created_at?: string
           event_id: string
           id?: string
+          now_playing_request_id?: string | null
           source?: string | null
           source_track_id?: string | null
           started_at?: string | null
@@ -367,6 +369,7 @@ export type Database = {
           created_at?: string
           event_id?: string
           id?: string
+          now_playing_request_id?: string | null
           source?: string | null
           source_track_id?: string | null
           started_at?: string | null
@@ -479,6 +482,8 @@ export type Database = {
           explicit: boolean
           external_url: string | null
           id: string
+          played_at: string | null
+          played_by_source: string | null
           preview_url: string | null
           queue_position: number | null
           requested_by: string | null
@@ -502,6 +507,8 @@ export type Database = {
           explicit?: boolean
           external_url?: string | null
           id?: string
+          played_at?: string | null
+          played_by_source?: string | null
           preview_url?: string | null
           queue_position?: number | null
           requested_by?: string | null
@@ -525,6 +532,8 @@ export type Database = {
           explicit?: boolean
           external_url?: string | null
           id?: string
+          played_at?: string | null
+          played_by_source?: string | null
           preview_url?: string | null
           queue_position?: number | null
           requested_by?: string | null
@@ -647,6 +656,8 @@ export type Database = {
           explicit: boolean
           external_url: string | null
           id: string
+          played_at: string | null
+          played_by_source: string | null
           preview_url: string | null
           queue_position: number | null
           requested_by: string | null
