@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AppHeader } from "@/components/AppHeader";
+import { SEO } from "@/components/SEO";
 
 const features = [
   { icon: Vote, title: "Reddit-style voting", desc: "Upvote bangers, downvote skips. The crowd shapes the night." },
@@ -34,6 +35,7 @@ const audiences = [
 const Landing = () => {
   return (
     <div className="min-h-screen">
+      <SEO title="Decks — Let the Crowd Control the Vibe" path="/" />
       <AppHeader />
 
       {/* Hero */}

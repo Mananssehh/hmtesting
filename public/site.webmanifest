@@ -1,0 +1,17 @@
+{
+  "name": "Decks",
+  "short_name": "Decks",
+  "description": "Live DJ song requests and crowd-powered music voting.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0F0820",
+  "theme_color": "#0F0820",
+  "icons": [
+    {
+      "src": "/favicon.png?v=2",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

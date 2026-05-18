@@ -22,6 +22,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppHeader } from "@/components/AppHeader";
+import { SEO } from "@/components/SEO";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -415,6 +416,7 @@ const Leaderboard = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO title="Leaderboard" description="See who's dominating the dancefloor — top requesters, biggest boosters, and live crowd influence on Decks." path="/leaderboard" />
       <AppHeader />
       <main className="container max-w-3xl py-8 sm:py-10 space-y-6">
         <div>
