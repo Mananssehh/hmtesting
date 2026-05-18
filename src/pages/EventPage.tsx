@@ -19,7 +19,7 @@ import { formatDuration, platformLabel } from "@/lib/searchLinks";
 import { PreviewButton } from "@/components/PreviewButton";
 import { NowPlayingDisplay } from "@/components/NowPlayingDisplay";
 
-type SortMode = "top" | "new" | "trending";
+type SortMode = "top" | "trending" | "played";
 
 interface EventInfo {
   id: string; name: string; venue: string | null; dj_name: string;
