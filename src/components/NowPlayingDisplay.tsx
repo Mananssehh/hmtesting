@@ -124,15 +124,22 @@ export function NowPlayingDisplay({ eventId }: Props) {
             </div>
           )}
           <div className="flex-1 min-w-0">
-            <span
-              className={cn(
-                "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider border",
-                meta.pillClass,
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span
+                className={cn(
+                  "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider border",
+                  meta.pillClass,
+                )}
+              >
+                {meta.icon}
+                <span>{meta.label}</span>
+              </span>
+              {sourceLabel && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wider border border-border/60 bg-background/40 text-muted-foreground">
+                  {sourceLabel}
+                </span>
               )}
-            >
-              {meta.icon}
-              <span>{meta.label}</span>
-            </span>
+            </div>
             <div className="mt-2 text-lg sm:text-xl font-semibold truncate tracking-tight">
               {nowPlaying.title}
             </div>
