@@ -61,7 +61,22 @@ Deno.serve(async (req) => {
 
   if (integErr || !integration) return jsonResponse({ error: "Invalid token" }, 401);
 
-  const parsed = BodySchema.safeParse(await req.json().catch(() => ({})));
+  const rawBody = await req.json().catch(() => ({}));
+
+  // Bridge heartbeat: mark integration as seen without touching now_playing.
+  if (rawBody && typeof rawBody === "object" && (rawBody as any).type === "bridge_connected") {
+    const { error: hbErr } = await supabase
+      .from("event_integrations")
+      .update({ last_seen_at: new Date().toISOString() })
+      .eq("id", integration.id);
+    if (hbErr) {
+      console.error("bridge heartbeat update failed:", hbErr);
+      return jsonResponse({ error: "Internal server error" }, 500);
+    }
+    return jsonResponse({ ok: true, type: "bridge_connected" });
+  }
+
+  const parsed = BodySchema.safeParse(rawBody);
   if (!parsed.success) {
     return jsonResponse({ error: parsed.error.flatten().fieldErrors }, 400);
   }
