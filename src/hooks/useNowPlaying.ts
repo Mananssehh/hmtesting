@@ -38,8 +38,11 @@ export function useNowPlaying(eventId: string | undefined) {
             filter: `event_id=eq.${eventId}`,
           },
           (payload) => {
+            console.log("[now-playing realtime] payload", payload);
             if (payload.eventType === "DELETE") setNowPlaying(null);
             else setNowPlaying(payload.new as NowPlayingRow);
+            // Safety refetch in case payload shape differs from row schema
+            refresh();
           },
         )
         .subscribe((status) => {
