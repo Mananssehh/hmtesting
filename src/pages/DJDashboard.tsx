@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Archive as ArchiveIcon, ClipboardCheck, Copy, Loader2, Plus, QrCode, Radio, RefreshCw, Settings, Sparkles, Wand2 } from "lucide-react";
+import { Archive as ArchiveIcon, Copy, Loader2, Plus, QrCode, Radio, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { eventSchema, roomCodeSchema } from "@/lib/validation";
-import { generateRoomCode } from "@/lib/mockSongs";
+import { generateRoomCode } from "@/lib/roomCode";
 import { EventQR } from "@/components/EventQR";
 import { logCritical } from "@/lib/errorLogger";
 
@@ -123,23 +123,9 @@ const DJDashboard = () => {
     navigate(`/dj/${data.id}`);
   };
 
-  const launchDemoRoom = async () => {
-    const { error } = await supabase.rpc("ensure_demo_event", { _code: "DEMO123" });
-    if (error) return toast.error(error.message);
-    toast.success("Demo room ready — code DEMO123");
-    navigate("/event/DEMO123");
-  };
-
-  const resetDemoRooms = async () => {
-    const { error } = await supabase.rpc("reset_demo_events");
-    if (error) return toast.error(error.message);
-    toast.success("All demo rooms reset");
-  };
-
-  const copyDemoLink = () => {
-    const url = `${window.location.origin}/join?code=DEMO123`;
-    navigator.clipboard.writeText(url);
-    toast.success("Demo join link copied");
+  const copyJoinLink = (code: string) => {
+    navigator.clipboard.writeText(`${window.location.origin}/join?code=${code}`);
+    toast.success("Join link copied");
   };
 
   const copyJoinLink = (code: string) => {
