@@ -18,6 +18,11 @@ import { searchMusic, MusicSearchResult, normalizeKey } from "@/lib/musicSearch"
 import { formatDuration, platformLabel } from "@/lib/searchLinks";
 import { PreviewButton } from "@/components/PreviewButton";
 import { NowPlayingDisplay } from "@/components/NowPlayingDisplay";
+import { useBoostFeed } from "@/hooks/useBoostFeed";
+import { BoostFX } from "@/components/BoostFX";
+import { BoostActivityStrip } from "@/components/BoostActivityStrip";
+import { DominatingBanner } from "@/components/DominatingBanner";
+import { TopSupportersRecap } from "@/components/TopSupportersRecap";
 
 type SortMode = "top" | "trending" | "played";
 
@@ -200,6 +205,31 @@ const EventPage = () => {
   }, [eventInfo?.id]);
 
   const nowPlaying = useMemo(() => songs.find((s) => s.status === "playing"), [songs]);
+
+  // Live boost activity (derived from realtime song updates)
+  const boostEvents = useBoostFeed(songs);
+
+  // "Currently dominating" + boost battle detection (active queue only)
+  const { dominatingSong, dominatingLead, battleIds } = useMemo(() => {
+    const active = songs
+      .filter((s) => s.status !== "removed" && s.status !== "playing" && s.status !== "played" && s.status !== "skipped")
+      .filter((s) => (s.boost ?? 0) > 0)
+      .sort((a, b) => (b.boost ?? 0) - (a.boost ?? 0));
+    const top = active[0];
+    const second = active[1];
+    const lead = top && second ? (top.boost ?? 0) - (second.boost ?? 0) : (top?.boost ?? 0);
+    const battle = new Set<string>();
+    // Battle when top 2 are within 10 boost and both have meaningful boost
+    if (top && second && (top.boost ?? 0) >= 20 && Math.abs((top.boost ?? 0) - (second.boost ?? 0)) <= 10) {
+      battle.add(top.id);
+      battle.add(second.id);
+    }
+    return {
+      dominatingSong: top && (top.boost ?? 0) >= 25 ? top : null,
+      dominatingLead: lead,
+      battleIds: battle,
+    };
+  }, [songs]);
 
   const playedSongs = useMemo(() => {
     return songs
