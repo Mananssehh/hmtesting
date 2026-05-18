@@ -8,6 +8,7 @@ import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import AuthCallback from "./pages/AuthCallback";
 import Join from "./pages/Join";
+import Connect from "./pages/Connect";
 import EventPage from "./pages/EventPage";
 import DJDashboard from "./pages/DJDashboard";
 import DJEventManage from "./pages/DJEventManage";
@@ -38,6 +39,7 @@ const App = () => (
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/auth/v1/callback" element={<AuthCallback />} />
               <Route path="/join" element={<Join />} />
+              <Route path="/connect" element={<Connect />} />
               <Route path="/event/:code" element={<EventPage />} />
               <Route path="/dj" element={<DJDashboard />} />
               <Route path="/dj/:id" element={<DJEventManage />} />

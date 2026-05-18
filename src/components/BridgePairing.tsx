@@ -241,7 +241,7 @@ export function BridgePairing({ eventId }: Props) {
               <div className="mt-3 flex justify-center">
                 <div className="rounded-lg bg-white p-2.5">
                   <QRCodeSVG
-                    value={`decksbridge://pair?code=${pairing.code}`}
+                    value={`https://linku99.com/connect?code=${pairing.code}`}
                     size={140}
                     level="M"
                     includeMargin={false}
