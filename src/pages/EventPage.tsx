@@ -18,6 +18,11 @@ import { searchMusic, MusicSearchResult, normalizeKey } from "@/lib/musicSearch"
 import { formatDuration, platformLabel } from "@/lib/searchLinks";
 import { PreviewButton } from "@/components/PreviewButton";
 import { NowPlayingDisplay } from "@/components/NowPlayingDisplay";
+import { useBoostFeed } from "@/hooks/useBoostFeed";
+import { BoostFX } from "@/components/BoostFX";
+import { BoostActivityStrip } from "@/components/BoostActivityStrip";
+import { DominatingBanner } from "@/components/DominatingBanner";
+import { TopSupportersRecap } from "@/components/TopSupportersRecap";
 
 type SortMode = "top" | "trending" | "played";
 
@@ -200,6 +205,31 @@ const EventPage = () => {
   }, [eventInfo?.id]);
 
   const nowPlaying = useMemo(() => songs.find((s) => s.status === "playing"), [songs]);
+
+  // Live boost activity (derived from realtime song updates)
+  const boostEvents = useBoostFeed(songs);
+
+  // "Currently dominating" + boost battle detection (active queue only)
+  const { dominatingSong, dominatingLead, battleIds } = useMemo(() => {
+    const active = songs
+      .filter((s) => s.status !== "removed" && s.status !== "playing" && s.status !== "played" && s.status !== "skipped")
+      .filter((s) => (s.boost ?? 0) > 0)
+      .sort((a, b) => (b.boost ?? 0) - (a.boost ?? 0));
+    const top = active[0];
+    const second = active[1];
+    const lead = top && second ? (top.boost ?? 0) - (second.boost ?? 0) : (top?.boost ?? 0);
+    const battle = new Set<string>();
+    // Battle when top 2 are within 10 boost and both have meaningful boost
+    if (top && second && (top.boost ?? 0) >= 20 && Math.abs((top.boost ?? 0) - (second.boost ?? 0)) <= 10) {
+      battle.add(top.id);
+      battle.add(second.id);
+    }
+    return {
+      dominatingSong: top && (top.boost ?? 0) >= 25 ? top : null,
+      dominatingLead: lead,
+      battleIds: battle,
+    };
+  }, [songs]);
 
   const playedSongs = useMemo(() => {
     return songs
@@ -475,13 +505,16 @@ const EventPage = () => {
           </div>
         )}
         {isEnded && (
-          <div className="mb-4 p-4 rounded-2xl bg-destructive/10 border border-destructive/30 flex items-start gap-3">
-            <XCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
-            <div className="text-sm">
-              <p className="font-medium">This event has ended</p>
-              <p className="text-muted-foreground">Thanks for playing — see you next time!</p>
+          <>
+            <div className="mb-4 p-4 rounded-2xl bg-destructive/10 border border-destructive/30 flex items-start gap-3">
+              <XCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+              <div className="text-sm">
+                <p className="font-medium">This event has ended</p>
+                <p className="text-muted-foreground">Thanks for playing — see you next time!</p>
+              </div>
             </div>
-          </div>
+            <TopSupportersRecap songs={songs} />
+          </>
         )}
 
         {/* Event rules chips */}
@@ -559,6 +592,14 @@ const EventPage = () => {
           </Dialog>
         </div>
 
+        {/* Boost social layer: dominator + live activity */}
+        {!isEnded && sort !== "played" && dominatingSong && (
+          <DominatingBanner song={dominatingSong} lead={dominatingLead} />
+        )}
+        {!isEnded && sort !== "played" && (
+          <BoostActivityStrip events={boostEvents} />
+        )}
+
         {/* Sort tabs */}
         <Tabs value={sort} onValueChange={(v) => setSort(v as SortMode)} className="mb-4">
           <TabsList className="grid grid-cols-3 w-full rounded-full bg-secondary/60 p-1 h-10">
@@ -614,11 +655,15 @@ const EventPage = () => {
                 onVote={(v) => handleVote(s.id, v)}
                 onBoost={isLive ? () => setBoostTarget(s) : undefined}
                 disabled={!!pendingVotes[s.id]}
+                battle={battleIds.has(s.id)}
               />
             ))}
           </div>
         )}
       </div>
+
+      {/* Live boost FX overlay (toasts + mega) */}
+      <BoostFX events={boostEvents} />
 
       {/* Mobile sticky request CTA */}
       {isLive && (

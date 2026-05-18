@@ -1,4 +1,4 @@
-import { ChevronUp, ChevronDown, Sparkles, Rocket, Clock } from "lucide-react";
+import { ChevronUp, ChevronDown, Sparkles, Rocket, Clock, Flame, Swords } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -46,12 +46,21 @@ interface Props {
   onVote?: (value: 1 | -1) => void;
   onBoost?: () => void;
   disabled?: boolean;
+  battle?: boolean;
 }
 
-export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, disabled }: Props) {
+export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, disabled, battle }: Props) {
   const score = song.upvotes - song.downvotes + song.boost;
   const upvoted = myVote === 1;
   const downvoted = myVote === -1;
+
+  // Heat tiers based on boost total
+  const boost = song.boost ?? 0;
+  const heatClass =
+    boost >= 100 ? "boost-heat-3" :
+    boost >= 25  ? "boost-heat-2" :
+    boost >= 5   ? "boost-heat-1" : "";
+  const showFlame = boost >= 25;
 
   return (
     <div
@@ -59,7 +68,8 @@ export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, disab
         "group relative flex items-center gap-3 p-3 sm:p-3.5 rounded-2xl bg-card/60 backdrop-blur-sm border border-white/[0.05] shadow-card transition-all duration-200",
         "hover:border-white/[0.1] hover:bg-card/80",
         song.status === "playing" && "ring-1 ring-primary/40 bg-primary/[0.04]",
-        song.boost > 0 && "ring-1 ring-primary/20",
+        heatClass,
+        battle && "battle-pulse",
       )}
     >
       {/* Reddit-style vote column */}
@@ -118,7 +128,8 @@ export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, disab
         ) : (
           <div className="h-full w-full bg-gradient-to-br from-primary/30 to-accent/30" />
         )}
-        {song.boost > 0 && (
+        {showFlame && <div className="flame" aria-hidden />}
+        {song.boost > 0 && !showFlame && (
           <div className="absolute top-1 right-1 bg-primary/90 text-primary-foreground rounded-full p-0.5 shadow-sm">
             <Sparkles className="h-2.5 w-2.5" />
           </div>
@@ -138,8 +149,19 @@ export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, disab
             </Badge>
           )}
           {song.boost > 0 && (
-            <Badge className="text-[10px] px-1.5 py-0 bg-primary/15 text-primary border-primary/25 rounded-md gap-1">
-              <Sparkles className="h-2.5 w-2.5" /> +{song.boost}
+            <Badge className={cn(
+              "text-[10px] px-1.5 py-0 border rounded-md gap-1",
+              boost >= 100 ? "bg-orange-500/20 text-orange-300 border-orange-500/40" :
+              boost >= 25  ? "bg-primary/25 text-primary-foreground border-primary/40" :
+              "bg-primary/15 text-primary border-primary/25"
+            )}>
+              {boost >= 25 ? <Flame className="h-2.5 w-2.5" /> : <Sparkles className="h-2.5 w-2.5" />}
+              +{song.boost}
+            </Badge>
+          )}
+          {battle && (
+            <Badge className="text-[10px] px-1.5 py-0 bg-orange-500/20 text-orange-300 border-orange-500/40 rounded-md gap-1">
+              <Swords className="h-2.5 w-2.5" /> Battle
             </Badge>
           )}
         </div>
