@@ -230,8 +230,6 @@ const EventPage = () => {
         ts(b) - ts(a) ||
         a.id.localeCompare(b.id),
       );
-    } else if (sort === "new") {
-      list = [...list].sort((a, b) => ts(b) - ts(a) || a.id.localeCompare(b.id));
     } else {
       list = [...list].sort((a, b) => {
         const ageA = Math.max(0.25, (Date.now() - ts(a)) / 3600000);
