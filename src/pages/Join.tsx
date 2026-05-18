@@ -113,35 +113,6 @@ const Join = () => {
             Join event
           </Button>
 
-          <div className="space-y-2 pt-1">
-            <p className="text-xs text-center text-muted-foreground">
-              Testing? Try one of the demo codes:
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { code: "DEMO123", label: "Full Demo" },
-                { code: "EMPTY123", label: "Empty Event" },
-                { code: "PAUSED123", label: "Paused Event" },
-                { code: "ENDED123", label: "Ended Event" },
-                { code: "MOD123", label: "Moderation" },
-              ].map((d) => (
-                <Button
-                  key={d.code}
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={loading}
-                  onClick={() => {
-                    setCode(d.code);
-                    if (!nickname) setNickname("DemoGuest");
-                  }}
-                >
-                  <Sparkles className="mr-1 h-3 w-3 text-accent" />
-                  {d.label}
-                </Button>
-              ))}
-            </div>
-          </div>
           <p className="text-xs text-center text-muted-foreground">
             No signup needed. We'll create a guest session for you.
           </p>
