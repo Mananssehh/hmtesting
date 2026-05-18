@@ -16,6 +16,7 @@ export function useNowPlaying(eventId: string | undefined) {
     const refresh = async () => {
       try {
         const row = await fetchNowPlaying(eventId);
+        console.log("[now-playing hook] fetched row", { eventId, row });
         if (!cancelled) setNowPlaying(row);
       } catch (e) {
         console.error("fetchNowPlaying", e);
