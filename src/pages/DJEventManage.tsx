@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
-  Award, Check, Copy, Loader2, Play, SkipForward, Sparkles, Trophy, Wand2,
-  PauseCircle, PlayCircle, XCircle, Music, Rocket, RefreshCw, ListMusic,
+  Award, Check, Copy, Loader2, Play, SkipForward, Sparkles, Trophy,
+  PauseCircle, PlayCircle, XCircle, Music, Rocket, ListMusic,
   Maximize2, Minimize2, BarChart3, Shield, UserX, EyeOff,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -22,7 +22,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { seedDemoEvent, resetDemoEvent } from "@/lib/demoSeed";
+
 import { logCritical } from "@/lib/errorLogger";
 import { NowPlayingPanel } from "@/components/NowPlayingPanel";
 import { BridgePairing } from "@/components/BridgePairing";
@@ -67,10 +67,8 @@ const DJEventManage = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<Filter>("queue");
   const [awardOpen, setAwardOpen] = useState(false);
-  const [seeding, setSeeding] = useState(false);
   const [removeTarget, setRemoveTarget] = useState<SongRequestRow | null>(null);
   const [endConfirmOpen, setEndConfirmOpen] = useState(false);
-  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
   const [moderationOpen, setModerationOpen] = useState(false);
   const [banTarget, setBanTarget] = useState<SongRequestRow | null>(null);
@@ -270,29 +268,6 @@ const DJEventManage = () => {
     toast.success("Join link copied!");
   };
 
-  const handleSeed = async () => {
-    if (!event) return;
-    setSeeding(true);
-    try {
-      const { count } = await seedDemoEvent(event.id);
-      toast.success(`Seeded ${count} demo requests 🎉`);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Seed failed");
-    } finally {
-      setSeeding(false);
-    }
-  };
-
-  const handleReset = async () => {
-    if (!event) return;
-    try {
-      await resetDemoEvent(event.id);
-      toast.success("Event reset");
-      setResetConfirmOpen(false);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Reset failed");
-    }
-  };
 
   if (authLoading || loading || !event) {
     return (
@@ -413,15 +388,6 @@ const DJEventManage = () => {
                   <XCircle className="mr-1.5 h-4 w-4" /> End event
                 </Button>
               )}
-              <div className="ml-auto flex gap-1">
-                <Button variant="ghost" size="sm" onClick={handleSeed} disabled={seeding} className="text-muted-foreground">
-                  {seeding ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Wand2 className="mr-1.5 h-4 w-4" />}
-                  Seed demo
-                </Button>
-                <Button variant="ghost" size="sm" onClick={() => setResetConfirmOpen(true)} className="text-muted-foreground">
-                  <RefreshCw className="mr-1.5 h-4 w-4" /> Reset
-                </Button>
-              </div>
             </div>
           </div>
 
@@ -640,23 +606,6 @@ const DJEventManage = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Confirm reset */}
-      <AlertDialog open={resetConfirmOpen} onOpenChange={setResetConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Reset all requests?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This deletes every song request &amp; vote in this event. Use it to start fresh between demos.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleReset} className="bg-destructive hover:bg-destructive/90">
-              Reset event
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* Confirm ban */}
       <AlertDialog open={!!banTarget} onOpenChange={(o) => !o && setBanTarget(null)}>

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Archive as ArchiveIcon, ClipboardCheck, Copy, Loader2, Plus, QrCode, Radio, RefreshCw, Settings, Sparkles, Wand2 } from "lucide-react";
+import { Archive as ArchiveIcon, Copy, Loader2, Plus, QrCode, Radio, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { eventSchema, roomCodeSchema } from "@/lib/validation";
-import { generateRoomCode } from "@/lib/mockSongs";
+import { generateRoomCode } from "@/lib/roomCode";
 import { EventQR } from "@/components/EventQR";
 import { logCritical } from "@/lib/errorLogger";
 
@@ -123,25 +123,6 @@ const DJDashboard = () => {
     navigate(`/dj/${data.id}`);
   };
 
-  const launchDemoRoom = async () => {
-    const { error } = await supabase.rpc("ensure_demo_event", { _code: "DEMO123" });
-    if (error) return toast.error(error.message);
-    toast.success("Demo room ready — code DEMO123");
-    navigate("/event/DEMO123");
-  };
-
-  const resetDemoRooms = async () => {
-    const { error } = await supabase.rpc("reset_demo_events");
-    if (error) return toast.error(error.message);
-    toast.success("All demo rooms reset");
-  };
-
-  const copyDemoLink = () => {
-    const url = `${window.location.origin}/join?code=DEMO123`;
-    navigator.clipboard.writeText(url);
-    toast.success("Demo join link copied");
-  };
-
   const copyJoinLink = (code: string) => {
     navigator.clipboard.writeText(`${window.location.origin}/join?code=${code}`);
     toast.success("Join link copied");
@@ -177,22 +158,10 @@ const DJDashboard = () => {
           </div>
           <div className="flex flex-wrap gap-2">
             <Button asChild variant="outline">
-              <Link to="/testing"><ClipboardCheck className="mr-1 h-4 w-4" /> Testing</Link>
-            </Button>
-            <Button asChild variant="outline">
               <Link to="/dj/archive"><ArchiveIcon className="mr-1 h-4 w-4" /> Archive</Link>
             </Button>
             <Button asChild variant="outline">
               <Link to="/dj/errors"><Settings className="mr-1 h-4 w-4" /> Error monitor</Link>
-            </Button>
-            <Button variant="outline" onClick={launchDemoRoom}>
-              <Sparkles className="mr-1 h-4 w-4 text-accent" /> Demo room
-            </Button>
-            <Button variant="outline" size="icon" onClick={copyDemoLink} title="Copy demo join link">
-              <Copy className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={resetDemoRooms} title="Reset all demo rooms">
-              <RefreshCw className="h-4 w-4" />
             </Button>
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>
               <DialogTrigger asChild>
@@ -222,14 +191,9 @@ const DJDashboard = () => {
             <Radio className="h-12 w-12 text-primary mx-auto mb-3" />
             <h2 className="text-xl font-semibold">No events yet</h2>
             <p className="text-muted-foreground mt-1 mb-6">Create your first session to start receiving requests.</p>
-            <div className="flex flex-col sm:flex-row gap-2 justify-center">
-              <Button onClick={() => setCreateOpen(true)} variant="premium">
-                <Plus className="mr-1 h-4 w-4" /> New event
-              </Button>
-              <Button variant="outline" onClick={launchDemoRoom}>
-                <Wand2 className="mr-1 h-4 w-4" /> Open demo room
-              </Button>
-            </div>
+            <Button onClick={() => setCreateOpen(true)} variant="premium">
+              <Plus className="mr-1 h-4 w-4" /> New event
+            </Button>
           </div>
         ) : (
           <>

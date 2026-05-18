@@ -689,32 +689,6 @@ export type Database = {
         }
         Returns: undefined
       }
-      ensure_demo_event: {
-        Args: { _code: string }
-        Returns: {
-          allow_explicit: boolean
-          archived_at: string | null
-          cooldown_seconds: number
-          created_at: string
-          dj_id: string
-          dj_name: string
-          ended_at: string | null
-          id: string
-          is_active: boolean
-          name: string
-          requests_status: string
-          require_approval: boolean
-          room_code: string
-          rules_text: string | null
-          venue: string | null
-        }
-        SetofOptions: {
-          from: "*"
-          to: "events"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
       generate_bridge_pairing_code: {
         Args: { _event_id: string }
         Returns: {
@@ -740,7 +714,6 @@ export type Database = {
         Args: { _event_id: string }
         Returns: undefined
       }
-      reset_demo_events: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "dj" | "guest" | "admin"

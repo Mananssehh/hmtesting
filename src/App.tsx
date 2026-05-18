@@ -18,7 +18,7 @@ import Profile from "./pages/Profile";
 import PublicProfile from "./pages/PublicProfile";
 import Analytics from "./pages/Analytics";
 import Archive from "./pages/Archive";
-import Testing from "./pages/Testing";
+
 import ErrorMonitor from "./pages/ErrorMonitor";
 import NotFound from "./pages/NotFound.tsx";
 import { ErrorBoundary } from "./components/ErrorBoundary";
@@ -50,7 +50,7 @@ const App = () => (
               <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/users/:userId" element={<PublicProfile />} />
-              <Route path="/testing" element={<Testing />} />
+              
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

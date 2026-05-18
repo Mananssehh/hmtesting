@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Headphones, Loader2, Sparkles } from "lucide-react";
+import { Headphones, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -37,10 +37,7 @@ const Join = () => {
         throw new Error("Please choose a different nickname.");
       }
 
-      const DEMO_CODES = ["DEMO123", "EMPTY123", "PAUSED123", "ENDED123", "MOD123"];
-      const isDemo = DEMO_CODES.includes(codeParse.data);
-
-      // Sign in first (anonymous if needed) so demo RPCs and inserts work under RLS.
+      // Sign in first (anonymous if needed) so inserts work under RLS.
       if (!user) {
         const { error: anonError } = await supabase.auth.signInAnonymously({
           options: { data: { nickname: nickParse.data } },
@@ -54,11 +51,6 @@ const Join = () => {
         await supabase.from("profiles").update({ nickname: nickParse.data }).eq("id", user.id);
       }
 
-      // For demo codes, ensure the corresponding demo event exists (idempotent, requires auth)
-      if (isDemo) {
-        await supabase.rpc("ensure_demo_event", { _code: codeParse.data });
-      }
-
       // Verify event exists & is active
       const { data: event, error: eventError } = await supabase
         .from("events")
@@ -68,7 +60,7 @@ const Join = () => {
 
       if (eventError) throw eventError;
       if (!event) throw new Error("No event with that code. Double-check with the DJ.");
-      if (!isDemo && (event.requests_status === "ended" || !event.is_active)) {
+      if (event.requests_status === "ended" || !event.is_active) {
         throw new Error("This event has ended");
       }
 
@@ -121,35 +113,6 @@ const Join = () => {
             Join event
           </Button>
 
-          <div className="space-y-2 pt-1">
-            <p className="text-xs text-center text-muted-foreground">
-              Testing? Try one of the demo codes:
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { code: "DEMO123", label: "Full Demo" },
-                { code: "EMPTY123", label: "Empty Event" },
-                { code: "PAUSED123", label: "Paused Event" },
-                { code: "ENDED123", label: "Ended Event" },
-                { code: "MOD123", label: "Moderation" },
-              ].map((d) => (
-                <Button
-                  key={d.code}
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={loading}
-                  onClick={() => {
-                    setCode(d.code);
-                    if (!nickname) setNickname("DemoGuest");
-                  }}
-                >
-                  <Sparkles className="mr-1 h-3 w-3 text-accent" />
-                  {d.label}
-                </Button>
-              ))}
-            </div>
-          </div>
           <p className="text-xs text-center text-muted-foreground">
             No signup needed. We'll create a guest session for you.
           </p>
