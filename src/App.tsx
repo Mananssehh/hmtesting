@@ -8,6 +8,7 @@ import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import AuthCallback from "./pages/AuthCallback";
 import Join from "./pages/Join";
+import Connect from "./pages/Connect";
 import EventPage from "./pages/EventPage";
 import DJDashboard from "./pages/DJDashboard";
 import DJEventManage from "./pages/DJEventManage";
