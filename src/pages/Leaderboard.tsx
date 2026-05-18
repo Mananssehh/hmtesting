@@ -71,7 +71,7 @@ const Leaderboard = () => {
     let cancelled = false;
     setLoading(true);
 
-    (async () => {
+    const load = async () => {
       const { data: reqs } = await supabase
         .from("song_requests")
         .select("id, requested_by, requester_name, title, artist, album_art, upvotes, downvotes, boost")
@@ -110,7 +110,7 @@ const Leaderboard = () => {
       }
 
       const userIds = Array.from(map.values()).map((r) => r.user_id).filter(Boolean) as string[];
-      let pointsMap = new Map<string, number>();
+      const pointsMap = new Map<string, number>();
       if (userIds.length) {
         const { data: profs } = await supabase
           .from("profiles")
@@ -127,11 +127,33 @@ const Leaderboard = () => {
         ...r,
         points: r.user_id ? (pointsMap.get(r.user_id) ?? 0) : 0,
       }));
-      setGuests(computed);
-      setLoading(false);
-    })();
+      if (!cancelled) {
+        setGuests(computed);
+        setLoading(false);
+      }
+    };
 
-    return () => { cancelled = true; };
+    load();
+
+    // Live updates on requests/votes for this event
+    const channel = supabase
+      .channel(`leaderboard-${selectedEventId}-${Date.now()}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "song_requests", filter: `event_id=eq.${selectedEventId}` },
+        () => load(),
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "votes" },
+        () => load(),
+      )
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
   }, [selectedEventId]);
 
   const sortedGuests = useMemo(() => {
