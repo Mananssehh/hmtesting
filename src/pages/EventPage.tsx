@@ -201,8 +201,21 @@ const EventPage = () => {
 
   const nowPlaying = useMemo(() => songs.find((s) => s.status === "playing"), [songs]);
 
+  const playedSongs = useMemo(() => {
+    return songs
+      .filter((s) => s.status === "played")
+      .sort((a, b) => {
+        const ta = +new Date(a.played_at || a.created_at);
+        const tb = +new Date(b.played_at || b.created_at);
+        return tb - ta;
+      })
+      .slice(0, 25);
+  }, [songs]);
+
   const visibleSongs = useMemo(() => {
-    let list = songs.filter((s) => s.status !== "removed" && s.status !== "playing");
+    let list = songs.filter(
+      (s) => s.status !== "removed" && s.status !== "playing" && s.status !== "played" && s.status !== "skipped",
+    );
     const q = search.trim().toLowerCase();
     if (q) list = list.filter((s) => s.title.toLowerCase().includes(q) || s.artist.toLowerCase().includes(q));
 
