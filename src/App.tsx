@@ -18,7 +18,7 @@ import Profile from "./pages/Profile";
 import PublicProfile from "./pages/PublicProfile";
 import Analytics from "./pages/Analytics";
 import Archive from "./pages/Archive";
-import Testing from "./pages/Testing";
+
 import ErrorMonitor from "./pages/ErrorMonitor";
 import NotFound from "./pages/NotFound.tsx";
 import { ErrorBoundary } from "./components/ErrorBoundary";
