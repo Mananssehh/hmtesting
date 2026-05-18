@@ -26,6 +26,8 @@ export interface SongRequestRow {
   source_song_id?: string | null;
   explicit?: boolean | null;
   queue_position?: number | null;
+  played_at?: string | null;
+  played_by_source?: string | null;
 }
 
 const statusStyles: Record<SongRequestRow["status"], string> = {
