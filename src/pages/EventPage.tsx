@@ -208,6 +208,21 @@ const EventPage = () => {
 
   const nowPlaying = useMemo(() => songs.find((s) => s.status === "playing"), [songs]);
 
+  // Live broadcast (DJ/Bridge) — used to auto-merge with a matching queue request.
+  const { nowPlaying: broadcastNowPlaying } = useNowPlaying(eventInfo?.id);
+  const matchedPlayingRequest = useMemo(() => {
+    if (nowPlaying) return nowPlaying;
+    if (!broadcastNowPlaying) return null;
+    const key = normalizeKey(broadcastNowPlaying.title, broadcastNowPlaying.artist ?? "");
+    return (
+      songs.find(
+        (s) =>
+          s.status !== "removed" &&
+          normalizeKey(s.title, s.artist) === key,
+      ) ?? null
+    );
+  }, [nowPlaying, broadcastNowPlaying, songs]);
+
   // Live boost activity (derived from realtime song updates)
   const boostEvents = useBoostFeed(songs);
 
