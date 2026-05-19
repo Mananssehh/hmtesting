@@ -47,9 +47,12 @@ interface Props {
   onBoost?: () => void;
   disabled?: boolean;
   battle?: boolean;
+  mostWanted?: boolean;
+  pinned?: boolean;
+  moderation?: boolean;
 }
 
-export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, disabled, battle }: Props) {
+export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, disabled, battle, mostWanted, pinned, moderation }: Props) {
   const score = song.upvotes - song.downvotes + song.boost;
   const upvoted = myVote === 1;
   const downvoted = myVote === -1;
