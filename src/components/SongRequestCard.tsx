@@ -50,9 +50,11 @@ interface Props {
   mostWanted?: boolean;
   pinned?: boolean;
   moderation?: boolean;
+  trending?: boolean;
+  movement?: "up" | "down" | "same" | "new";
 }
 
-export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, disabled, battle, mostWanted, pinned, moderation }: Props) {
+export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, disabled, battle, mostWanted, pinned, moderation, trending, movement }: Props) {
   const score = song.upvotes - song.downvotes + song.boost;
   const upvoted = myVote === 1;
   const downvoted = myVote === -1;
@@ -73,6 +75,7 @@ export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, disab
         song.status === "playing" && "ring-1 ring-primary/40 bg-primary/[0.04]",
         heatClass,
         battle && "battle-pulse",
+        trending && "trending-glow",
       )}
     >
       {/* Reddit-style vote column */}
