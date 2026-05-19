@@ -20,6 +20,8 @@ import { formatDuration, platformLabel } from "@/lib/searchLinks";
 import { PreviewButton } from "@/components/PreviewButton";
 import { NowPlayingDisplay } from "@/components/NowPlayingDisplay";
 import { useBoostFeed } from "@/hooks/useBoostFeed";
+import { useTrending } from "@/hooks/useTrending";
+import { useRef } from "react";
 import { BoostFX } from "@/components/BoostFX";
 import { BoostActivityStrip } from "@/components/BoostActivityStrip";
 import { DominatingBanner } from "@/components/DominatingBanner";
