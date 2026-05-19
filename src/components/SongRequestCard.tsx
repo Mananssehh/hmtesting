@@ -1,4 +1,4 @@
-import { ChevronUp, ChevronDown, Sparkles, Rocket, Clock, Flame, Swords, Crown, Pin, Shield } from "lucide-react";
+import { ChevronUp, ChevronDown, Sparkles, Rocket, Clock, Flame, Swords, Crown, Pin, Shield, TrendingUp, ArrowUp, ArrowDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -50,9 +50,11 @@ interface Props {
   mostWanted?: boolean;
   pinned?: boolean;
   moderation?: boolean;
+  trending?: boolean;
+  movement?: "up" | "down" | "same" | "new";
 }
 
-export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, disabled, battle, mostWanted, pinned, moderation }: Props) {
+export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, disabled, battle, mostWanted, pinned, moderation, trending, movement }: Props) {
   const score = song.upvotes - song.downvotes + song.boost;
   const upvoted = myVote === 1;
   const downvoted = myVote === -1;
@@ -73,6 +75,7 @@ export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, disab
         song.status === "playing" && "ring-1 ring-primary/40 bg-primary/[0.04]",
         heatClass,
         battle && "battle-pulse",
+        trending && "trending-glow",
       )}
     >
       {/* Reddit-style vote column */}
@@ -166,6 +169,24 @@ export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, disab
             <Badge className="text-[10px] px-1.5 py-0 bg-orange-500/20 text-orange-300 border-orange-500/40 rounded-md gap-1">
               <Swords className="h-2.5 w-2.5" /> Battle
             </Badge>
+          )}
+          {trending && (
+            <Badge className="text-[10px] px-1.5 py-0 bg-gradient-to-r from-orange-500/25 to-pink-500/25 text-orange-200 border-orange-400/50 rounded-md gap-1 animate-pulse">
+              <TrendingUp className="h-2.5 w-2.5" /> Trending
+            </Badge>
+          )}
+          {movement === "up" && (
+            <span className="inline-flex items-center text-[10px] text-emerald-400 font-semibold tabular-nums gap-0.5">
+              <ArrowUp className="h-2.5 w-2.5" />
+            </span>
+          )}
+          {movement === "down" && (
+            <span className="inline-flex items-center text-[10px] text-muted-foreground/70 gap-0.5">
+              <ArrowDown className="h-2.5 w-2.5" />
+            </span>
+          )}
+          {movement === "new" && (
+            <span className="text-[9px] font-bold px-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">NEW</span>
           )}
           {mostWanted && (
             <Badge className="text-[10px] px-1.5 py-0 bg-amber-400/20 text-amber-300 border-amber-400/40 rounded-md gap-1">

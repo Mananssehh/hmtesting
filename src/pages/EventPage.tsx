@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   Loader2, Plus, Search, Sparkles, Trophy, Music, PauseCircle, XCircle, PartyPopper, CheckCircle2,
@@ -20,6 +20,7 @@ import { formatDuration, platformLabel } from "@/lib/searchLinks";
 import { PreviewButton } from "@/components/PreviewButton";
 import { NowPlayingDisplay } from "@/components/NowPlayingDisplay";
 import { useBoostFeed } from "@/hooks/useBoostFeed";
+import { useTrending } from "@/hooks/useTrending";
 import { BoostFX } from "@/components/BoostFX";
 import { BoostActivityStrip } from "@/components/BoostActivityStrip";
 import { DominatingBanner } from "@/components/DominatingBanner";
@@ -259,6 +260,9 @@ const EventPage = () => {
       .slice(0, 25);
   }, [songs]);
 
+  const trending = useTrending(songs);
+  const prevRanks = useRef<Map<string, number>>(new Map());
+
   const visibleSongs = useMemo(() => {
     let list = songs.filter(
       (s) => s.status !== "removed" && s.status !== "playing" && s.status !== "played" && s.status !== "skipped",
@@ -266,31 +270,53 @@ const EventPage = () => {
     const q = search.trim().toLowerCase();
     if (q) list = list.filter((s) => s.title.toLowerCase().includes(q) || s.artist.toLowerCase().includes(q));
 
-    const score = (s: SongRequestRow) => s.upvotes - s.downvotes + s.boost;
     const ts = (s: SongRequestRow) => +new Date(s.created_at);
 
     if (sort === "top") {
-      // Deterministic: score → boost → newest → id (final stable tiebreak)
+      // TOP = best overall. Boost weighted 2x (purchased intent),
+      // plus net upvotes, then recency as tiebreaker.
+      const topScore = (s: SongRequestRow) =>
+        (s.upvotes - s.downvotes) + (s.boost ?? 0) * 2;
       list = [...list].sort((a, b) =>
-        score(b) - score(a) ||
-        b.boost - a.boost ||
+        topScore(b) - topScore(a) ||
+        (b.boost ?? 0) - (a.boost ?? 0) ||
         ts(b) - ts(a) ||
         a.id.localeCompare(b.id),
       );
     } else {
+      // TRENDING = hottest right now. Heavy weight on recent boost momentum.
       list = [...list].sort((a, b) => {
-        const ageA = Math.max(0.25, (Date.now() - ts(a)) / 3600000);
-        const ageB = Math.max(0.25, (Date.now() - ts(b)) / 3600000);
+        const sa = trending.scoreMap.get(a.id) ?? 0;
+        const sb = trending.scoreMap.get(b.id) ?? 0;
         return (
-          score(b) / ageB - score(a) / ageA ||
-          b.boost - a.boost ||
+          sb - sa ||
+          (trending.recentBoostMap.get(b.id) ?? 0) - (trending.recentBoostMap.get(a.id) ?? 0) ||
           ts(b) - ts(a) ||
           a.id.localeCompare(b.id)
         );
       });
     }
     return list;
-  }, [songs, sort, search]);
+  }, [songs, sort, search, trending]);
+
+  // Track previous rank per sort mode for movement arrows
+  const movementMap = useMemo(() => {
+    const m = new Map<string, "up" | "down" | "same" | "new">();
+    visibleSongs.forEach((s, i) => {
+      const prev = prevRanks.current.get(`${sort}:${s.id}`);
+      if (prev === undefined) m.set(s.id, "new");
+      else if (i < prev) m.set(s.id, "up");
+      else if (i > prev) m.set(s.id, "down");
+      else m.set(s.id, "same");
+    });
+    return m;
+  }, [visibleSongs, sort]);
+
+  useEffect(() => {
+    const next = new Map<string, number>();
+    visibleSongs.forEach((s, i) => next.set(`${sort}:${s.id}`, i));
+    prevRanks.current = next;
+  }, [visibleSongs, sort]);
 
   const handleVote = async (songId: string, value: 1 | -1) => {
     if (!user) return;
@@ -605,7 +631,7 @@ const EventPage = () => {
         <Tabs value={sort} onValueChange={(v) => setSort(v as SortMode)} className="mb-4">
           <TabsList className="grid grid-cols-3 w-full rounded-full bg-secondary/60 p-1 h-10">
             <TabsTrigger value="top" className="rounded-full"><Sparkles className="h-3.5 w-3.5 mr-1.5" />Top</TabsTrigger>
-            <TabsTrigger value="trending" className="rounded-full">Trending</TabsTrigger>
+            <TabsTrigger value="trending" className="rounded-full">🔥 Trending</TabsTrigger>
             <TabsTrigger value="played" className="rounded-full"><CheckCircle2 className="h-3.5 w-3.5 mr-1.5" />Played</TabsTrigger>
           </TabsList>
         </Tabs>
@@ -657,6 +683,8 @@ const EventPage = () => {
                 onBoost={isLive ? () => setBoostTarget(s) : undefined}
                 disabled={!!pendingVotes[s.id]}
                 battle={battleIds.has(s.id)}
+                trending={sort === "trending" && trending.hotIds.has(s.id)}
+                movement={sort === "trending" ? movementMap.get(s.id) : undefined}
               />
             ))}
           </div>
