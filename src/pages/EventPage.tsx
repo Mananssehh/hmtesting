@@ -537,30 +537,13 @@ const EventPage = () => {
           </div>
         )}
 
-        {/* Live Now Playing (broadcast by DJ) */}
-        {eventInfo?.id && <NowPlayingDisplay eventId={eventInfo.id} />}
-
-        {/* Now Playing (from request queue) */}
-        {nowPlaying && (
-          <div className="mb-4">
-            <div className="flex items-center justify-between gap-2 mb-2">
-              <div className="flex items-center gap-2 text-xs uppercase tracking-wider text-primary font-medium">
-                <Music className="h-3.5 w-3.5" /> Now playing
-              </div>
-              <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                DJ marked this as playing
-              </span>
-            </div>
-            <SongRequestCard
-              song={nowPlaying}
-              myVote={myVotes[nowPlaying.id] ?? 0}
-              onVote={(v) => handleVote(nowPlaying.id, v)}
-              disabled={!!pendingVotes[nowPlaying.id]}
-            />
-            <p className="mt-1.5 text-xs text-muted-foreground italic">
-              Updated by DJ — the next track appears here when they tap Mark Now Playing.
-            </p>
-          </div>
+        {/* Single hero Now Playing — merges DJ broadcast + matched queue request */}
+        {eventInfo?.id && (
+          <NowPlayingDisplay
+            eventId={eventInfo.id}
+            matchedRequest={matchedPlayingRequest}
+            fallbackRequest={nowPlaying ?? null}
+          />
         )}
 
         {/* Search + request */}
