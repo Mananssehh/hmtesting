@@ -1,7 +1,7 @@
 import { useState } from "react";
 import {
   Copy, Check, Music2, ExternalLink, Play, SkipForward, Trash2,
-  ArrowUp, ArrowDown, ChevronsUp, Rocket, EyeOff, UserX, ShieldCheck,
+  ArrowUp, ArrowDown, ChevronsUp, Rocket, EyeOff, UserX, ShieldCheck, Pin, PinOff,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
