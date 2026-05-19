@@ -683,6 +683,8 @@ const EventPage = () => {
                 onBoost={isLive ? () => setBoostTarget(s) : undefined}
                 disabled={!!pendingVotes[s.id]}
                 battle={battleIds.has(s.id)}
+                trending={sort === "trending" && trending.hotIds.has(s.id)}
+                movement={sort === "trending" ? movementMap.get(s.id) : undefined}
               />
             ))}
           </div>
