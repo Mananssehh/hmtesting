@@ -167,10 +167,10 @@ const Landing = () => {
             </div>
             <div className="grid grid-cols-2 gap-3">
               {[
-                { v: "+5", l: "Song requested" },
+                { v: "+1", l: "Song requested" },
                 { v: "+1", l: "Per upvote" },
-                { v: "+5", l: "Track played" },
-                { v: "−10", l: "Boost spend" },
+                { v: "+1", l: "Track played" },
+                { v: "★", l: "Boosts use credits" },
               ].map((s) => (
                 <div key={s.l} className="p-4 rounded-2xl bg-background/60 border border-border/60 text-center">
                   <div className="text-2xl font-bold text-gradient">{s.v}</div>

@@ -61,7 +61,7 @@ const Profile = () => {
       const [reqRes, txRes, evRes, profRes] = await Promise.all([
         supabase.from("song_requests").select("upvotes").eq("requested_by", user.id),
         supabase.from("points_transactions").select("id, amount, type, reason, created_at")
-          .eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
+          .eq("user_id", user.id).gt("amount", 0).order("created_at", { ascending: false }).limit(20),
         isDJ
           ? supabase.from("events").select("id, name, room_code, is_active")
               .eq("dj_id", user.id).order("created_at", { ascending: false }).limit(5)
