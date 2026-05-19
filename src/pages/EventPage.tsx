@@ -446,7 +446,7 @@ const EventPage = () => {
       setMyVotes((p) => ({ ...p, [inserted.id]: 1 }));
     }
 
-    toast.success("Song requested! +5 pts 🎶", { icon: <PartyPopper className="h-4 w-4" /> });
+    toast.success("Song requested! +1 pt 🎶", { icon: <PartyPopper className="h-4 w-4" /> });
     setRequestOpen(false);
   };
 
