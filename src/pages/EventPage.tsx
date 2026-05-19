@@ -25,7 +25,6 @@ import { BoostActivityStrip } from "@/components/BoostActivityStrip";
 import { DominatingBanner } from "@/components/DominatingBanner";
 import { TopSupportersRecap } from "@/components/TopSupportersRecap";
 import { useNowPlaying } from "@/hooks/useNowPlaying";
-import { normalizeKey } from "@/lib/musicSearch";
 
 type SortMode = "top" | "trending" | "played";
 
