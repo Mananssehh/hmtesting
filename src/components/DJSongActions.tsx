@@ -1,7 +1,7 @@
 import { useState } from "react";
 import {
   Copy, Check, Music2, ExternalLink, Play, SkipForward, Trash2,
-  ArrowUp, ArrowDown, ChevronsUp, Rocket, EyeOff, UserX, ShieldCheck,
+  ArrowUp, ArrowDown, ChevronsUp, Rocket, EyeOff, UserX, ShieldCheck, Pin, PinOff,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -26,13 +26,16 @@ interface Props {
   onMoveTop?: () => void;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
+  onPin?: () => void;
+  onUnpin?: () => void;
+  isPinned?: boolean;
   canReorder?: boolean;
 }
 
 export function DJSongActions({
   song, isPlaying, onMarkPlaying, onMarkPlayed, onSkip, onRemove,
   onApprove, onHide, onBan,
-  onMoveTop, onMoveUp, onMoveDown, canReorder,
+  onMoveTop, onMoveUp, onMoveDown, onPin, onUnpin, isPinned, canReorder,
 }: Props) {
   const [copied, setCopied] = useState<string | null>(null);
 
@@ -154,7 +157,16 @@ export function DJSongActions({
               <Rocket className="mr-1 h-4 w-4" /> Queue
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-44">
+          <DropdownMenuContent align="start" className="w-48">
+            {isPinned && onUnpin ? (
+              <DropdownMenuItem onClick={onUnpin}>
+                <PinOff className="mr-2 h-4 w-4" /> Unpin from top
+              </DropdownMenuItem>
+            ) : onPin ? (
+              <DropdownMenuItem onClick={onPin}>
+                <Pin className="mr-2 h-4 w-4" /> Pin to top
+              </DropdownMenuItem>
+            ) : null}
             {onMoveTop && (
               <DropdownMenuItem onClick={onMoveTop}>
                 <ChevronsUp className="mr-2 h-4 w-4" /> Move to top

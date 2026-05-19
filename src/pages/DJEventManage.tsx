@@ -45,14 +45,11 @@ interface EventInfo {
 }
 
 type Status = SongRequestRow["status"];
-type Filter = "queue" | "pending" | "boosted" | "newest" | "approved" | "played" | "all";
+type Filter = "queue" | "boosted" | "played" | "all";
 
 const filters: { key: Filter; label: string; icon?: React.ReactNode }[] = [
-  { key: "queue", label: "Queue" },
-  { key: "pending", label: "Pending", icon: <Shield className="h-3.5 w-3.5 mr-1" /> },
+  { key: "queue", label: "Queue", icon: <ListMusic className="h-3.5 w-3.5 mr-1" /> },
   { key: "boosted", label: "Boosted", icon: <Sparkles className="h-3.5 w-3.5 mr-1" /> },
-  { key: "newest", label: "Newest" },
-  { key: "approved", label: "Approved" },
   { key: "played", label: "Played" },
   { key: "all", label: "All" },
 ];
@@ -120,49 +117,55 @@ const DJEventManage = () => {
 
   const requireApproval = !!event?.require_approval;
 
+  // Unified queue: pending + approved together. DJ sees everything;
+  // pending items get a moderation badge when approval is required.
   const queueSongs = useMemo(
     () => songs
-      .filter((s) => requireApproval ? s.status === "approved" : (s.status === "pending" || s.status === "approved"))
+      .filter((s) => s.status === "pending" || s.status === "approved")
       .sort((a, b) => {
         const ap = a.queue_position;
         const bp = b.queue_position;
         if (ap != null && bp != null) return ap - bp;
         if (ap != null) return -1;
         if (bp != null) return 1;
-        return (b.upvotes - b.downvotes + b.boost) - (a.upvotes - a.downvotes + a.boost);
+        // 1) Boost, 2) net upvotes, 3) recent activity
+        if ((b.boost ?? 0) !== (a.boost ?? 0)) return (b.boost ?? 0) - (a.boost ?? 0);
+        const netA = a.upvotes - a.downvotes;
+        const netB = b.upvotes - b.downvotes;
+        if (netB !== netA) return netB - netA;
+        return +new Date(b.created_at) - +new Date(a.created_at);
       }),
-    [songs, requireApproval],
-  );
-
-  const pendingSongs = useMemo(
-    () => songs.filter((s) => s.status === "pending")
-      .sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at)),
     [songs],
   );
 
+  const pendingCount = useMemo(
+    () => songs.filter((s) => s.status === "pending").length,
+    [songs],
+  );
+
+  const topBoostedId = useMemo(() => {
+    const top = [...songs]
+      .filter((s) => (s.boost ?? 0) > 0 && s.status !== "removed" && s.status !== "played" && s.status !== "skipped")
+      .sort((a, b) => (b.boost ?? 0) - (a.boost ?? 0))[0];
+    return top?.id ?? null;
+  }, [songs]);
+
   const filtered = useMemo(() => {
     if (filter === "queue") return queueSongs;
-    if (filter === "pending") return pendingSongs;
     if (filter === "boosted") return [...songs].filter((s) => s.boost > 0 && s.status !== "removed")
       .sort((a, b) => b.boost - a.boost);
-    if (filter === "newest") return [...songs].filter((s) => s.status !== "removed")
-      .sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at));
-    if (filter === "approved") return [...songs].filter((s) => s.status === "approved");
     if (filter === "played") return [...songs].filter((s) => s.status === "played" || s.status === "skipped")
       .sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at));
     return [...songs].filter((s) => s.status !== "removed")
       .sort((a, b) => (b.upvotes - b.downvotes + b.boost) - (a.upvotes - a.downvotes + a.boost));
-  }, [songs, queueSongs, pendingSongs, filter]);
+  }, [songs, queueSongs, filter]);
 
   const counts = useMemo(() => ({
     queue: queueSongs.length,
-    pending: pendingSongs.length,
     boosted: songs.filter((s) => s.boost > 0 && s.status !== "removed").length,
-    newest: songs.filter((s) => s.status !== "removed").length,
-    approved: songs.filter((s) => s.status === "approved").length,
     played: songs.filter((s) => s.status === "played" || s.status === "skipped").length,
     all: songs.filter((s) => s.status !== "removed").length,
-  }), [songs, queueSongs, pendingSongs]);
+  }), [songs, queueSongs]);
 
   const updateStatus = async (songId: string, status: Status) => {
     if (status === "playing") {
@@ -364,9 +367,9 @@ const DJEventManage = () => {
                 {event.require_approval ? "Approval required" : "Open requests"}
               </Badge>
               <Badge variant="secondary">{event.cooldown_seconds}s cooldown</Badge>
-              {pendingSongs.length > 0 && (
+              {pendingCount > 0 && (
                 <Badge className="bg-primary/20 text-primary border-primary/40 gap-1">
-                  <Shield className="h-3 w-3" /> {pendingSongs.length} pending
+                  <Shield className="h-3 w-3" /> {pendingCount} awaiting review
                 </Badge>
               )}
             </div>
@@ -541,9 +544,16 @@ const DJEventManage = () => {
                 {filtered.map((song) => {
                   const queueIdx = queueSongs.findIndex((s) => s.id === song.id);
                   const inQueue = queueIdx >= 0;
+                  const isPinned = (song.queue_position ?? 0) < -1000;
+                  const showModerationBadge = requireApproval && song.status === "pending";
                   return (
                     <div key={song.id} className="space-y-2 p-2 rounded-xl bg-card/30 border border-border/30">
-                      <SongRequestCard song={song} />
+                      <SongRequestCard
+                        song={song}
+                        mostWanted={song.id === topBoostedId}
+                        pinned={isPinned}
+                        moderation={showModerationBadge}
+                      />
                       <DJSongActions
                         song={song}
                         isPlaying={song.status === "playing"}
@@ -555,6 +565,9 @@ const DJEventManage = () => {
                         onHide={song.status !== "removed" && song.status !== "playing" ? () => updateStatus(song.id, "removed") : undefined}
                         onBan={song.requested_by ? () => setBanTarget(song) : undefined}
                         canReorder={inQueue}
+                        isPinned={isPinned}
+                        onPin={inQueue && !isPinned ? () => setQueuePosition(song.id, -1_000_000 - Date.now() / 1000) : undefined}
+                        onUnpin={inQueue && isPinned ? () => setQueuePosition(song.id, 0) : undefined}
                         onMoveTop={inQueue && queueIdx > 0 ? () => moveTo(song, "top") : undefined}
                         onMoveUp={inQueue && queueIdx > 0 ? () => moveTo(song, "up") : undefined}
                         onMoveDown={inQueue && queueIdx < queueSongs.length - 1 ? () => moveTo(song, "down") : undefined}

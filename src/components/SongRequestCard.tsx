@@ -1,4 +1,4 @@
-import { ChevronUp, ChevronDown, Sparkles, Rocket, Clock, Flame, Swords } from "lucide-react";
+import { ChevronUp, ChevronDown, Sparkles, Rocket, Clock, Flame, Swords, Crown, Pin, Shield } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -47,9 +47,12 @@ interface Props {
   onBoost?: () => void;
   disabled?: boolean;
   battle?: boolean;
+  mostWanted?: boolean;
+  pinned?: boolean;
+  moderation?: boolean;
 }
 
-export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, disabled, battle }: Props) {
+export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, disabled, battle, mostWanted, pinned, moderation }: Props) {
   const score = song.upvotes - song.downvotes + song.boost;
   const upvoted = myVote === 1;
   const downvoted = myVote === -1;
@@ -162,6 +165,21 @@ export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, disab
           {battle && (
             <Badge className="text-[10px] px-1.5 py-0 bg-orange-500/20 text-orange-300 border-orange-500/40 rounded-md gap-1">
               <Swords className="h-2.5 w-2.5" /> Battle
+            </Badge>
+          )}
+          {mostWanted && (
+            <Badge className="text-[10px] px-1.5 py-0 bg-amber-400/20 text-amber-300 border-amber-400/40 rounded-md gap-1">
+              <Crown className="h-2.5 w-2.5" /> Most Wanted
+            </Badge>
+          )}
+          {pinned && (
+            <Badge className="text-[10px] px-1.5 py-0 bg-accent/20 text-accent border-accent/40 rounded-md gap-1">
+              <Pin className="h-2.5 w-2.5" /> Pinned
+            </Badge>
+          )}
+          {moderation && (
+            <Badge className="text-[10px] px-1.5 py-0 bg-muted text-muted-foreground border-border rounded-md gap-1">
+              <Shield className="h-2.5 w-2.5" /> Awaiting review
             </Badge>
           )}
         </div>
