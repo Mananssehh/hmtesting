@@ -312,4 +312,26 @@ html, body {
     0%, 100% { transform: scale(1); }
     50% { transform: scale(1.04); }
   }
+
+  .trending-glow {
+    box-shadow:
+      0 0 0 1px hsl(14 95% 60% / 0.35),
+      0 0 24px -4px hsl(14 95% 60% / 0.55),
+      0 0 48px -12px hsl(322 90% 62% / 0.45);
+    animation: trending-glow 2.4s ease-in-out infinite;
+  }
+  @keyframes trending-glow {
+    0%, 100% {
+      box-shadow:
+        0 0 0 1px hsl(14 95% 60% / 0.30),
+        0 0 18px -4px hsl(14 95% 60% / 0.45),
+        0 0 36px -12px hsl(322 90% 62% / 0.35);
+    }
+    50% {
+      box-shadow:
+        0 0 0 1px hsl(14 95% 60% / 0.55),
+        0 0 32px -4px hsl(14 95% 60% / 0.75),
+        0 0 64px -12px hsl(322 90% 62% / 0.60);
+    }
+  }
 }
