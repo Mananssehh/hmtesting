@@ -167,6 +167,21 @@ export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, disab
               <Swords className="h-2.5 w-2.5" /> Battle
             </Badge>
           )}
+          {mostWanted && (
+            <Badge className="text-[10px] px-1.5 py-0 bg-amber-400/20 text-amber-300 border-amber-400/40 rounded-md gap-1">
+              <Crown className="h-2.5 w-2.5" /> Most Wanted
+            </Badge>
+          )}
+          {pinned && (
+            <Badge className="text-[10px] px-1.5 py-0 bg-accent/20 text-accent border-accent/40 rounded-md gap-1">
+              <Pin className="h-2.5 w-2.5" /> Pinned
+            </Badge>
+          )}
+          {moderation && (
+            <Badge className="text-[10px] px-1.5 py-0 bg-muted text-muted-foreground border-border rounded-md gap-1">
+              <Shield className="h-2.5 w-2.5" /> Awaiting review
+            </Badge>
+          )}
         </div>
         <p className="text-[13px] text-muted-foreground truncate">{song.artist}</p>
         <div className="mt-1 flex items-center gap-2 flex-wrap">
