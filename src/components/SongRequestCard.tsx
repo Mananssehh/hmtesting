@@ -170,6 +170,24 @@ export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, disab
               <Swords className="h-2.5 w-2.5" /> Battle
             </Badge>
           )}
+          {trending && (
+            <Badge className="text-[10px] px-1.5 py-0 bg-gradient-to-r from-orange-500/25 to-pink-500/25 text-orange-200 border-orange-400/50 rounded-md gap-1 animate-pulse">
+              <TrendingUp className="h-2.5 w-2.5" /> Trending
+            </Badge>
+          )}
+          {movement === "up" && (
+            <span className="inline-flex items-center text-[10px] text-emerald-400 font-semibold tabular-nums gap-0.5">
+              <ArrowUp className="h-2.5 w-2.5" />
+            </span>
+          )}
+          {movement === "down" && (
+            <span className="inline-flex items-center text-[10px] text-muted-foreground/70 gap-0.5">
+              <ArrowDown className="h-2.5 w-2.5" />
+            </span>
+          )}
+          {movement === "new" && (
+            <span className="text-[9px] font-bold px-1 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">NEW</span>
+          )}
           {mostWanted && (
             <Badge className="text-[10px] px-1.5 py-0 bg-amber-400/20 text-amber-300 border-amber-400/40 rounded-md gap-1">
               <Crown className="h-2.5 w-2.5" /> Most Wanted
