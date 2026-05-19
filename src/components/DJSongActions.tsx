@@ -157,7 +157,16 @@ export function DJSongActions({
               <Rocket className="mr-1 h-4 w-4" /> Queue
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-44">
+          <DropdownMenuContent align="start" className="w-48">
+            {isPinned && onUnpin ? (
+              <DropdownMenuItem onClick={onUnpin}>
+                <PinOff className="mr-2 h-4 w-4" /> Unpin from top
+              </DropdownMenuItem>
+            ) : onPin ? (
+              <DropdownMenuItem onClick={onPin}>
+                <Pin className="mr-2 h-4 w-4" /> Pin to top
+              </DropdownMenuItem>
+            ) : null}
             {onMoveTop && (
               <DropdownMenuItem onClick={onMoveTop}>
                 <ChevronsUp className="mr-2 h-4 w-4" /> Move to top
