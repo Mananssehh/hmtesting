@@ -45,14 +45,11 @@ interface EventInfo {
 }
 
 type Status = SongRequestRow["status"];
-type Filter = "queue" | "pending" | "boosted" | "newest" | "approved" | "played" | "all";
+type Filter = "queue" | "boosted" | "played" | "all";
 
 const filters: { key: Filter; label: string; icon?: React.ReactNode }[] = [
-  { key: "queue", label: "Queue" },
-  { key: "pending", label: "Pending", icon: <Shield className="h-3.5 w-3.5 mr-1" /> },
+  { key: "queue", label: "Queue", icon: <ListMusic className="h-3.5 w-3.5 mr-1" /> },
   { key: "boosted", label: "Boosted", icon: <Sparkles className="h-3.5 w-3.5 mr-1" /> },
-  { key: "newest", label: "Newest" },
-  { key: "approved", label: "Approved" },
   { key: "played", label: "Played" },
   { key: "all", label: "All" },
 ];
