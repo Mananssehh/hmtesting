@@ -544,9 +544,16 @@ const DJEventManage = () => {
                 {filtered.map((song) => {
                   const queueIdx = queueSongs.findIndex((s) => s.id === song.id);
                   const inQueue = queueIdx >= 0;
+                  const isPinned = (song.queue_position ?? 0) < -1000;
+                  const showModerationBadge = requireApproval && song.status === "pending";
                   return (
                     <div key={song.id} className="space-y-2 p-2 rounded-xl bg-card/30 border border-border/30">
-                      <SongRequestCard song={song} />
+                      <SongRequestCard
+                        song={song}
+                        mostWanted={song.id === topBoostedId}
+                        pinned={isPinned}
+                        moderation={showModerationBadge}
+                      />
                       <DJSongActions
                         song={song}
                         isPlaying={song.status === "playing"}
@@ -558,6 +565,9 @@ const DJEventManage = () => {
                         onHide={song.status !== "removed" && song.status !== "playing" ? () => updateStatus(song.id, "removed") : undefined}
                         onBan={song.requested_by ? () => setBanTarget(song) : undefined}
                         canReorder={inQueue}
+                        isPinned={isPinned}
+                        onPin={inQueue && !isPinned ? () => setQueuePosition(song.id, -1_000_000 - Date.now() / 1000) : undefined}
+                        onUnpin={inQueue && isPinned ? () => setQueuePosition(song.id, 0) : undefined}
                         onMoveTop={inQueue && queueIdx > 0 ? () => moveTo(song, "top") : undefined}
                         onMoveUp={inQueue && queueIdx > 0 ? () => moveTo(song, "up") : undefined}
                         onMoveDown={inQueue && queueIdx < queueSongs.length - 1 ? () => moveTo(song, "down") : undefined}
