@@ -26,13 +26,16 @@ interface Props {
   onMoveTop?: () => void;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
+  onPin?: () => void;
+  onUnpin?: () => void;
+  isPinned?: boolean;
   canReorder?: boolean;
 }
 
 export function DJSongActions({
   song, isPlaying, onMarkPlaying, onMarkPlayed, onSkip, onRemove,
   onApprove, onHide, onBan,
-  onMoveTop, onMoveUp, onMoveDown, canReorder,
+  onMoveTop, onMoveUp, onMoveDown, onPin, onUnpin, isPinned, canReorder,
 }: Props) {
   const [copied, setCopied] = useState<string | null>(null);
 
