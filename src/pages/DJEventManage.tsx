@@ -367,9 +367,9 @@ const DJEventManage = () => {
                 {event.require_approval ? "Approval required" : "Open requests"}
               </Badge>
               <Badge variant="secondary">{event.cooldown_seconds}s cooldown</Badge>
-              {pendingSongs.length > 0 && (
+              {pendingCount > 0 && (
                 <Badge className="bg-primary/20 text-primary border-primary/40 gap-1">
-                  <Shield className="h-3 w-3" /> {pendingSongs.length} pending
+                  <Shield className="h-3 w-3" /> {pendingCount} awaiting review
                 </Badge>
               )}
             </div>
