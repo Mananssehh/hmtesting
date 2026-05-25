@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Crown, Globe2, Loader2, Music2, Rocket, ThumbsUp, Trophy, Users, Calendar, Headphones } from "lucide-react";
+import { ArrowLeft, Crown, Globe2, Loader2, Music2, Rocket, ThumbsUp, Trophy, Calendar, Headphones } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { AppHeader } from "@/components/AppHeader";
 import { SEO } from "@/components/SEO";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
 type Period = "all" | "week" | "month";
-type RoleFilter = "all" | "dj" | "guest";
+type RoleFilter = "dj" | "guest";
 
 type Row = {
   user_id: string;
@@ -24,6 +25,16 @@ type Row = {
   top_song: { id: string; title: string; artist: string; album_art: string | null } | null;
   global_score: number;
 };
+
+type MyRank = {
+  user_id: string;
+  nickname: string;
+  is_dj: boolean;
+  global_score: number;
+  rank: number;
+};
+
+const MAX_ROWS = 100;
 
 const RankBadge = ({ rank }: { rank: number }) => {
   if (rank === 1)
@@ -52,9 +63,11 @@ const RankBadge = ({ rank }: { rank: number }) => {
 };
 
 export default function GlobalLeaderboard() {
+  const { user } = useAuth();
   const [period, setPeriod] = useState<Period>("all");
-  const [roleFilter, setRoleFilter] = useState<RoleFilter>("all");
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>("dj");
   const [rows, setRows] = useState<Row[]>([]);
+  const [myRank, setMyRank] = useState<MyRank | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -66,14 +79,14 @@ export default function GlobalLeaderboard() {
       const { data, error } = await supabase.rpc("get_global_leaderboard", {
         _period: period,
         _role_filter: roleFilter,
-        _limit: 100,
+        _limit: MAX_ROWS,
       });
       if (cancelled) return;
       if (error) {
         setError(error.message);
         setRows([]);
       } else {
-        setRows((data ?? []) as unknown as Row[]);
+        setRows(((data ?? []) as unknown as Row[]).slice(0, MAX_ROWS));
       }
       setLoading(false);
     })();
@@ -82,13 +95,39 @@ export default function GlobalLeaderboard() {
     };
   }, [period, roleFilter]);
 
+  // Fetch the current user's rank separately so we can pin it if they're outside top 100
+  useEffect(() => {
+    let cancelled = false;
+    if (!user) {
+      setMyRank(null);
+      return;
+    }
+    (async () => {
+      const { data, error } = await supabase.rpc("get_user_global_rank", {
+        _user_id: user.id,
+        _period: period,
+        _role_filter: roleFilter,
+      });
+      if (cancelled) return;
+      if (error || !data || (data as any[]).length === 0) {
+        setMyRank(null);
+      } else {
+        setMyRank((data as any[])[0] as MyRank);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, period, roleFilter]);
+
   const top3 = useMemo(() => rows.slice(0, 3), [rows]);
+  const inTop100 = !!(myRank && rows.some((r) => r.user_id === myRank.user_id));
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-28">
       <SEO
         title="Global Leaderboard"
-        description="See who's running the dancefloor worldwide — top requesters, biggest boosters, and most influential listeners across every Decks event."
+        description="The world's top 100 DJs and listeners on Decks — see who's running the dancefloor worldwide."
         path="/global-leaderboard"
       />
       <AppHeader />
@@ -105,7 +144,7 @@ export default function GlobalLeaderboard() {
             Global Leaderboard
           </h1>
           <p className="text-muted-foreground text-[15px] mt-1.5">
-            The world's most influential listeners and DJs on Decks.
+            The top 100 most influential listeners and DJs on Decks.
           </p>
         </div>
 
@@ -118,10 +157,9 @@ export default function GlobalLeaderboard() {
           </TabsList>
         </Tabs>
 
-        {/* Role filter */}
+        {/* Role filter — DJs vs Guests only */}
         <Tabs value={roleFilter} onValueChange={(v) => setRoleFilter(v as RoleFilter)}>
-          <TabsList className="w-full grid grid-cols-3">
-            <TabsTrigger value="all"><Users className="h-3.5 w-3.5 mr-1.5" />Everyone</TabsTrigger>
+          <TabsList className="w-full grid grid-cols-2">
             <TabsTrigger value="dj"><Headphones className="h-3.5 w-3.5 mr-1.5" />DJs</TabsTrigger>
             <TabsTrigger value="guest"><Trophy className="h-3.5 w-3.5 mr-1.5" />Guests</TabsTrigger>
           </TabsList>
@@ -172,11 +210,17 @@ export default function GlobalLeaderboard() {
               {rows.map((r, i) => {
                 const rank = i + 1;
                 const initial = (r.nickname || "G").charAt(0).toUpperCase();
+                const isMe = user?.id === r.user_id;
                 return (
                   <li key={r.user_id}>
                     <Link
                       to={`/users/${r.user_id}`}
-                      className="flex items-center gap-3 px-3 sm:px-4 py-3 hover:bg-white/[0.03] transition-colors"
+                      className={cn(
+                        "flex items-center gap-3 px-3 sm:px-4 py-3 transition-colors",
+                        isMe
+                          ? "bg-primary/10 ring-1 ring-inset ring-primary/40 shadow-[inset_0_0_24px_-8px_hsl(var(--primary)/0.5)]"
+                          : "hover:bg-white/[0.03]",
+                      )}
                     >
                       <RankBadge rank={rank} />
                       <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-accent grid place-items-center text-sm font-bold text-primary-foreground shrink-0">
@@ -185,6 +229,11 @@ export default function GlobalLeaderboard() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="font-semibold truncate">{r.nickname}</span>
+                          {isMe && (
+                            <Badge className="rounded-full text-[10px] px-1.5 py-0 h-4 bg-primary text-primary-foreground">
+                              You
+                            </Badge>
+                          )}
                           <Badge
                             variant="outline"
                             className={cn(
@@ -221,9 +270,38 @@ export default function GlobalLeaderboard() {
         </div>
 
         <p className="text-[11px] text-muted-foreground/70 text-center">
-          Score = points + upvotes + boosts×2 + events×5. Only public profiles are shown.
+          Showing Top {MAX_ROWS} worldwide · Score = points + upvotes + boosts×2 + events×5
         </p>
       </main>
+
+      {/* Sticky "Your Rank" card when outside top 100 */}
+      {myRank && !inTop100 && (
+        <div className="fixed bottom-0 inset-x-0 z-40 px-3 pb-3 sm:pb-4 pointer-events-none">
+          <div className="container max-w-3xl pointer-events-auto">
+            <Link
+              to={`/users/${myRank.user_id}`}
+              className="flex items-center gap-3 rounded-2xl border border-primary/40 bg-card/95 backdrop-blur-xl px-3 sm:px-4 py-3 shadow-[0_8px_40px_-8px_hsl(var(--primary)/0.5)]"
+            >
+              <div className="h-10 w-10 rounded-full grid place-items-center bg-secondary/60 text-foreground font-mono text-sm tabular-nums shrink-0">
+                #{myRank.rank}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold truncate">{myRank.nickname}</span>
+                  <Badge className="rounded-full text-[10px] px-1.5 py-0 h-4 bg-primary text-primary-foreground">
+                    You
+                  </Badge>
+                </div>
+                <div className="text-[11px] text-muted-foreground">Your global rank</div>
+              </div>
+              <div className="text-right shrink-0">
+                <div className="text-base font-bold tabular-nums text-primary">{myRank.global_score}</div>
+                <div className="text-[9px] uppercase tracking-wider text-muted-foreground">score</div>
+              </div>
+            </Link>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
