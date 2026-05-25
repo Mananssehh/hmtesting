@@ -748,9 +748,9 @@ const EventPage = () => {
       <AlertDialog open={!!removeTarget} onOpenChange={(o) => !o && !removing && setRemoveTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove this request?</AlertDialogTitle>
+            <AlertDialogTitle>Remove this pending request?</AlertDialogTitle>
             <AlertDialogDescription>
-              You can request another song after this.
+              The request cooldown still applies — you can request another song once it expires.
               {removeTarget && (
                 <span className="block mt-2 text-foreground/80 font-medium">
                   {removeTarget.title} — {removeTarget.artist}
