@@ -26,6 +26,7 @@ import { Badge } from "@/components/ui/badge";
 import { logCritical } from "@/lib/errorLogger";
 import { NowPlayingPanel } from "@/components/NowPlayingPanel";
 import { BridgePairing } from "@/components/BridgePairing";
+import { BridgeMonitor } from "@/components/BridgeMonitor";
 
 interface EventInfo {
   id: string;
@@ -427,8 +428,9 @@ const DJEventManage = () => {
 
         {/* Decks Bridge pairing */}
         {status !== "ended" && (
-          <div className="mb-4">
+          <div className="mb-4 space-y-4">
             <BridgePairing eventId={event.id} />
+            <BridgeMonitor eventId={event.id} />
           </div>
         )}
 
