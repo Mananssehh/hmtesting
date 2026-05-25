@@ -14,6 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
+      bridge_pair_attempts: {
+        Row: {
+          attempted_at: string
+          id: string
+          ip: string
+          success: boolean
+        }
+        Insert: {
+          attempted_at?: string
+          id?: string
+          ip: string
+          success?: boolean
+        }
+        Update: {
+          attempted_at?: string
+          id?: string
+          ip?: string
+          success?: boolean
+        }
+        Relationships: []
+      }
       bridge_pairing_codes: {
         Row: {
           claimed_at: string | null
