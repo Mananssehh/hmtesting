@@ -407,12 +407,13 @@ const EventPage = () => {
     try {
       const { error } = await supabase.rpc("remove_my_song_request", { _song_request_id: target.id });
       if (error) throw error;
-      setSongs((prev) => prev.filter((s) => s.id !== target.id));
-      toast.success("Request removed.");
+      // Soft-delete: mark as removed locally so it disappears from visible lists (filters drop status === "removed")
+      setSongs((prev) => prev.map((s) => (s.id === target.id ? { ...s, status: "removed" as const } : s)));
+      toast.success("Request removed. Cooldown still applies.");
       setRemoveTarget(null);
     } catch (err) {
       const msg = (err as { message?: string })?.message ?? "";
-      if (/can't be removed|cannot be removed|not authenticated|only remove/i.test(msg)) {
+      if (/can't be removed|cannot be removed|only remove|not authenticated/i.test(msg)) {
         toast.error("This request can't be removed anymore.");
       } else {
         toast.error(msg || "Could not remove request");
@@ -708,7 +709,7 @@ const EventPage = () => {
                 myVote={myVotes[s.id] ?? 0}
                 onVote={(v) => handleVote(s.id, v)}
                 onBoost={isLive ? () => setBoostTarget(s) : undefined}
-                onRemove={s.requested_by === user?.id ? () => setRemoveTarget(s) : undefined}
+                onRemove={s.requested_by === user?.id && s.status === "pending" ? () => setRemoveTarget(s) : undefined}
                 disabled={!!pendingVotes[s.id]}
                 battle={battleIds.has(s.id)}
                 trending={sort === "trending" && trending.hotIds.has(s.id)}
@@ -747,9 +748,9 @@ const EventPage = () => {
       <AlertDialog open={!!removeTarget} onOpenChange={(o) => !o && !removing && setRemoveTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Remove this request?</AlertDialogTitle>
+            <AlertDialogTitle>Remove this pending request?</AlertDialogTitle>
             <AlertDialogDescription>
-              You can request another song after this.
+              The request cooldown still applies — you can request another song once it expires.
               {removeTarget && (
                 <span className="block mt-2 text-foreground/80 font-medium">
                   {removeTarget.title} — {removeTarget.artist}
