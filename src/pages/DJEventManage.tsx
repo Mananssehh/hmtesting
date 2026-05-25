@@ -26,6 +26,7 @@ import { Badge } from "@/components/ui/badge";
 import { logCritical } from "@/lib/errorLogger";
 import { NowPlayingPanel } from "@/components/NowPlayingPanel";
 import { BridgePairing } from "@/components/BridgePairing";
+import { BridgeMonitor } from "@/components/BridgeMonitor";
 
 interface EventInfo {
   id: string;
