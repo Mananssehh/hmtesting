@@ -743,6 +743,32 @@ const EventPage = () => {
           songTitle={`${boostTarget.title} — ${boostTarget.artist}`}
         />
       )}
+
+      <AlertDialog open={!!removeTarget} onOpenChange={(o) => !o && !removing && setRemoveTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove this request?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You can request another song after this.
+              {removeTarget && (
+                <span className="block mt-2 text-foreground/80 font-medium">
+                  {removeTarget.title} — {removeTarget.artist}
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={removing}>Keep it</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleConfirmRemove(); }}
+              disabled={removing}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {removing ? "Removing…" : "Remove"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
