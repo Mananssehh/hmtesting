@@ -246,6 +246,18 @@ export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, onRem
           <span className="hidden sm:inline">Boost</span>
         </button>
       )}
+
+      {/* Remove own request */}
+      {onRemove && (song.status === "pending" || song.status === "approved") && (
+        <button
+          onClick={onRemove}
+          aria-label="Remove my request"
+          title="Remove my request"
+          className="shrink-0 h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground/70 hover:text-destructive hover:bg-destructive/10 transition-colors tap-target"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      )}
     </div>
   );
 }
