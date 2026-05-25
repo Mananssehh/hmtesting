@@ -51,6 +51,8 @@ const EventPage = () => {
   const [loading, setLoading] = useState(true);
   const [requestOpen, setRequestOpen] = useState(false);
   const [boostTarget, setBoostTarget] = useState<SongRequestRow | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<SongRequestRow | null>(null);
+  const [removing, setRemoving] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const [lastRequestAt, setLastRequestAt] = useState(0);
 
