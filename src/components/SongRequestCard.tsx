@@ -247,8 +247,8 @@ export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, onRem
         </button>
       )}
 
-      {/* Remove own request */}
-      {onRemove && (song.status === "pending" || song.status === "approved") && (
+      {/* Remove own pending request */}
+      {onRemove && song.status === "pending" && (
         <button
           onClick={onRemove}
           aria-label="Remove my request"
