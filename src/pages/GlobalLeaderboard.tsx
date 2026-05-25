@@ -269,9 +269,6 @@ export default function GlobalLeaderboard() {
           )}
         </div>
 
-        <p className="text-[11px] text-muted-foreground/70 text-center">
-          Showing Top {MAX_ROWS} worldwide · Score = points + upvotes + boosts×2 + events×5
-        </p>
       </main>
 
       {/* Sticky "Your Rank" card when outside top 100 */}
