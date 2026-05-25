@@ -22,18 +22,45 @@ function json(body: unknown, status = 200) {
   });
 }
 
+// Light rate limiting: max N failed attempts per IP per window.
+const MAX_FAILED_ATTEMPTS = 10;
+const WINDOW_MINUTES = 10;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
-  const parsed = BodySchema.safeParse(await req.json().catch(() => ({})));
-  if (!parsed.success) {
-    return json({ error: parsed.error.flatten().fieldErrors }, 400);
-  }
-  const { code } = parsed.data;
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
 
   const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
   const supabase = createClient(SUPABASE_URL, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+
+  // Check recent failed attempts for this IP
+  const since = new Date(Date.now() - WINDOW_MINUTES * 60_000).toISOString();
+  const { count: failedCount } = await supabase
+    .from("bridge_pair_attempts")
+    .select("id", { count: "exact", head: true })
+    .eq("ip", ip)
+    .eq("success", false)
+    .gte("attempted_at", since);
+
+  if ((failedCount ?? 0) >= MAX_FAILED_ATTEMPTS) {
+    return json(
+      { error: "Too many pairing attempts. Please wait a few minutes and try again." },
+      429,
+    );
+  }
+
+  const logAttempt = async (success: boolean) => {
+    await supabase.from("bridge_pair_attempts").insert({ ip, success });
+  };
+
+  const parsed = BodySchema.safeParse(await req.json().catch(() => ({})));
+  if (!parsed.success) {
+    await logAttempt(false);
+    return json({ error: parsed.error.flatten().fieldErrors }, 400);
+  }
+  const { code } = parsed.data;
 
   const { data: row, error } = await supabase
     .from("bridge_pairing_codes")
