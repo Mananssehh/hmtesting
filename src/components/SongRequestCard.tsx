@@ -45,6 +45,7 @@ interface Props {
   myVote?: 1 | -1 | 0;
   onVote?: (value: 1 | -1) => void;
   onBoost?: () => void;
+  onRemove?: () => void;
   disabled?: boolean;
   battle?: boolean;
   mostWanted?: boolean;
@@ -54,7 +55,7 @@ interface Props {
   movement?: "up" | "down" | "same" | "new";
 }
 
-export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, disabled, battle, mostWanted, pinned, moderation, trending, movement }: Props) {
+export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, onRemove, disabled, battle, mostWanted, pinned, moderation, trending, movement }: Props) {
   const score = song.upvotes - song.downvotes + song.boost;
   const upvoted = myVote === 1;
   const downvoted = myVote === -1;
