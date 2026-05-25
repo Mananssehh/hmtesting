@@ -104,60 +104,96 @@ Deno.serve(async (req) => {
       .replace(/\s+(feat\.?|ft\.?)\s+.*$/g, " ")
       .replace(/[^a-z0-9]+/g, "");
   };
+  // Dice coefficient on character bigrams — robust title similarity.
+  const bigrams = (s: string) => {
+    const out = new Map<string, number>();
+    for (let i = 0; i < s.length - 1; i++) {
+      const g = s.slice(i, i + 2);
+      out.set(g, (out.get(g) ?? 0) + 1);
+    }
+    return out;
+  };
+  const similarity = (a: string, b: string) => {
+    if (!a || !b) return 0;
+    if (a === b) return 1;
+    if (a.length < 2 || b.length < 2) return 0;
+    const ba = bigrams(a);
+    const bb = bigrams(b);
+    let inter = 0;
+    let total = 0;
+    for (const v of ba.values()) total += v;
+    for (const [k, v] of bb) {
+      total += v;
+      const av = ba.get(k);
+      if (av) inter += Math.min(av, v);
+    }
+    return (2 * inter) / total;
+  };
+
   const npTitleN = normalize(b.title);
   const npArtistN = normalize(b.artist);
-  console.log("[bridge-match] now playing title/artist", { title: b.title, artist: b.artist });
+  console.log("[bridge-match] now playing", { title: b.title, artist: b.artist });
 
   let matchedRequestId: string | null = null;
   try {
+    // Only consider requests that are still actionable (never auto-mark played/skipped/removed twice).
     const { data: candidates } = await supabase
       .from("song_requests")
       .select("id, title, artist, status, upvotes, downvotes, boost, created_at")
       .eq("event_id", integration.event_id)
-      .not("status", "in", "(removed,skipped)");
+      .in("status", ["pending", "approved"]);
 
     if (candidates && candidates.length) {
-      const matches = candidates.filter((c: any) => {
+      // 1) Exact normalized title+artist (or title alone when one side has no artist).
+      let matches = candidates.filter((c: any) => {
         const t = normalize(c.title);
         const a = normalize(c.artist);
-        if (!t) return false;
-        if (t !== npTitleN) return false;
-        // If both sides have artist, require artist match; otherwise title alone is enough.
+        if (!t || t !== npTitleN) return false;
         if (npArtistN && a) return a === npArtistN;
         return true;
       });
+      let matchType = "exact";
+
+      // 2) Strong title similarity fallback (Dice ≥ 0.92). When artist is known on
+      //    both sides, require artist similarity too to avoid false positives.
+      if (!matches.length) {
+        matches = candidates.filter((c: any) => {
+          const t = normalize(c.title);
+          const a = normalize(c.artist);
+          const titleSim = similarity(t, npTitleN);
+          if (titleSim < 0.92) return false;
+          if (npArtistN && a) return similarity(a, npArtistN) >= 0.85;
+          return true;
+        });
+        matchType = "similarity";
+      }
+
       if (matches.length) {
-        // Prefer not-yet-played; then highest score; then newest.
-        const statusRank = (s: string) =>
-          s === "played" ? 2 : 1; // active first
+        // Highest score, then newest.
         matches.sort((a: any, b: any) => {
-          const ra = statusRank(a.status);
-          const rb = statusRank(b.status);
-          if (ra !== rb) return ra - rb;
           const sa = (a.upvotes ?? 0) - (a.downvotes ?? 0) + (a.boost ?? 0);
           const sb = (b.upvotes ?? 0) - (b.downvotes ?? 0) + (b.boost ?? 0);
           if (sa !== sb) return sb - sa;
           return +new Date(b.created_at) - +new Date(a.created_at);
         });
         matchedRequestId = matches[0].id;
-        console.log("[bridge-match] matched request id", matchedRequestId);
+        console.log("[bridge-match] matched", { matchType, id: matchedRequestId });
 
-        if (matches[0].status !== "played") {
-          const { error: markErr } = await supabase
-            .from("song_requests")
-            .update({
-              status: "played",
-              played_at: new Date().toISOString(),
-              played_by_source: "bridge",
-            })
-            .eq("id", matchedRequestId);
-          if (markErr) console.error("[bridge-match] mark played failed:", markErr);
-        }
+        const { error: markErr } = await supabase
+          .from("song_requests")
+          .update({
+            status: "played",
+            played_at: new Date().toISOString(),
+            played_by_source: "decks_bridge",
+          })
+          .eq("id", matchedRequestId)
+          .in("status", ["pending", "approved"]);
+        if (markErr) console.error("[bridge-match] mark played failed:", markErr);
       } else {
-        console.log("[bridge-match] no match found");
+        console.log("[bridge-match] no confident match");
       }
     } else {
-      console.log("[bridge-match] no match found");
+      console.log("[bridge-match] no active candidates");
     }
   } catch (e) {
     console.error("[bridge-match] error:", e);
