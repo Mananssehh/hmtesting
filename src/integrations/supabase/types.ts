@@ -713,6 +713,16 @@ export type Database = {
       }
       get_nickname: { Args: { _user_id: string }; Returns: string }
       get_public_profile: { Args: { _user_id: string }; Returns: Json }
+      get_user_global_rank: {
+        Args: { _period?: string; _role_filter?: string; _user_id: string }
+        Returns: {
+          global_score: number
+          is_dj: boolean
+          nickname: string
+          rank: number
+          user_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
