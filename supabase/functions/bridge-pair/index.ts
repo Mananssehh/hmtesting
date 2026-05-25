@@ -72,9 +72,16 @@ Deno.serve(async (req) => {
     console.error("pairing lookup failed:", error);
     return json({ error: "Internal server error" }, 500);
   }
-  if (!row) return json({ error: "Invalid pairing code" }, 404);
-  if (row.claimed_at) return json({ error: "Pairing code already used" }, 409);
+  if (!row) {
+    await logAttempt(false);
+    return json({ error: "Invalid pairing code" }, 404);
+  }
+  if (row.claimed_at) {
+    await logAttempt(false);
+    return json({ error: "Pairing code already used" }, 409);
+  }
   if (new Date(row.expires_at).getTime() < Date.now()) {
+    await logAttempt(false);
     return json({ error: "Pairing code expired" }, 410);
   }
 
@@ -109,11 +116,12 @@ Deno.serve(async (req) => {
   }
 
   // Mark code as claimed
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
   await supabase
     .from("bridge_pairing_codes")
     .update({ claimed_at: new Date().toISOString(), claimed_ip: ip })
     .eq("id", row.id);
+
+  await logAttempt(true);
 
   return json({
     event_id: row.event_id,
