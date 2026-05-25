@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { searchMusic, MusicSearchResult, normalizeKey } from "@/lib/musicSearch";
 import { formatDuration, platformLabel } from "@/lib/searchLinks";
@@ -50,6 +51,8 @@ const EventPage = () => {
   const [loading, setLoading] = useState(true);
   const [requestOpen, setRequestOpen] = useState(false);
   const [boostTarget, setBoostTarget] = useState<SongRequestRow | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<SongRequestRow | null>(null);
+  const [removing, setRemoving] = useState(false);
   const [showHint, setShowHint] = useState(false);
   const [lastRequestAt, setLastRequestAt] = useState(0);
 
@@ -397,6 +400,30 @@ const EventPage = () => {
     }
   };
 
+  const handleConfirmRemove = async () => {
+    if (!removeTarget) return;
+    setRemoving(true);
+    const target = removeTarget;
+    try {
+      const { error } = await supabase.rpc("remove_my_song_request", { _song_request_id: target.id });
+      if (error) throw error;
+      setSongs((prev) => prev.filter((s) => s.id !== target.id));
+      toast.success("Request removed.");
+      setRemoveTarget(null);
+    } catch (err) {
+      const msg = (err as { message?: string })?.message ?? "";
+      if (/can't be removed|cannot be removed|not authenticated|only remove/i.test(msg)) {
+        toast.error("This request can't be removed anymore.");
+      } else {
+        toast.error(msg || "Could not remove request");
+      }
+    } finally {
+      setRemoving(false);
+    }
+  };
+
+
+
   const handleRequestSong = async (song: MusicSearchResult) => {
     if (!user || !eventInfo) return;
     if (eventInfo.requests_status !== "live") {
@@ -681,6 +708,7 @@ const EventPage = () => {
                 myVote={myVotes[s.id] ?? 0}
                 onVote={(v) => handleVote(s.id, v)}
                 onBoost={isLive ? () => setBoostTarget(s) : undefined}
+                onRemove={s.requested_by === user?.id ? () => setRemoveTarget(s) : undefined}
                 disabled={!!pendingVotes[s.id]}
                 battle={battleIds.has(s.id)}
                 trending={sort === "trending" && trending.hotIds.has(s.id)}
@@ -715,6 +743,32 @@ const EventPage = () => {
           songTitle={`${boostTarget.title} — ${boostTarget.artist}`}
         />
       )}
+
+      <AlertDialog open={!!removeTarget} onOpenChange={(o) => !o && !removing && setRemoveTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove this request?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You can request another song after this.
+              {removeTarget && (
+                <span className="block mt-2 text-foreground/80 font-medium">
+                  {removeTarget.title} — {removeTarget.artist}
+                </span>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={removing}>Keep it</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleConfirmRemove(); }}
+              disabled={removing}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {removing ? "Removing…" : "Remove"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

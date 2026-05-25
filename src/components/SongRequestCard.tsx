@@ -1,4 +1,4 @@
-import { ChevronUp, ChevronDown, Sparkles, Rocket, Clock, Flame, Swords, Crown, Pin, Shield, TrendingUp, ArrowUp, ArrowDown } from "lucide-react";
+import { ChevronUp, ChevronDown, Sparkles, Rocket, Clock, Flame, Swords, Crown, Pin, Shield, TrendingUp, ArrowUp, ArrowDown, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +45,7 @@ interface Props {
   myVote?: 1 | -1 | 0;
   onVote?: (value: 1 | -1) => void;
   onBoost?: () => void;
+  onRemove?: () => void;
   disabled?: boolean;
   battle?: boolean;
   mostWanted?: boolean;
@@ -54,7 +55,7 @@ interface Props {
   movement?: "up" | "down" | "same" | "new";
 }
 
-export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, disabled, battle, mostWanted, pinned, moderation, trending, movement }: Props) {
+export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, onRemove, disabled, battle, mostWanted, pinned, moderation, trending, movement }: Props) {
   const score = song.upvotes - song.downvotes + song.boost;
   const upvoted = myVote === 1;
   const downvoted = myVote === -1;
@@ -243,6 +244,18 @@ export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, disab
         >
           <Rocket className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">Boost</span>
+        </button>
+      )}
+
+      {/* Remove own request */}
+      {onRemove && (song.status === "pending" || song.status === "approved") && (
+        <button
+          onClick={onRemove}
+          aria-label="Remove my request"
+          title="Remove my request"
+          className="shrink-0 h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground/70 hover:text-destructive hover:bg-destructive/10 transition-colors tap-target"
+        >
+          <Trash2 className="h-4 w-4" />
         </button>
       )}
     </div>
