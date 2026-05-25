@@ -428,8 +428,9 @@ const DJEventManage = () => {
 
         {/* Decks Bridge pairing */}
         {status !== "ended" && (
-          <div className="mb-4">
+          <div className="mb-4 space-y-4">
             <BridgePairing eventId={event.id} />
+            <BridgeMonitor eventId={event.id} />
           </div>
         )}
 
