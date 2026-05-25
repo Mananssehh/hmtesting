@@ -739,11 +739,15 @@ export type Database = {
         Args: { _event_id: string }
         Returns: undefined
       }
+      remove_my_song_request: {
+        Args: { _song_request_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "dj" | "guest" | "admin"
       error_severity: "critical" | "warning" | "info"
-      point_tx_type: "earned" | "spent" | "manual_adjustment"
+      point_tx_type: "earned" | "spent" | "manual_adjustment" | "refunded"
       request_status:
         | "pending"
         | "approved"
@@ -880,7 +884,7 @@ export const Constants = {
     Enums: {
       app_role: ["dj", "guest", "admin"],
       error_severity: ["critical", "warning", "info"],
-      point_tx_type: ["earned", "spent", "manual_adjustment"],
+      point_tx_type: ["earned", "spent", "manual_adjustment", "refunded"],
       request_status: [
         "pending",
         "approved",
