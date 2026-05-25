@@ -400,6 +400,30 @@ const EventPage = () => {
     }
   };
 
+  const handleConfirmRemove = async () => {
+    if (!removeTarget) return;
+    setRemoving(true);
+    const target = removeTarget;
+    try {
+      const { error } = await supabase.rpc("remove_my_song_request", { _song_request_id: target.id });
+      if (error) throw error;
+      setSongs((prev) => prev.filter((s) => s.id !== target.id));
+      toast.success("Request removed.");
+      setRemoveTarget(null);
+    } catch (err) {
+      const msg = (err as { message?: string })?.message ?? "";
+      if (/can't be removed|cannot be removed|not authenticated|only remove/i.test(msg)) {
+        toast.error("This request can't be removed anymore.");
+      } else {
+        toast.error(msg || "Could not remove request");
+      }
+    } finally {
+      setRemoving(false);
+    }
+  };
+
+
+
   const handleRequestSong = async (song: MusicSearchResult) => {
     if (!user || !eventInfo) return;
     if (eventInfo.requests_status !== "live") {
