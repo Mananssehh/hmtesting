@@ -25,10 +25,16 @@ export function useNowPlaying(eventId: string | undefined) {
       }
     };
 
+    let subscribing = false;
     const subscribe = () => {
-      if (channel) supabase.removeChannel(channel);
-      channel = supabase
-        .channel(`now-playing-${eventId}-${Date.now()}`)
+      if (subscribing || cancelled) return;
+      subscribing = true;
+      if (channel) {
+        try { supabase.removeChannel(channel); } catch { /* noop */ }
+        channel = null;
+      }
+      const ch = supabase
+        .channel(`now-playing-${eventId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`)
         .on(
           "postgres_changes",
           {
@@ -38,28 +44,27 @@ export function useNowPlaying(eventId: string | undefined) {
             filter: `event_id=eq.${eventId}`,
           },
           (payload) => {
-            console.log("[now-playing realtime] payload", payload);
             if (payload.eventType === "DELETE") setNowPlaying(null);
             else setNowPlaying(payload.new as NowPlayingRow);
-            // Safety refetch in case payload shape differs from row schema
             refresh();
           },
-        )
-        .subscribe((status) => {
-          if (status === "SUBSCRIBED") {
-            backoff = 1000;
-          } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
-            // Exponential backoff, capped at 30s
-            if (reconnectTimer) window.clearTimeout(reconnectTimer);
-            reconnectTimer = window.setTimeout(() => {
-              if (!cancelled) {
-                refresh();
-                subscribe();
-                backoff = Math.min(backoff * 2, 30000);
-              }
-            }, backoff);
-          }
-        });
+        );
+      channel = ch;
+      ch.subscribe((status) => {
+        subscribing = false;
+        if (status === "SUBSCRIBED") {
+          backoff = 1000;
+        } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+          if (reconnectTimer) window.clearTimeout(reconnectTimer);
+          reconnectTimer = window.setTimeout(() => {
+            if (!cancelled) {
+              refresh();
+              subscribe();
+              backoff = Math.min(backoff * 2, 30000);
+            }
+          }, backoff);
+        }
+      });
     };
 
     const onVisibility = () => {
