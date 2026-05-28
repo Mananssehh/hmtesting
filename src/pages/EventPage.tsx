@@ -899,6 +899,9 @@ function RequestPicker({ onPick, existing, allowExplicit = true }: { onPick: (so
             <p className="text-xs text-muted-foreground/80 mt-1">
               Try a different spelling, the artist name, or fewer words.
             </p>
+            <p className="text-xs text-muted-foreground/60 mt-3">
+              Can&rsquo;t find your song? Ask the DJ to add it manually.
+            </p>
           </div>
         )}
 
