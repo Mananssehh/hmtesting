@@ -1,5 +1,5 @@
-// Music search proxy: Spotify → iTunes → empty.
-// No API key required for iTunes. Spotify is optional.
+// Music search proxy: searches Spotify + iTunes in parallel and merges results.
+// iTunes requires no API key; Spotify is optional.
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
 
@@ -45,9 +45,13 @@ async function searchSpotify(q: string): Promise<SearchResult[] | null> {
   const token = await getSpotifyToken();
   if (!token) return null;
   try {
-    const url = `https://api.spotify.com/v1/search?type=track&limit=20&q=${encodeURIComponent(q)}`;
+    // Higher limit + multi-market fallback to catch region-only tracks
+    const url = `https://api.spotify.com/v1/search?type=track&limit=50&market=from_token&q=${encodeURIComponent(q)}`;
     const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.warn("[music-search] spotify status", res.status);
+      return null;
+    }
     const j = await res.json();
     const items: any[] = j?.tracks?.items ?? [];
     return items.map((t) => ({
@@ -62,16 +66,20 @@ async function searchSpotify(q: string): Promise<SearchResult[] | null> {
       external_url: t.external_urls?.spotify ?? `https://open.spotify.com/track/${t.id}`,
       explicit: !!t.explicit,
     }));
-  } catch {
+  } catch (e) {
+    console.warn("[music-search] spotify error", e);
     return null;
   }
 }
 
 async function searchItunes(q: string): Promise<SearchResult[] | null> {
   try {
-    const url = `https://itunes.apple.com/search?media=music&entity=song&limit=20&term=${encodeURIComponent(q)}`;
+    const url = `https://itunes.apple.com/search?media=music&entity=song&limit=50&term=${encodeURIComponent(q)}`;
     const res = await fetch(url);
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.warn("[music-search] itunes status", res.status);
+      return null;
+    }
     const j = await res.json();
     const items: any[] = j?.results ?? [];
     return items.map((t) => ({
@@ -80,15 +88,56 @@ async function searchItunes(q: string): Promise<SearchResult[] | null> {
       title: t.trackName ?? "Unknown",
       artist: t.artistName ?? "Unknown",
       album: t.collectionName ?? "",
-      album_art_url: (t.artworkUrl100 as string | undefined)?.replace("100x100", "300x300") ?? null,
+      album_art_url: (t.artworkUrl100 as string | undefined)?.replace("100x100", "600x600") ?? null,
       duration_ms: t.trackTimeMillis ?? 0,
       preview_url: t.previewUrl ?? null,
       external_url: t.trackViewUrl ?? "",
       explicit: t.trackExplicitness === "explicit",
     }));
-  } catch {
+  } catch (e) {
+    console.warn("[music-search] itunes error", e);
     return null;
   }
+}
+
+// Loose normalization for dedupe: lowercase, drop punctuation, collapse
+// common variants (feat./ft./featuring, &/and, remix tags, parens).
+function normalizeForDedupe(title: string, artist: string): string {
+  const norm = (s: string) =>
+    (s ?? "")
+      .toLowerCase()
+      // Replace common collaborator markers
+      .replace(/\b(featuring|feat\.?|ft\.?|with)\b/g, " ")
+      // Strip parenthetical remix/version tags but keep the words
+      .replace(/[\(\)\[\]\{\}]/g, " ")
+      // & -> and
+      .replace(/&/g, " and ")
+      // Remove punctuation
+      .replace(/[^\p{L}\p{N}\s]/gu, " ")
+      // Collapse whitespace
+      .replace(/\s+/g, " ")
+      .trim();
+  return `${norm(title)}|${norm(artist).split(" ")[0] ?? ""}`;
+}
+
+function mergeResults(spotify: SearchResult[], itunes: SearchResult[]): SearchResult[] {
+  // Prefer Spotify entries when duplicate; always append unique iTunes entries.
+  const seen = new Map<string, SearchResult>();
+  const order: string[] = [];
+  for (const r of [...spotify, ...itunes]) {
+    const key = `${r.source_platform}:${r.source_song_id}`;
+    const dupeKey = normalizeForDedupe(r.title, r.artist);
+    // Hard-dedupe by same-platform id
+    if (seen.has(key)) continue;
+    // Soft dedupe across providers: keep the first (spotify wins because it iterates first)
+    const existing = [...seen.values()].find(
+      (s) => normalizeForDedupe(s.title, s.artist) === dupeKey,
+    );
+    if (existing) continue;
+    seen.set(key, r);
+    order.push(key);
+  }
+  return order.map((k) => seen.get(k)!).slice(0, 50);
 }
 
 Deno.serve(async (req) => {
@@ -136,22 +185,28 @@ Deno.serve(async (req) => {
       });
     }
 
-    const spotify = await searchSpotify(q);
-    if (spotify && spotify.length > 0) {
-      return new Response(JSON.stringify({ provider: "spotify", results: spotify }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    const itunes = await searchItunes(q);
-    if (itunes && itunes.length > 0) {
-      return new Response(JSON.stringify({ provider: "itunes", results: itunes }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    return new Response(
-      JSON.stringify({ provider: spotify ? "spotify" : "itunes", results: [] }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-    );
+    // Query both providers in parallel
+    const [spotifyRes, itunesRes] = await Promise.all([
+      searchSpotify(q),
+      searchItunes(q),
+    ]);
+    const spotify = spotifyRes ?? [];
+    const itunes = itunesRes ?? [];
+
+    const merged = mergeResults(spotify, itunes);
+
+    const provider: "spotify" | "itunes" | "none" =
+      merged.length === 0
+        ? "none"
+        : spotify.length > 0 && itunes.length > 0
+        ? "spotify"
+        : spotify.length > 0
+        ? "spotify"
+        : "itunes";
+
+    return new Response(JSON.stringify({ provider, results: merged }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (e) {
     console.error("music-search error", e);
     return new Response(
