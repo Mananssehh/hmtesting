@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Disc3, Globe2, LogOut, Trophy, User as UserIcon } from "lucide-react";
+import { Disc3, LogOut, Trophy, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
@@ -31,9 +31,6 @@ export function AppHeader() {
             <>
               <Button asChild variant="ghost" size="sm">
                 <Link to="/leaderboard"><Trophy className="h-4 w-4 sm:mr-1" /><span className="hidden sm:inline">Leaderboard</span></Link>
-              </Button>
-              <Button asChild variant="ghost" size="sm">
-                <Link to="/global-leaderboard"><Globe2 className="h-4 w-4 sm:mr-1" /><span className="hidden sm:inline">Global</span></Link>
               </Button>
               {isDJ && (
                 <Button asChild variant="ghost" size="sm">

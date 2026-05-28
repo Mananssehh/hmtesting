@@ -717,33 +717,8 @@ export type Database = {
           expires_at: string
         }[]
       }
-      get_global_leaderboard: {
-        Args: { _limit?: number; _period?: string; _role_filter?: string }
-        Returns: {
-          events_joined: number
-          global_score: number
-          is_dj: boolean
-          nickname: string
-          points: number
-          top_song: Json
-          total_boosts: number
-          total_requests: number
-          total_upvotes: number
-          user_id: string
-        }[]
-      }
       get_nickname: { Args: { _user_id: string }; Returns: string }
       get_public_profile: { Args: { _user_id: string }; Returns: Json }
-      get_user_global_rank: {
-        Args: { _period?: string; _role_filter?: string; _user_id: string }
-        Returns: {
-          global_score: number
-          is_dj: boolean
-          nickname: string
-          rank: number
-          user_id: string
-        }[]
-      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
