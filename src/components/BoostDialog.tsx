@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Sparkles, Loader2, Flame, Rocket, Zap, Crown } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,7 +19,7 @@ interface Props {
   onOpenChange: (v: boolean) => void;
   songRequestId: string;
   songTitle: string;
-  onBoosted?: (amount: number) => void;
+  onBoosted?: (nextBoost: number) => void;
 }
 
 type Pack = {
@@ -45,12 +45,13 @@ export function BoostDialog({ open, onOpenChange, songRequestId, songTitle, onBo
   const [selected, setSelected] = useState<number>(25);
   const [custom, setCustom] = useState<string>("");
   const [loading, setLoading] = useState(false);
+  const submittingRef = useRef(false);
 
   const customAmount = Math.max(0, parseInt(custom || "0", 10) || 0);
   const amount = custom ? customAmount : selected;
 
   const submit = async () => {
-    if (loading) return;
+    if (loading || submittingRef.current) return;
     if (amount < 1) {
       toast.error("Pick a boost pack");
       return;
@@ -59,11 +60,13 @@ export function BoostDialog({ open, onOpenChange, songRequestId, songTitle, onBo
       toast.error("Not enough points — earn more by requesting & voting!");
       return;
     }
+    submittingRef.current = true;
     setLoading(true);
-    const { error } = await supabase.rpc("boost_request", {
+    const { data, error } = await supabase.rpc("boost_request", {
       _song_request_id: songRequestId,
       _amount: amount,
     });
+    submittingRef.current = false;
     setLoading(false);
     if (error) {
       if (error.message.includes("Insufficient points")) {
@@ -82,7 +85,7 @@ export function BoostDialog({ open, onOpenChange, songRequestId, songTitle, onBo
     adjustProfilePoints(-amount);
     toast.success(`🔥 +${amount} BOOST! Pushing it up the queue.`);
     void refreshProfile();
-    onBoosted?.(amount);
+    onBoosted?.(data?.boost ?? amount);
     onOpenChange(false);
   };
 
