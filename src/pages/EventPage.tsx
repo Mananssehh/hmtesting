@@ -742,6 +742,14 @@ const EventPage = () => {
           onOpenChange={(o) => !o && setBoostTarget(null)}
           songRequestId={boostTarget.id}
           songTitle={`${boostTarget.title} — ${boostTarget.artist}`}
+          onBoosted={(amount) => {
+            setSongs((prev) =>
+              prev.map((song) =>
+                song.id === boostTarget.id ? { ...song, boost: (song.boost ?? 0) + amount } : song,
+              ),
+            );
+            setBoostTarget(null);
+          }}
         />
       )}
 
