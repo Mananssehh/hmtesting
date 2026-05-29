@@ -19,7 +19,7 @@ interface Props {
   onOpenChange: (v: boolean) => void;
   songRequestId: string;
   songTitle: string;
-  onBoosted?: () => void;
+  onBoosted?: (amount: number) => void;
 }
 
 type Pack = {
@@ -82,7 +82,7 @@ export function BoostDialog({ open, onOpenChange, songRequestId, songTitle, onBo
     adjustProfilePoints(-amount);
     toast.success(`🔥 +${amount} BOOST! Pushing it up the queue.`);
     void refreshProfile();
-    onBoosted?.();
+    onBoosted?.(amount);
     onOpenChange(false);
   };
 
