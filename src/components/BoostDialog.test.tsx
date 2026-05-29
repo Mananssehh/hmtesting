@@ -56,6 +56,7 @@ describe("BoostDialog", () => {
       />,
     );
 
+    fireEvent.click(screen.getByRole("button", { name: /\+5 Spark \$0\.99/i }));
     fireEvent.click(screen.getByRole("button", { name: /^Boost \+5$/ }));
 
     await waitFor(() => {
@@ -89,6 +90,7 @@ describe("BoostDialog", () => {
       />,
     );
 
+    fireEvent.click(screen.getByRole("button", { name: /\+5 Spark \$0\.99/i }));
     const submitButton = screen.getByRole("button", { name: /^Boost \+5$/ });
     fireEvent.click(submitButton);
     fireEvent.click(submitButton);
