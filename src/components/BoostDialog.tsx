@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Sparkles, Loader2, Flame, Rocket, Zap, Crown } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -19,7 +19,7 @@ interface Props {
   onOpenChange: (v: boolean) => void;
   songRequestId: string;
   songTitle: string;
-  onBoosted?: () => void;
+  onBoosted?: (nextBoost: number) => void;
 }
 
 type Pack = {
@@ -40,16 +40,18 @@ const PACKS: Pack[] = [
 ];
 
 export function BoostDialog({ open, onOpenChange, songRequestId, songTitle, onBoosted }: Props) {
-  const { profile, refreshProfile } = useAuth();
+  const { profile, refreshProfile, adjustProfilePoints } = useAuth();
   const balance = profile?.points ?? 0;
   const [selected, setSelected] = useState<number>(25);
   const [custom, setCustom] = useState<string>("");
   const [loading, setLoading] = useState(false);
+  const submittingRef = useRef(false);
 
   const customAmount = Math.max(0, parseInt(custom || "0", 10) || 0);
   const amount = custom ? customAmount : selected;
 
   const submit = async () => {
+    if (loading || submittingRef.current) return;
     if (amount < 1) {
       toast.error("Pick a boost pack");
       return;
@@ -58,19 +60,32 @@ export function BoostDialog({ open, onOpenChange, songRequestId, songTitle, onBo
       toast.error("Not enough points — earn more by requesting & voting!");
       return;
     }
+    submittingRef.current = true;
     setLoading(true);
-    const { error } = await supabase.rpc("boost_request", {
+    const { data, error } = await supabase.rpc("boost_request", {
       _song_request_id: songRequestId,
       _amount: amount,
     });
+    submittingRef.current = false;
     setLoading(false);
     if (error) {
-      toast.error(error.message);
+      if (error.message.includes("Insufficient points")) {
+        toast.error("Insufficient points");
+      } else if (error.message.includes("Invalid boost amount") || error.message.includes("Boost too large")) {
+        toast.error("Invalid boost amount");
+      } else if (error.message.includes("Request not found")) {
+        toast.error("Request not found");
+      } else if (error.message.includes("Cannot boost this request")) {
+        toast.error("This song can’t be boosted anymore");
+      } else {
+        toast.error(error.message);
+      }
       return;
     }
+    adjustProfilePoints(-amount);
     toast.success(`🔥 +${amount} BOOST! Pushing it up the queue.`);
-    await refreshProfile();
-    onBoosted?.();
+    void refreshProfile();
+    onBoosted?.(data?.boost ?? amount);
     onOpenChange(false);
   };
 
