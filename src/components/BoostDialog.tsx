@@ -40,7 +40,7 @@ const PACKS: Pack[] = [
 ];
 
 export function BoostDialog({ open, onOpenChange, songRequestId, songTitle, onBoosted }: Props) {
-  const { profile, refreshProfile } = useAuth();
+  const { profile, refreshProfile, adjustProfilePoints } = useAuth();
   const balance = profile?.points ?? 0;
   const [selected, setSelected] = useState<number>(25);
   const [custom, setCustom] = useState<string>("");
@@ -50,6 +50,7 @@ export function BoostDialog({ open, onOpenChange, songRequestId, songTitle, onBo
   const amount = custom ? customAmount : selected;
 
   const submit = async () => {
+    if (loading) return;
     if (amount < 1) {
       toast.error("Pick a boost pack");
       return;
@@ -65,11 +66,22 @@ export function BoostDialog({ open, onOpenChange, songRequestId, songTitle, onBo
     });
     setLoading(false);
     if (error) {
-      toast.error(error.message);
+      if (error.message.includes("Insufficient points")) {
+        toast.error("Insufficient points");
+      } else if (error.message.includes("Invalid boost amount") || error.message.includes("Boost too large")) {
+        toast.error("Invalid boost amount");
+      } else if (error.message.includes("Request not found")) {
+        toast.error("Request not found");
+      } else if (error.message.includes("Cannot boost this request")) {
+        toast.error("This song can’t be boosted anymore");
+      } else {
+        toast.error(error.message);
+      }
       return;
     }
+    adjustProfilePoints(-amount);
     toast.success(`🔥 +${amount} BOOST! Pushing it up the queue.`);
-    await refreshProfile();
+    void refreshProfile();
     onBoosted?.();
     onOpenChange(false);
   };
