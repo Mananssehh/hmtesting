@@ -17,6 +17,7 @@ interface AuthContextValue {
   loading: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  adjustProfilePoints: (delta: number) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -86,8 +87,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (user) await loadProfile(user.id);
   };
 
+  const adjustProfilePoints = (delta: number) => {
+    if (!delta) return;
+    setProfile((prev) => (prev ? { ...prev, points: Math.max(0, prev.points + delta) } : prev));
+  };
+
   return (
-    <AuthContext.Provider value={{ session, user, profile, isDJ, loading, signOut, refreshProfile }}>
+    <AuthContext.Provider value={{ session, user, profile, isDJ, loading, signOut, refreshProfile, adjustProfilePoints }}>
       {children}
     </AuthContext.Provider>
   );
