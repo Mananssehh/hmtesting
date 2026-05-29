@@ -2,11 +2,19 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { BoostDialog } from "@/components/BoostDialog";
 
-const mockRpc = vi.fn();
-const mockRefreshProfile = vi.fn();
-const mockAdjustProfilePoints = vi.fn();
-const mockToastError = vi.fn();
-const mockToastSuccess = vi.fn();
+const {
+  mockRpc,
+  mockRefreshProfile,
+  mockAdjustProfilePoints,
+  mockToastError,
+  mockToastSuccess,
+} = vi.hoisted(() => ({
+  mockRpc: vi.fn(),
+  mockRefreshProfile: vi.fn(),
+  mockAdjustProfilePoints: vi.fn(),
+  mockToastError: vi.fn(),
+  mockToastSuccess: vi.fn(),
+}));
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
