@@ -25,7 +25,7 @@ import { useTrending } from "@/hooks/useTrending";
 import { BoostFX } from "@/components/BoostFX";
 import { BoostActivityStrip } from "@/components/BoostActivityStrip";
 import { DominatingBanner } from "@/components/DominatingBanner";
-import { TopSupportersRecap } from "@/components/TopSupportersRecap";
+
 import { useNowPlaying } from "@/hooks/useNowPlaying";
 
 type SortMode = "top" | "trending" | "played";
