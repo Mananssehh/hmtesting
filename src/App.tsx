@@ -13,7 +13,7 @@ import EventPage from "./pages/EventPage";
 import DJDashboard from "./pages/DJDashboard";
 import DJEventManage from "./pages/DJEventManage";
 import DJDevTools from "./pages/DJDevTools";
-import Leaderboard from "./pages/Leaderboard";
+
 
 import Profile from "./pages/Profile";
 import PublicProfile from "./pages/PublicProfile";
@@ -48,7 +48,7 @@ const App = () => (
               <Route path="/dj/:id/analytics" element={<Analytics />} />
               <Route path="/dj/archive" element={<Archive />} />
               <Route path="/dj/errors" element={<ErrorMonitor />} />
-              <Route path="/leaderboard" element={<Leaderboard />} />
+              
               
               <Route path="/profile" element={<Profile />} />
               <Route path="/users/:userId" element={<PublicProfile />} />

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
-  Loader2, Plus, Search, Sparkles, Trophy, Music, PauseCircle, XCircle, PartyPopper, CheckCircle2,
+  Loader2, Plus, Search, Sparkles, Music, PauseCircle, XCircle, PartyPopper, CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,7 +25,7 @@ import { useTrending } from "@/hooks/useTrending";
 import { BoostFX } from "@/components/BoostFX";
 import { BoostActivityStrip } from "@/components/BoostActivityStrip";
 import { DominatingBanner } from "@/components/DominatingBanner";
-import { TopSupportersRecap } from "@/components/TopSupportersRecap";
+
 import { useNowPlaying } from "@/hooks/useNowPlaying";
 
 type SortMode = "top" | "trending" | "played";
@@ -535,11 +535,6 @@ const EventPage = () => {
                 <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 rounded-full gap-1">
                   <Sparkles className="h-3 w-3" />{profile?.points ?? 0} pts
                 </Badge>
-                <Button asChild size="sm" variant="ghost" className="h-7 px-2">
-                  <Link to={`/leaderboard?event=${eventInfo.id}`} aria-label="Top fans">
-                    <Trophy className="h-3.5 w-3.5" />
-                  </Link>
-                </Button>
               </div>
             </div>
             <h1 className="text-[26px] sm:text-3xl font-semibold leading-tight tracking-tight">{eventInfo.name}</h1>
@@ -577,16 +572,13 @@ const EventPage = () => {
           </div>
         )}
         {isEnded && (
-          <>
-            <div className="mb-4 p-4 rounded-2xl bg-destructive/10 border border-destructive/30 flex items-start gap-3">
-              <XCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
-              <div className="text-sm">
-                <p className="font-medium">This event has ended</p>
-                <p className="text-muted-foreground">Thanks for playing — see you next time!</p>
-              </div>
+          <div className="mb-4 p-4 rounded-2xl bg-destructive/10 border border-destructive/30 flex items-start gap-3">
+            <XCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <p className="font-medium">This event has ended</p>
+              <p className="text-muted-foreground">Thanks for playing — see you next time!</p>
             </div>
-            <TopSupportersRecap songs={songs} />
-          </>
+          </div>
         )}
 
         {/* Event rules chips */}

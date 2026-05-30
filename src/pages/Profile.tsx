@@ -195,16 +195,10 @@ const Profile = () => {
         </Card>
 
         {/* Stats grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           <StatCard icon={<Trophy className="h-4 w-4" />} label="Points" value={profile.points} highlight />
           <StatCard icon={<Music2 className="h-4 w-4" />} label="Requests" value={stats.totalRequests} />
           <StatCard icon={<ThumbsUp className="h-4 w-4" />} label="Upvotes" value={stats.totalUpvotes} />
-          <Button asChild variant="outline" className="h-auto flex-col py-4 gap-2">
-            <Link to="/leaderboard">
-              <Trophy className="h-4 w-4" />
-              <span className="text-xs">Leaderboard</span>
-            </Link>
-          </Button>
         </div>
 
         {/* DJ events shortcut */}
