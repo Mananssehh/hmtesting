@@ -577,16 +577,13 @@ const EventPage = () => {
           </div>
         )}
         {isEnded && (
-          <>
-            <div className="mb-4 p-4 rounded-2xl bg-destructive/10 border border-destructive/30 flex items-start gap-3">
-              <XCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
-              <div className="text-sm">
-                <p className="font-medium">This event has ended</p>
-                <p className="text-muted-foreground">Thanks for playing — see you next time!</p>
-              </div>
+          <div className="mb-4 p-4 rounded-2xl bg-destructive/10 border border-destructive/30 flex items-start gap-3">
+            <XCircle className="h-5 w-5 text-destructive shrink-0 mt-0.5" />
+            <div className="text-sm">
+              <p className="font-medium">This event has ended</p>
+              <p className="text-muted-foreground">Thanks for playing — see you next time!</p>
             </div>
-            <TopSupportersRecap songs={songs} />
-          </>
+          </div>
         )}
 
         {/* Event rules chips */}
