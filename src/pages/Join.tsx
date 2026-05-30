@@ -110,7 +110,10 @@ const Join = () => {
             <Input
               id="nick"
               value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
+              onChange={(e) => {
+                setHasEditedNickname(true);
+                setNickname(e.target.value);
+              }}
               placeholder="DanceFloorKing"
               maxLength={24}
               required
