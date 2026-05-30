@@ -341,11 +341,6 @@ const DJEventManage = () => {
               <Button variant="outline" onClick={() => setAwardOpen(true)} disabled={status === "ended"}>
                 <Award className="mr-2 h-4 w-4" /> Award points
               </Button>
-              <Button asChild variant="outline">
-                <Link to={`/leaderboard?event=${event.id}`}>
-                  <Trophy className="mr-2 h-4 w-4" /> Leaderboard
-                </Link>
-              </Button>
               <Button variant="outline" onClick={() => setFocusMode(true)} disabled={status === "ended"}>
                 <Maximize2 className="mr-2 h-4 w-4" /> Focus mode
               </Button>
