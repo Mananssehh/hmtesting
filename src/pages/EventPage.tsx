@@ -535,11 +535,6 @@ const EventPage = () => {
                 <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 rounded-full gap-1">
                   <Sparkles className="h-3 w-3" />{profile?.points ?? 0} pts
                 </Badge>
-                <Button asChild size="sm" variant="ghost" className="h-7 px-2">
-                  <Link to={`/leaderboard?event=${eventInfo.id}`} aria-label="Top fans">
-                    <Trophy className="h-3.5 w-3.5" />
-                  </Link>
-                </Button>
               </div>
             </div>
             <h1 className="text-[26px] sm:text-3xl font-semibold leading-tight tracking-tight">{eventInfo.name}</h1>
