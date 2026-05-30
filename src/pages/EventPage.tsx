@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
-  Loader2, Plus, Search, Sparkles, Trophy, Music, PauseCircle, XCircle, PartyPopper, CheckCircle2,
+  Loader2, Plus, Search, Sparkles, Music, PauseCircle, XCircle, PartyPopper, CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
