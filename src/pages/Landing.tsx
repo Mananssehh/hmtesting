@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import {
-  Disc3, Headphones, Radio, Sparkles, Trophy, Vote,
+  Disc3, Headphones, Radio, Sparkles, Vote,
   QrCode, Zap, Users, Building2, Music4, ArrowRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
