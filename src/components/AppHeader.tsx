@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Disc3, LogOut, Trophy, User as UserIcon } from "lucide-react";
+import { Disc3, LogOut, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
