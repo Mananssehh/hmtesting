@@ -17,14 +17,19 @@ const Join = () => {
   const [params] = useSearchParams();
   const { user, profile } = useAuth();
   const [code, setCode] = useState(params.get("code")?.toUpperCase() ?? "");
-  const [nickname, setNickname] = useState(profile?.nickname && profile.nickname !== "Guest" ? profile.nickname : "");
+  const initialNickname = profile?.nickname && profile.nickname !== "Guest" ? profile.nickname : "";
+  const [nickname, setNickname] = useState(initialNickname);
+  const [hasEditedNickname, setHasEditedNickname] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  // Prefill nickname only once when profile first loads, and only if the user hasn't started editing.
   useEffect(() => {
-    if (profile?.nickname && profile.nickname !== "Guest" && !nickname) {
+    if (hasEditedNickname) return;
+    if (nickname) return;
+    if (profile?.nickname && profile.nickname !== "Guest") {
       setNickname(profile.nickname);
     }
-  }, [profile, nickname]);
+  }, [profile, hasEditedNickname, nickname]);
 
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,7 +37,9 @@ const Join = () => {
     try {
       const codeParse = roomCodeSchema.safeParse(code);
       if (!codeParse.success) throw new Error(codeParse.error.issues[0].message);
-      const nickParse = nicknameSchema.safeParse(nickname);
+      const trimmedNickname = nickname.trim();
+      if (!trimmedNickname) throw new Error("Enter a nickname.");
+      const nickParse = nicknameSchema.safeParse(trimmedNickname);
       if (!nickParse.success) throw new Error(nickParse.error.issues[0].message);
       if (containsProfanity(nickParse.data) || looksSpammy(nickParse.data)) {
         throw new Error("Please choose a different nickname.");
