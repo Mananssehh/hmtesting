@@ -412,7 +412,7 @@ const DJEventManage = () => {
           <div className="mb-4 p-3 rounded-xl bg-primary/5 border border-primary/20 text-sm text-muted-foreground flex items-start gap-2">
             <Music className="h-4 w-4 text-primary shrink-0 mt-0.5" />
             <span>
-              Use the leaderboard to choose your next track, then tap{" "}
+              Pick the next track from the queue, then tap{" "}
               <strong className="text-primary">Mark Now Playing</strong> so guests see the update.
               <span className="block mt-1 text-xs opacity-80">
                 Decks does not access or upload DJ music files.
