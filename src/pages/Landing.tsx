@@ -160,7 +160,7 @@ const Landing = () => {
                   <Link to="/auth?role=dj">Start as DJ</Link>
                 </Button>
                 <Button asChild variant="outline">
-                  <Link to="/leaderboard">See the leaderboard</Link>
+                  <Link to="/join">Join an event</Link>
                 </Button>
               </div>
             </div>
