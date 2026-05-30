@@ -29,9 +29,6 @@ export function AppHeader() {
         <nav className="flex items-center gap-1">
           {user ? (
             <>
-              <Button asChild variant="ghost" size="sm">
-                <Link to="/leaderboard"><Trophy className="h-4 w-4 sm:mr-1" /><span className="hidden sm:inline">Leaderboard</span></Link>
-              </Button>
               {isDJ && (
                 <Button asChild variant="ghost" size="sm">
                   <Link to="/dj">Dashboard</Link>
