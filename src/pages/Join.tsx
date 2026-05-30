@@ -116,8 +116,8 @@ const Join = () => {
               }}
               placeholder="DanceFloorKing"
               maxLength={24}
-              required
             />
+
           </div>
 
           <Button type="submit" disabled={loading} variant="premium" className="w-full h-11">
