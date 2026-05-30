@@ -9,7 +9,6 @@ import { SEO } from "@/components/SEO";
 
 const features = [
   { icon: Vote, title: "Reddit-style voting", desc: "Upvote bangers, downvote skips. The crowd shapes the night." },
-  { icon: Trophy, title: "Live leaderboard", desc: "Earn points for requests and upvotes. Top requesters get bragging rights." },
   { icon: Radio, title: "Realtime DJ queue", desc: "DJs see top requests update instantly. No more shouting at the booth." },
   { icon: Sparkles, title: "Boost requests", desc: "Spend points to push your song to the top of the queue." },
 ];
