@@ -185,7 +185,7 @@ const Analytics = () => {
           </div>
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" size="sm" onClick={exportRequests}><Download className="mr-1.5 h-4 w-4" />Requests CSV</Button>
-            <Button variant="outline" size="sm" onClick={exportLeaderboard}><Download className="mr-1.5 h-4 w-4" />Leaderboard CSV</Button>
+            <Button variant="outline" size="sm" onClick={exportLeaderboard}><Download className="mr-1.5 h-4 w-4" />Top guests CSV</Button>
             <Button variant="outline" size="sm" onClick={exportSummary}><Download className="mr-1.5 h-4 w-4" />Summary CSV</Button>
           </div>
         </div>
