@@ -1,9 +1,12 @@
 import { ChevronUp, ChevronDown, Sparkles, Rocket, Clock, Flame, Swords, Crown, Pin, Shield, TrendingUp, ArrowUp, ArrowDown, Trash2 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { formatDuration, platformLabel } from "@/lib/searchLinks";
 import { PlatformLinks } from "@/components/PlatformLinks";
+
+// Shared sessionStorage key helper for scroll restoration on Back from /users/:id
+const scrollKey = (path: string) => `decks:scroll:${path}`;
 
 export interface SongRequestRow {
   id: string;
