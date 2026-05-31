@@ -38,6 +38,24 @@ interface PublicProfileData {
 
 const PublicProfile = () => {
   const { userId } = useParams<{ userId: string }>();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const backState = location.state as { from?: string } | null;
+
+  const handleBack = () => {
+    const from = backState?.from;
+    if (from && from.startsWith("/") && !from.startsWith("//")) {
+      navigate(from);
+      return;
+    }
+    // Use history if we have any; otherwise fall back to home (never leaderboard).
+    if (window.history.length > 1) {
+      navigate(-1);
+    } else {
+      navigate("/");
+    }
+  };
+
   const [data, setData] = useState<PublicProfileData | null>(null);
   const [loading, setLoading] = useState(true);
 
