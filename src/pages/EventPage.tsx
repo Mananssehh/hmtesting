@@ -40,6 +40,7 @@ interface EventInfo {
 const EventPage = () => {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, profile, loading: authLoading } = useAuth();
 
   const [eventInfo, setEventInfo] = useState<EventInfo | null>(null);
