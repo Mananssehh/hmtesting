@@ -136,6 +136,34 @@ const EventPage = () => {
     return () => { cancelled = true; };
   }, [code, user, navigate, profile?.nickname]);
 
+  // Restore scroll position when returning from a user profile page (Back button).
+  // Source of truth in priority order: location.state.scrollY, then sessionStorage.
+  // We wait until `loading` is false so the song list has rendered and the page has height.
+  const scrollRestoredRef = useRef(false);
+  useEffect(() => {
+    if (loading || scrollRestoredRef.current) return;
+    const key = `decks:scroll:${location.pathname + location.search}`;
+    const stateY = (location.state as { scrollY?: number } | null)?.scrollY;
+    let y: number | null = null;
+    if (typeof stateY === "number" && stateY > 0) y = stateY;
+    else {
+      try {
+        const stored = sessionStorage.getItem(key);
+        if (stored) y = parseInt(stored, 10);
+      } catch {
+        /* ignore */
+      }
+    }
+    if (y && y > 0) {
+      // Defer to next paint so layout is final.
+      requestAnimationFrame(() => window.scrollTo({ top: y!, behavior: "auto" }));
+    }
+    try { sessionStorage.removeItem(key); } catch { /* ignore */ }
+    scrollRestoredRef.current = true;
+  }, [loading, location.pathname, location.search, location.state]);
+
+
+
   // Realtime: songs + event lifecycle, with mobile-friendly reconnect
   useEffect(() => {
     if (!eventInfo) return;
