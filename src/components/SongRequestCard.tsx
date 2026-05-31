@@ -1,9 +1,12 @@
 import { ChevronUp, ChevronDown, Sparkles, Rocket, Clock, Flame, Swords, Crown, Pin, Shield, TrendingUp, ArrowUp, ArrowDown, Trash2 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { formatDuration, platformLabel } from "@/lib/searchLinks";
 import { PlatformLinks } from "@/components/PlatformLinks";
+
+// Shared sessionStorage key helper for scroll restoration on Back from /users/:id
+const scrollKey = (path: string) => `decks:scroll:${path}`;
 
 export interface SongRequestRow {
   id: string;
@@ -56,6 +59,7 @@ interface Props {
 }
 
 export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, onRemove, disabled, battle, mostWanted, pinned, moderation, trending, movement }: Props) {
+  const location = useLocation();
   const score = song.upvotes - song.downvotes + song.boost;
   const upvoted = myVote === 1;
   const downvoted = myVote === -1;
@@ -217,7 +221,15 @@ export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, onRem
             {song.requested_by ? (
               <Link
                 to={`/users/${song.requested_by}`}
-                onClick={(e) => e.stopPropagation()}
+                state={{ from: location.pathname + location.search, scrollY: typeof window !== "undefined" ? window.scrollY : 0 }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  try {
+                    sessionStorage.setItem(scrollKey(location.pathname + location.search), String(window.scrollY));
+                  } catch {
+                    /* ignore */
+                  }
+                }}
                 className="truncate max-w-[8rem] hover:text-primary hover:underline underline-offset-2 transition-colors tap-target"
               >
                 {song.requester_name}

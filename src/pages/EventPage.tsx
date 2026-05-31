@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, Link, useLocation } from "react-router-dom";
 import {
   Loader2, Plus, Search, Sparkles, Music, PauseCircle, XCircle, PartyPopper, CheckCircle2,
 } from "lucide-react";
@@ -40,6 +40,7 @@ interface EventInfo {
 const EventPage = () => {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, profile, loading: authLoading } = useAuth();
 
   const [eventInfo, setEventInfo] = useState<EventInfo | null>(null);
@@ -134,6 +135,34 @@ const EventPage = () => {
 
     return () => { cancelled = true; };
   }, [code, user, navigate, profile?.nickname]);
+
+  // Restore scroll position when returning from a user profile page (Back button).
+  // Source of truth in priority order: location.state.scrollY, then sessionStorage.
+  // We wait until `loading` is false so the song list has rendered and the page has height.
+  const scrollRestoredRef = useRef(false);
+  useEffect(() => {
+    if (loading || scrollRestoredRef.current) return;
+    const key = `decks:scroll:${location.pathname + location.search}`;
+    const stateY = (location.state as { scrollY?: number } | null)?.scrollY;
+    let y: number | null = null;
+    if (typeof stateY === "number" && stateY > 0) y = stateY;
+    else {
+      try {
+        const stored = sessionStorage.getItem(key);
+        if (stored) y = parseInt(stored, 10);
+      } catch {
+        /* ignore */
+      }
+    }
+    if (y && y > 0) {
+      // Defer to next paint so layout is final.
+      requestAnimationFrame(() => window.scrollTo({ top: y!, behavior: "auto" }));
+    }
+    try { sessionStorage.removeItem(key); } catch { /* ignore */ }
+    scrollRestoredRef.current = true;
+  }, [loading, location.pathname, location.search, location.state]);
+
+
 
   // Realtime: songs + event lifecycle, with mobile-friendly reconnect
   useEffect(() => {
@@ -230,7 +259,8 @@ const EventPage = () => {
   // Live boost activity (derived from realtime song updates)
   const boostEvents = useBoostFeed(songs);
 
-  // "Currently dominating" + boost battle detection (active queue only)
+  // "Currently dominating" + boost battle detection (active queue only).
+  // Battle glow only when songs are genuinely neck-and-neck — not just high score.
   const { dominatingSong, dominatingLead, battleIds } = useMemo(() => {
     const active = songs
       .filter((s) => s.status !== "removed" && s.status !== "playing" && s.status !== "played" && s.status !== "skipped")
@@ -239,12 +269,30 @@ const EventPage = () => {
     const top = active[0];
     const second = active[1];
     const lead = top && second ? (top.boost ?? 0) - (second.boost ?? 0) : (top?.boost ?? 0);
+
+    // Cluster songs from the top while each is "close" to the previous one.
+    // Close = diff <= 5 points OR within 10% of the higher value.
     const battle = new Set<string>();
-    // Battle when top 2 are within 10 boost and both have meaningful boost
-    if (top && second && (top.boost ?? 0) >= 20 && Math.abs((top.boost ?? 0) - (second.boost ?? 0)) <= 10) {
-      battle.add(top.id);
-      battle.add(second.id);
+    const CLOSE_ABS = 5;
+    const CLOSE_PCT = 0.10;
+    const isClose = (hi: number, lo: number) => {
+      const diff = hi - lo;
+      return diff <= CLOSE_ABS || diff <= hi * CLOSE_PCT;
+    };
+    if (top && second) {
+      const cluster: typeof active = [top];
+      for (let i = 1; i < active.length; i++) {
+        const prev = cluster[cluster.length - 1].boost ?? 0;
+        const cur = active[i].boost ?? 0;
+        if (isClose(prev, cur)) cluster.push(active[i]);
+        else break;
+      }
+      // Only mark a battle if at least 2 songs cluster AND they have meaningful boost.
+      if (cluster.length >= 2 && (top.boost ?? 0) >= 10) {
+        cluster.forEach((s) => battle.add(s.id));
+      }
     }
+
     return {
       dominatingSong: top && (top.boost ?? 0) >= 25 ? top : null,
       dominatingLead: lead,
