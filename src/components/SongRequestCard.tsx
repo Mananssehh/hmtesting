@@ -59,6 +59,7 @@ interface Props {
 }
 
 export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, onRemove, disabled, battle, mostWanted, pinned, moderation, trending, movement }: Props) {
+  const location = useLocation();
   const score = song.upvotes - song.downvotes + song.boost;
   const upvoted = myVote === 1;
   const downvoted = myVote === -1;
