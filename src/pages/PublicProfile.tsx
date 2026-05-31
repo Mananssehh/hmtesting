@@ -99,8 +99,8 @@ const PublicProfile = () => {
     <div className="min-h-screen">
       <AppHeader />
       <main className="container max-w-3xl py-8 space-y-6">
-        <Button asChild variant="ghost" size="sm" className="-ml-3">
-          <Link to="/"><ArrowLeft className="h-4 w-4 mr-1" />Back</Link>
+        <Button variant="ghost" size="sm" className="-ml-3" onClick={handleBack}>
+          <ArrowLeft className="h-4 w-4 mr-1" />Back
         </Button>
 
         {/* Identity card */}
