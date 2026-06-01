@@ -64,12 +64,13 @@ export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, onRem
   const upvoted = myVote === 1;
   const downvoted = myVote === -1;
 
-  // Heat tiers based on boost total
+  // Heat tiers. Strong neon border (heat-2/3) is reserved for songs in an
+  // active battle. Non-battle boosted songs get only the subtle heat-1 ring,
+  // so a runaway leader doesn't dominate the UI with glow.
   const boost = song.boost ?? 0;
-  const heatClass =
-    boost >= 100 ? "boost-heat-3" :
-    boost >= 25  ? "boost-heat-2" :
-    boost >= 5   ? "boost-heat-1" : "";
+  const heatClass = battle
+    ? (boost >= 100 ? "boost-heat-3" : boost >= 25 ? "boost-heat-2" : "boost-heat-1")
+    : (boost >= 5 ? "boost-heat-1" : "");
   const showFlame = boost >= 25;
 
   return (
