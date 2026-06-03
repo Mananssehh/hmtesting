@@ -943,16 +943,7 @@ function RequestPicker({ onPick, existing, allowExplicit = true }: { onPick: (so
         )}
 
         {showNoResults && (
-          <div className="text-center py-12 px-6">
-            <Search className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
-            <p className="text-sm font-medium">No matches for &ldquo;{debounced}&rdquo;</p>
-            <p className="text-xs text-muted-foreground/80 mt-1">
-              Try a different spelling, the artist name, or fewer words.
-            </p>
-            <p className="text-xs text-muted-foreground/60 mt-3">
-              Can&rsquo;t find your song? Ask the DJ to add it manually.
-            </p>
-          </div>
+          <ManualFallback query={debounced} onPick={onPick} />
         )}
 
         {showError && (
@@ -962,6 +953,7 @@ function RequestPicker({ onPick, existing, allowExplicit = true }: { onPick: (so
             <p className="text-xs text-muted-foreground/80 mt-1">
               Check your connection and try again in a moment.
             </p>
+            <ManualFallback query={debounced} onPick={onPick} compact />
           </div>
         )}
 
