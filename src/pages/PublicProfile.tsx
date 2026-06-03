@@ -40,20 +40,30 @@ const PublicProfile = () => {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
-  const backState = location.state as { from?: string } | null;
+  const backState = location.state as { from?: string; scrollY?: number } | null;
 
   const handleBack = () => {
     const from = backState?.from;
-    if (from && from.startsWith("/") && !from.startsWith("//")) {
-      navigate(from);
+    // 1. In-app nav: replace profile with the source route, forwarding scrollY so EventPage can restore.
+    if (from && from.startsWith("/") && !from.startsWith("//") && !from.startsWith("/users/")) {
+      navigate(from, { replace: true, state: { scrollY: backState?.scrollY } });
       return;
     }
-    // Use history if we have any; otherwise fall back to home (never leaderboard).
+    // 2. Browser history available -> pop (works for native back gesture too).
     if (window.history.length > 1) {
       navigate(-1);
-    } else {
-      navigate("/");
+      return;
     }
+    // 3. Refresh on profile: fall back to last visited event page if we have one.
+    try {
+      const lastEvent = sessionStorage.getItem("decks:lastEvent");
+      if (lastEvent && lastEvent.startsWith("/")) {
+        navigate(lastEvent, { replace: true });
+        return;
+      }
+    } catch { /* ignore */ }
+    // 4. Final fallback (never leaderboard).
+    navigate("/", { replace: true });
   };
 
   const [data, setData] = useState<PublicProfileData | null>(null);

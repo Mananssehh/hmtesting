@@ -142,7 +142,8 @@ const EventPage = () => {
   const scrollRestoredRef = useRef(false);
   useEffect(() => {
     if (loading || scrollRestoredRef.current) return;
-    const key = `decks:scroll:${location.pathname + location.search}`;
+    const path = location.pathname + location.search;
+    const key = `decks:scroll:${path}`;
     const stateY = (location.state as { scrollY?: number } | null)?.scrollY;
     let y: number | null = null;
     if (typeof stateY === "number" && stateY > 0) y = stateY;
@@ -155,10 +156,11 @@ const EventPage = () => {
       }
     }
     if (y && y > 0) {
-      // Defer to next paint so layout is final.
       requestAnimationFrame(() => window.scrollTo({ top: y!, behavior: "auto" }));
     }
     try { sessionStorage.removeItem(key); } catch { /* ignore */ }
+    // Remember last event path so PublicProfile can fall back here after a refresh.
+    try { sessionStorage.setItem("decks:lastEvent", path); } catch { /* ignore */ }
     scrollRestoredRef.current = true;
   }, [loading, location.pathname, location.search, location.state]);
 
