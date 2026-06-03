@@ -1014,5 +1014,116 @@ function RequestPicker({ onPick, existing, allowExplicit = true }: { onPick: (so
   );
 }
 
+function ManualFallback({
+  query,
+  onPick,
+  compact = false,
+}: {
+  query: string;
+  onPick: (song: MusicSearchResult) => void;
+  compact?: boolean;
+}) {
+  // Best-effort split of "title - artist" or "title by artist"
+  const guess = (() => {
+    const byMatch = query.match(/^(.*?)\s+by\s+(.+)$/i);
+    if (byMatch) return { title: byMatch[1].trim(), artist: byMatch[2].trim() };
+    if (query.includes(" - ")) {
+      const [a, b] = query.split(" - ").map((s) => s.trim());
+      return { title: a, artist: b };
+    }
+    return { title: query, artist: "" };
+  })();
+
+  const [title, setTitle] = useState(guess.title);
+  const [artist, setArtist] = useState(guess.artist);
+  const [link, setLink] = useState("");
+  const [open, setOpen] = useState(false);
+
+  const submit = () => {
+    const t = title.trim();
+    const a = artist.trim();
+    if (!t || !a) {
+      toast.error("Title and artist required");
+      return;
+    }
+    const ext = link.trim();
+    const isSpotify = /open\.spotify\.com\/track\//.test(ext);
+    const isApple = /music\.apple\.com\//.test(ext);
+    onPick({
+      source_song_id: null,
+      source_platform: isSpotify ? "spotify" : isApple ? "itunes" : "manual",
+      title: t,
+      artist: a,
+      album: "",
+      album_art_url: null,
+      duration_ms: 0,
+      preview_url: null,
+      external_url: ext || `https://music.apple.com/us/search?term=${encodeURIComponent(`${t} ${a}`)}`,
+      explicit: false,
+    } as unknown as MusicSearchResult);
+  };
+
+  const sp = `https://open.spotify.com/search/${encodeURIComponent(query)}`;
+  const ap = `https://music.apple.com/us/search?term=${encodeURIComponent(query)}`;
+
+  if (!open) {
+    return (
+      <div className={compact ? "mt-4" : "text-center py-10 px-6"}>
+        {!compact && (
+          <>
+            <Search className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
+            <p className="text-sm font-medium">No matches for &ldquo;{query}&rdquo;</p>
+            <p className="text-xs text-muted-foreground/80 mt-1">
+              Try the artist name, or request it manually below.
+            </p>
+          </>
+        )}
+        <div className="flex flex-col items-center gap-2 mt-4">
+          <Button size="sm" variant="premium" onClick={() => setOpen(true)} className="w-full max-w-xs">
+            Request manually
+          </Button>
+          <div className="flex gap-2 mt-1">
+            <a
+              href={ap}
+              target="_blank"
+              rel="noreferrer"
+              className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
+            >
+              Search Apple Music
+            </a>
+            <span className="text-xs text-muted-foreground/40">·</span>
+            <a
+              href={sp}
+              target="_blank"
+              rel="noreferrer"
+              className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
+            >
+              Search Spotify
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-4 py-4 space-y-2">
+      <p className="text-xs text-muted-foreground">Manual request — the DJ sees title, artist, and your link.</p>
+      <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Song title" />
+      <Input value={artist} onChange={(e) => setArtist(e.target.value)} placeholder="Artist" />
+      <Input value={link} onChange={(e) => setLink(e.target.value)} placeholder="Spotify / Apple Music link (optional)" />
+      <div className="flex gap-2 pt-1">
+        <Button size="sm" variant="ghost" onClick={() => setOpen(false)} className="flex-1">
+          Cancel
+        </Button>
+        <Button size="sm" variant="premium" onClick={submit} className="flex-1">
+          Send request
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 export default EventPage;
+
 
