@@ -1,5 +1,6 @@
-// Music search proxy: searches Spotify + iTunes in parallel and merges results.
-// iTunes requires no API key; Spotify is optional.
+// Music search proxy: searches Spotify + iTunes in parallel across multiple
+// query variants and merges results with strict dedupe so Apple-only and
+// Spotify-only tracks both survive.
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.95.0";
 
@@ -41,109 +42,167 @@ async function getSpotifyToken(): Promise<string | null> {
   }
 }
 
-async function searchSpotify(q: string): Promise<SearchResult[] | null> {
-  const token = await getSpotifyToken();
-  if (!token) return null;
-  try {
-    // Higher limit + multi-market fallback to catch region-only tracks
-    const url = `https://api.spotify.com/v1/search?type=track&limit=50&market=from_token&q=${encodeURIComponent(q)}`;
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-    if (!res.ok) {
-      console.warn("[music-search] spotify status", res.status);
-      return null;
+async function spotifyOnce(q: string, token: string): Promise<SearchResult[]> {
+  // market=US (client-credentials cannot use `from_token`; that was silently
+  // filtering out region-restricted catalogs and missing many tracks).
+  const url = `https://api.spotify.com/v1/search?type=track&limit=50&market=US&q=${encodeURIComponent(q)}`;
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  if (!res.ok) {
+    console.warn("[music-search] spotify status", res.status, "q=", q);
+    return [];
+  }
+  const j = await res.json();
+  const items: any[] = j?.tracks?.items ?? [];
+  return items.map((t) => ({
+    source_song_id: t.id,
+    source_platform: "spotify" as const,
+    title: t.name,
+    artist: (t.artists ?? []).map((a: any) => a.name).join(", "),
+    album: t.album?.name ?? "",
+    album_art_url: t.album?.images?.[0]?.url ?? null,
+    duration_ms: t.duration_ms ?? 0,
+    preview_url: t.preview_url ?? null,
+    external_url: t.external_urls?.spotify ?? `https://open.spotify.com/track/${t.id}`,
+    explicit: !!t.explicit,
+  }));
+}
+
+async function itunesOnce(q: string): Promise<SearchResult[]> {
+  const url = `https://itunes.apple.com/search?media=music&entity=song&country=US&limit=50&term=${encodeURIComponent(q)}`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    console.warn("[music-search] itunes status", res.status, "q=", q);
+    return [];
+  }
+  const j = await res.json();
+  const items: any[] = j?.results ?? [];
+  return items.map((t) => ({
+    source_song_id: String(t.trackId),
+    source_platform: "itunes" as const,
+    title: t.trackName ?? "Unknown",
+    artist: t.artistName ?? "Unknown",
+    album: t.collectionName ?? "",
+    album_art_url: (t.artworkUrl100 as string | undefined)?.replace("100x100", "600x600") ?? null,
+    duration_ms: t.trackTimeMillis ?? 0,
+    preview_url: t.previewUrl ?? null,
+    external_url: t.trackViewUrl ?? "",
+    explicit: t.trackExplicitness === "explicit",
+  }));
+}
+
+// Build query variants to widen coverage (afrobeat / amapiano / Ghanaian
+// tracks often have inconsistent metadata across providers).
+function queryVariants(raw: string): string[] {
+  const q = raw.trim();
+  const variants = new Set<string>();
+  variants.add(q);
+
+  // Strip parenthetical, feat/ft, remix tags
+  const stripped = q
+    .replace(/\b(feat\.?|ft\.?|featuring|with)\b.*$/i, " ")
+    .replace(/\(.*?\)|\[.*?\]/g, " ")
+    .replace(/\b(remix|version|edit|extended|radio|club mix)\b/gi, " ")
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (stripped && stripped !== q) variants.add(stripped);
+
+  // "title - artist" / "artist - title" swap
+  if (q.includes(" - ")) {
+    const [a, b] = q.split(" - ").map((s) => s.trim()).filter(Boolean);
+    if (a && b) {
+      variants.add(`${b} ${a}`);
+      variants.add(`${a} ${b}`);
     }
-    const j = await res.json();
-    const items: any[] = j?.tracks?.items ?? [];
-    return items.map((t) => ({
-      source_song_id: t.id,
-      source_platform: "spotify" as const,
-      title: t.name,
-      artist: (t.artists ?? []).map((a: any) => a.name).join(", "),
-      album: t.album?.name ?? "",
-      album_art_url: t.album?.images?.[0]?.url ?? null,
-      duration_ms: t.duration_ms ?? 0,
-      preview_url: t.preview_url ?? null,
-      external_url: t.external_urls?.spotify ?? `https://open.spotify.com/track/${t.id}`,
-      explicit: !!t.explicit,
-    }));
-  } catch (e) {
-    console.warn("[music-search] spotify error", e);
-    return null;
   }
+
+  return [...variants].slice(0, 4);
 }
 
-async function searchItunes(q: string): Promise<SearchResult[] | null> {
-  try {
-    const url = `https://itunes.apple.com/search?media=music&entity=song&limit=50&term=${encodeURIComponent(q)}`;
-    const res = await fetch(url);
-    if (!res.ok) {
-      console.warn("[music-search] itunes status", res.status);
-      return null;
+function norm(s: string): string {
+  return (s ?? "")
+    .toLowerCase()
+    .replace(/\b(featuring|feat\.?|ft\.?|with)\b/g, " ")
+    .replace(/[\(\)\[\]\{\}]/g, " ")
+    .replace(/&/g, " and ")
+    .replace(/[^\p{L}\p{N}\s]/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function artistTokens(s: string): Set<string> {
+  return new Set(
+    norm(s)
+      .split(" ")
+      .filter((t) => t.length > 1),
+  );
+}
+
+// Strict cross-provider dedupe: titles must match exactly (normalized) AND
+// the artist token sets must overlap by ≥ 1 meaningful token AND durations
+// must be within 5s when both known. Otherwise keep both — different recordings.
+function isSameRecording(a: SearchResult, b: SearchResult): boolean {
+  if (norm(a.title) !== norm(b.title)) return false;
+  const ta = artistTokens(a.artist);
+  const tb = artistTokens(b.artist);
+  let overlap = 0;
+  for (const t of ta) if (tb.has(t)) overlap++;
+  if (overlap === 0) return false;
+  if (a.duration_ms > 0 && b.duration_ms > 0) {
+    if (Math.abs(a.duration_ms - b.duration_ms) > 5000) return false;
+  }
+  return true;
+}
+
+interface MergeStats {
+  spotify_raw: number;
+  itunes_raw: number;
+  merged: number;
+  dropped_dupes: number;
+}
+
+function mergeResults(
+  spotify: SearchResult[],
+  itunes: SearchResult[],
+): { results: SearchResult[]; stats: MergeStats } {
+  const kept: SearchResult[] = [];
+  const seenIds = new Set<string>();
+  let dropped = 0;
+
+  // Interleave so Apple-only tracks aren't pushed off the end.
+  const interleaved: SearchResult[] = [];
+  const maxLen = Math.max(spotify.length, itunes.length);
+  for (let i = 0; i < maxLen; i++) {
+    if (spotify[i]) interleaved.push(spotify[i]);
+    if (itunes[i]) interleaved.push(itunes[i]);
+  }
+
+  for (const r of interleaved) {
+    const id = `${r.source_platform}:${r.source_song_id}`;
+    if (seenIds.has(id)) continue;
+    seenIds.add(id);
+    const dupe = kept.find((k) => k.source_platform !== r.source_platform && isSameRecording(k, r));
+    if (dupe) {
+      dropped++;
+      continue;
     }
-    const j = await res.json();
-    const items: any[] = j?.results ?? [];
-    return items.map((t) => ({
-      source_song_id: String(t.trackId),
-      source_platform: "itunes" as const,
-      title: t.trackName ?? "Unknown",
-      artist: t.artistName ?? "Unknown",
-      album: t.collectionName ?? "",
-      album_art_url: (t.artworkUrl100 as string | undefined)?.replace("100x100", "600x600") ?? null,
-      duration_ms: t.trackTimeMillis ?? 0,
-      preview_url: t.previewUrl ?? null,
-      external_url: t.trackViewUrl ?? "",
-      explicit: t.trackExplicitness === "explicit",
-    }));
-  } catch (e) {
-    console.warn("[music-search] itunes error", e);
-    return null;
+    kept.push(r);
   }
-}
 
-// Loose normalization for dedupe: lowercase, drop punctuation, collapse
-// common variants (feat./ft./featuring, &/and, remix tags, parens).
-function normalizeForDedupe(title: string, artist: string): string {
-  const norm = (s: string) =>
-    (s ?? "")
-      .toLowerCase()
-      // Replace common collaborator markers
-      .replace(/\b(featuring|feat\.?|ft\.?|with)\b/g, " ")
-      // Strip parenthetical remix/version tags but keep the words
-      .replace(/[\(\)\[\]\{\}]/g, " ")
-      // & -> and
-      .replace(/&/g, " and ")
-      // Remove punctuation
-      .replace(/[^\p{L}\p{N}\s]/gu, " ")
-      // Collapse whitespace
-      .replace(/\s+/g, " ")
-      .trim();
-  return `${norm(title)}|${norm(artist).split(" ")[0] ?? ""}`;
-}
-
-function mergeResults(spotify: SearchResult[], itunes: SearchResult[]): SearchResult[] {
-  // Prefer Spotify entries when duplicate; always append unique iTunes entries.
-  const seen = new Map<string, SearchResult>();
-  const order: string[] = [];
-  for (const r of [...spotify, ...itunes]) {
-    const key = `${r.source_platform}:${r.source_song_id}`;
-    const dupeKey = normalizeForDedupe(r.title, r.artist);
-    // Hard-dedupe by same-platform id
-    if (seen.has(key)) continue;
-    // Soft dedupe across providers: keep the first (spotify wins because it iterates first)
-    const existing = [...seen.values()].find(
-      (s) => normalizeForDedupe(s.title, s.artist) === dupeKey,
-    );
-    if (existing) continue;
-    seen.set(key, r);
-    order.push(key);
-  }
-  return order.map((k) => seen.get(k)!).slice(0, 50);
+  return {
+    results: kept.slice(0, 60),
+    stats: {
+      spotify_raw: spotify.length,
+      itunes_raw: itunes.length,
+      merged: kept.length,
+      dropped_dupes: dropped,
+    },
+  };
 }
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
-  // Require an authenticated caller to prevent anonymous abuse of our Spotify quota
   const authHeader = req.headers.get("Authorization") ?? "";
   if (!authHeader.startsWith("Bearer ")) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -185,26 +244,55 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Query both providers in parallel
-    const [spotifyRes, itunesRes] = await Promise.all([
-      searchSpotify(q),
-      searchItunes(q),
-    ]);
-    const spotify = spotifyRes ?? [];
-    const itunes = itunesRes ?? [];
+    const variants = queryVariants(q);
+    const spotifyToken = await getSpotifyToken();
 
-    const merged = mergeResults(spotify, itunes);
+    // Run all variants × both providers in parallel.
+    const spotifyJobs = spotifyToken
+      ? variants.map((v) => spotifyOnce(v, spotifyToken))
+      : [];
+    const itunesJobs = variants.map((v) => itunesOnce(v));
+
+    const [spotifyArrs, itunesArrs] = await Promise.all([
+      Promise.all(spotifyJobs),
+      Promise.all(itunesJobs),
+    ]);
+
+    // Flatten + per-provider dedupe by id (preserve order across variants).
+    const seenSp = new Set<string>();
+    const spotify: SearchResult[] = [];
+    for (const arr of spotifyArrs) {
+      for (const r of arr) {
+        if (seenSp.has(r.source_song_id)) continue;
+        seenSp.add(r.source_song_id);
+        spotify.push(r);
+      }
+    }
+    const seenIt = new Set<string>();
+    const itunes: SearchResult[] = [];
+    for (const arr of itunesArrs) {
+      for (const r of arr) {
+        if (seenIt.has(r.source_song_id)) continue;
+        seenIt.add(r.source_song_id);
+        itunes.push(r);
+      }
+    }
+
+    const { results, stats } = mergeResults(spotify, itunes);
 
     const provider: "spotify" | "itunes" | "none" =
-      merged.length === 0
-        ? "none"
-        : spotify.length > 0 && itunes.length > 0
-        ? "spotify"
-        : spotify.length > 0
-        ? "spotify"
-        : "itunes";
+      results.length === 0 ? "none" : spotify.length >= itunes.length ? "spotify" : "itunes";
 
-    return new Response(JSON.stringify({ provider, results: merged }), {
+    if (results.length < 3) {
+      console.warn(
+        "[music-search] low-result",
+        JSON.stringify({ q, variants, ...stats, returned: results.length }),
+      );
+    } else {
+      console.log("[music-search] ok", JSON.stringify({ q, ...stats, returned: results.length }));
+    }
+
+    return new Response(JSON.stringify({ provider, results, stats }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
