@@ -11,7 +11,7 @@ interface SEOProps {
 
 const SITE_URL = "https://linku99.com";
 const DEFAULT_DESC =
-  "Live DJ song requests, crowd voting, boosts, and Now Playing syncing for clubs, parties, and events.";
+  "Decks is the live link between DJs and their crowd. Guests request and vote on songs in real time — the DJ decides what plays.";
 const DEFAULT_IMAGE = `${SITE_URL}/og-image.jpg?v=2`;
 
 export function SEO({
