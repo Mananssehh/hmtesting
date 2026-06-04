@@ -171,26 +171,15 @@ const Landing = () => {
               <h2 className="text-2xl sm:text-3xl font-bold mb-3">Earn points. Boost your song’s visibility.</h2>
               <p className="text-muted-foreground mb-6">
                 Every new guest starts with <span className="text-primary font-medium">15 points</span>.
-                Earn more by joining events, requesting songs, getting upvotes, and having your track played.
+                Earn more by joining events and requesting songs.
                 Spend points to <span className="text-primary font-medium">boost</span> a request higher in the queue —
                 the DJ still decides what actually plays.
               </p>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <Button asChild variant="premium">
-                  <Link to="/auth?role=dj">Start as a DJ</Link>
-                </Button>
-                <Button asChild variant="outline">
-                  <Link to="/join">Join an Event</Link>
-                </Button>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
+...
               {[
                 { v: "+15", l: "Starter points" },
                 { v: "+1", l: "Join an event" },
                 { v: "+1", l: "Request a song" },
-                { v: "+1", l: "Per upvote received" },
-                { v: "+1", l: "Track played" },
                 { v: "1:1", l: "Points → boost" },
               ].map((s) => (
                 <div key={s.l} className="p-4 rounded-2xl bg-background/60 border border-border/60 text-center">
