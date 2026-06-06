@@ -139,7 +139,7 @@ Deno.serve(async (req) => {
     // Only consider requests that are still actionable (never auto-mark played/skipped/removed twice).
     const { data: candidates } = await supabase
       .from("song_requests")
-      .select("id, title, artist, status, upvotes, downvotes, boost, created_at")
+      .select("id, title, artist, album_art, album_art_url, status, upvotes, downvotes, boost, created_at")
       .eq("event_id", integration.event_id)
       .in("status", ["pending", "approved"]);
 
