@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/ui/button";
 import { IngestTestPanel } from "@/components/IngestTestPanel";
+import { BridgeMonitor } from "@/components/BridgeMonitor";
 
 
 const DJDevTools = () => {
@@ -16,7 +17,9 @@ const DJDevTools = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!authLoading && (!user || !isDJ)) navigate("/auth", { replace: true });
+    if (authLoading) return;
+    if (!user) navigate("/auth?role=dj", { replace: true, state: { from: "/dj" } });
+    else if (!isDJ) navigate("/auth?role=dj", { replace: true });
   }, [user, isDJ, authLoading, navigate]);
 
   useEffect(() => {
@@ -50,7 +53,7 @@ const DJDevTools = () => {
         <div className="flex items-center justify-between">
           <div>
             <div className="text-xs uppercase tracking-wider text-muted-foreground">Developer tools</div>
-            <h1 className="text-2xl font-bold">Ingest testing</h1>
+            <h1 className="text-2xl font-bold">Bridge & ingest debug</h1>
             <p className="text-sm text-muted-foreground mt-1">
               Hidden dev-only panel. Not visible to guests or on the main DJ dashboard.
             </p>
@@ -60,6 +63,7 @@ const DJDevTools = () => {
           </Button>
         </div>
 
+        <BridgeMonitor eventId={id} />
         <IngestTestPanel eventId={id} />
       </div>
     </div>
