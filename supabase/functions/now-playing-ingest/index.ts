@@ -82,11 +82,13 @@ Deno.serve(async (req) => {
   }
   const b = parsed.data;
 
-  const row = {
+  const row: Record<string, any> = {
     event_id: integration.event_id,
     title: b.title,
     artist: b.artist || "",
     album_art: b.album_art ?? null,
+    apple_url: null as string | null,
+    spotify_url: null as string | null,
     source: b.source || integration.source_type || "helper",
     source_track_id: b.source_track_id ?? null,
     status: b.status,
