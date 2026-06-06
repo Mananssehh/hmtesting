@@ -185,6 +185,27 @@ const DJEventManage = () => {
       return;
     }
     if (status === "playing") {
+      // Mirror the DJ's choice into the broadcast row so guests (and any connected
+      // bridge ingest) see the same track — title/artist/art written together.
+      const picked = songs.find((s) => s.id === songId);
+      if (picked && event?.id) {
+        const albumArt = picked.album_art || picked.album_art_url || "";
+        console.log("[np-write] manual_dj", {
+          id: picked.id, title: picked.title, artist: picked.artist, album_art: albumArt,
+        });
+        try {
+          await updateNowPlaying({
+            eventId: event.id,
+            title: picked.title,
+            artist: picked.artist ?? "",
+            albumArt,
+            status: "playing",
+            source: "manual_dj",
+          });
+        } catch (e: any) {
+          logCritical("DJEventManage.updateNowPlaying", e?.message ?? String(e), { songId, eventId: event.id });
+        }
+      }
       toast.success("Now Playing updated for guests 🎶");
     }
   };
