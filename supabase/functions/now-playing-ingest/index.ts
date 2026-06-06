@@ -181,11 +181,18 @@ Deno.serve(async (req) => {
         matchedRequestId = matches[0].id;
         console.log("[bridge-match] matched", { matchType, id: matchedRequestId });
 
-        // Backfill album_art from the matched request when the bridge didn't supply one,
-        // so the broadcast row never has title/artist from this track + art from another.
+        // Backfill album_art + provider URLs from the matched request when the
+        // bridge didn't supply them, so the broadcast row never has title/artist
+        // from this track + art/links from another.
         if (!row.album_art) {
           const matchedArt = matches[0].album_art || matches[0].album_art_url || null;
           if (matchedArt) row.album_art = matchedArt;
+        }
+        const sp = (matches[0].source_platform ?? "").toLowerCase();
+        const ext = (matches[0].external_url ?? "").trim();
+        if (ext) {
+          if ((sp === "itunes" || sp === "apple_music") && !row.apple_url) row.apple_url = ext;
+          if (sp === "spotify" && !row.spotify_url) row.spotify_url = ext;
         }
 
         const { error: markErr } = await supabase
