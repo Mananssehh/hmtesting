@@ -9,8 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppHeader } from "@/components/AppHeader";
-import { GoogleButton } from "@/components/GoogleButton";
-import { AppleButton } from "@/components/AppleButton";
 import { emailSchema, nicknameSchema, passwordSchema } from "@/lib/validation";
 
 const Auth = () => {
@@ -274,17 +272,6 @@ const Auth = () => {
               </TabsContent>
             </form>
           </Tabs>
-
-          <div className="my-6 flex items-center gap-3">
-            <span className="h-px flex-1 bg-border" />
-            <span className="text-xs text-muted-foreground uppercase tracking-wider">Or</span>
-            <span className="h-px flex-1 bg-border" />
-          </div>
-
-          <div className="space-y-3">
-            <AppleButton />
-            <GoogleButton />
-          </div>
 
           <p className="text-xs text-center text-muted-foreground mt-6">
             Just want to vote? <Link to="/join" className="text-primary hover:underline">Join an event with a code →</Link>
