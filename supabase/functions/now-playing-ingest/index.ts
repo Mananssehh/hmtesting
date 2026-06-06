@@ -139,7 +139,7 @@ Deno.serve(async (req) => {
     // Only consider requests that are still actionable (never auto-mark played/skipped/removed twice).
     const { data: candidates } = await supabase
       .from("song_requests")
-      .select("id, title, artist, status, upvotes, downvotes, boost, created_at")
+      .select("id, title, artist, album_art, album_art_url, status, upvotes, downvotes, boost, created_at")
       .eq("event_id", integration.event_id)
       .in("status", ["pending", "approved"]);
 
@@ -179,6 +179,13 @@ Deno.serve(async (req) => {
         matchedRequestId = matches[0].id;
         console.log("[bridge-match] matched", { matchType, id: matchedRequestId });
 
+        // Backfill album_art from the matched request when the bridge didn't supply one,
+        // so the broadcast row never has title/artist from this track + art from another.
+        if (!row.album_art) {
+          const matchedArt = matches[0].album_art || matches[0].album_art_url || null;
+          if (matchedArt) row.album_art = matchedArt;
+        }
+
         const { error: markErr } = await supabase
           .from("song_requests")
           .update({
@@ -200,6 +207,13 @@ Deno.serve(async (req) => {
   }
 
   const rowWithMatch = { ...row, now_playing_request_id: matchedRequestId };
+  console.log("[np-write] decks_bridge", {
+    title: rowWithMatch.title,
+    artist: rowWithMatch.artist,
+    album_art: rowWithMatch.album_art,
+    source: rowWithMatch.source,
+    matched_request_id: matchedRequestId,
+  });
 
   // Find existing now_playing row for this event (one row per event in practice).
   const { data: existing } = await supabase
