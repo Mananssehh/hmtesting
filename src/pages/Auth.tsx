@@ -281,7 +281,10 @@ const Auth = () => {
             <span className="h-px flex-1 bg-border" />
           </div>
 
-          <GoogleButton />
+          <div className="space-y-3">
+            <AppleButton />
+            <GoogleButton />
+          </div>
 
           <p className="text-xs text-center text-muted-foreground mt-6">
             Just want to vote? <Link to="/join" className="text-primary hover:underline">Join an event with a code →</Link>
