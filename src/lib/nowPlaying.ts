@@ -20,6 +20,8 @@ export interface NowPlayingInput {
   title: string;
   artist?: string;
   albumArt?: string;
+  appleUrl?: string | null;
+  spotifyUrl?: string | null;
   source?: string;
   status?: NowPlayingStatus;
 }
@@ -29,6 +31,8 @@ export async function updateNowPlaying({
   title,
   artist = "",
   albumArt = "",
+  appleUrl = null,
+  spotifyUrl = null,
   source = "manual",
   status = "playing",
 }: NowPlayingInput): Promise<NowPlayingRow> {
@@ -42,6 +46,8 @@ export async function updateNowPlaying({
         title,
         artist,
         album_art: albumArt,
+        apple_url: appleUrl,
+        spotify_url: spotifyUrl,
         source,
         status,
         updated_at: new Date().toISOString(),
