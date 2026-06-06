@@ -206,11 +206,35 @@ Deno.serve(async (req) => {
     console.error("[bridge-match] error:", e);
   }
 
+  // Final fallback: when neither bridge nor a matched request supplied artwork,
+  // look it up on iTunes (no auth required, same provider used by music-search).
+  let artSource: "bridge" | "request_backfill" | "itunes_lookup" | "none" =
+    b.album_art ? "bridge" : row.album_art ? "request_backfill" : "none";
+  if (!row.album_art) {
+    try {
+      const term = `${b.title} ${b.artist ?? ""}`.trim();
+      const url = `https://itunes.apple.com/search?media=music&entity=song&country=US&limit=5&term=${encodeURIComponent(term)}`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const j = await res.json();
+        const first = (j?.results ?? [])[0];
+        const art = (first?.artworkUrl100 as string | undefined)?.replace("100x100", "600x600") ?? null;
+        if (art) {
+          row.album_art = art;
+          artSource = "itunes_lookup";
+        }
+      }
+    } catch (e) {
+      console.error("[np-art] itunes lookup failed:", e);
+    }
+  }
+
   const rowWithMatch = { ...row, now_playing_request_id: matchedRequestId };
   console.log("[np-write] decks_bridge", {
     title: rowWithMatch.title,
     artist: rowWithMatch.artist,
     album_art: rowWithMatch.album_art,
+    art_source: artSource,
     source: rowWithMatch.source,
     matched_request_id: matchedRequestId,
   });
