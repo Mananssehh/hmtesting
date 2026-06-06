@@ -215,11 +215,13 @@ Deno.serve(async (req) => {
     console.error("[bridge-match] error:", e);
   }
 
-  // Final fallback: when neither bridge nor a matched request supplied artwork,
-  // look it up on iTunes (no auth required, same provider used by music-search).
+  // Final fallback: when neither bridge nor a matched request supplied artwork
+  // or provider URLs, look the track up on iTunes (no auth) and Spotify
+  // (client-credentials, optional). Both populate deep-link URLs so guests can
+  // open the exact track from the Now Playing card.
   let artSource: "bridge" | "request_backfill" | "itunes_lookup" | "none" =
     b.album_art ? "bridge" : row.album_art ? "request_backfill" : "none";
-  if (!row.album_art) {
+  if (!row.album_art || !row.apple_url) {
     try {
       const term = `${b.title} ${b.artist ?? ""}`.trim();
       const url = `https://itunes.apple.com/search?media=music&entity=song&country=US&limit=5&term=${encodeURIComponent(term)}`;
@@ -227,14 +229,55 @@ Deno.serve(async (req) => {
       if (res.ok) {
         const j = await res.json();
         const first = (j?.results ?? [])[0];
-        const art = (first?.artworkUrl100 as string | undefined)?.replace("100x100", "600x600") ?? null;
-        if (art) {
-          row.album_art = art;
-          artSource = "itunes_lookup";
+        if (first) {
+          const art = (first?.artworkUrl100 as string | undefined)?.replace("100x100", "600x600") ?? null;
+          if (art && !row.album_art) {
+            row.album_art = art;
+            artSource = "itunes_lookup";
+          }
+          const trackUrl = first?.trackViewUrl as string | undefined;
+          if (trackUrl && !row.apple_url) row.apple_url = trackUrl;
         }
       }
     } catch (e) {
-      console.error("[np-art] itunes lookup failed:", e);
+      console.error("[np-lookup] itunes lookup failed:", e);
+    }
+  }
+
+  if (!row.spotify_url) {
+    const id = Deno.env.get("SPOTIFY_CLIENT_ID");
+    const secret = Deno.env.get("SPOTIFY_CLIENT_SECRET");
+    if (id && secret) {
+      try {
+        const tok = await fetch("https://accounts.spotify.com/api/token", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            Authorization: `Basic ${btoa(`${id}:${secret}`)}`,
+          },
+          body: "grant_type=client_credentials",
+        });
+        if (tok.ok) {
+          const tj = await tok.json();
+          const token = tj.access_token as string | undefined;
+          if (token) {
+            const term = `${b.title} ${b.artist ?? ""}`.trim();
+            const sres = await fetch(
+              `https://api.spotify.com/v1/search?type=track&limit=1&market=US&q=${encodeURIComponent(term)}`,
+              { headers: { Authorization: `Bearer ${token}` } },
+            );
+            if (sres.ok) {
+              const sj = await sres.json();
+              const t = sj?.tracks?.items?.[0];
+              const spUrl: string | undefined =
+                t?.external_urls?.spotify ?? (t?.id ? `https://open.spotify.com/track/${t.id}` : undefined);
+              if (spUrl) row.spotify_url = spUrl;
+            }
+          }
+        }
+      } catch (e) {
+        console.error("[np-lookup] spotify lookup failed:", e);
+      }
     }
   }
 
@@ -243,6 +286,8 @@ Deno.serve(async (req) => {
     title: rowWithMatch.title,
     artist: rowWithMatch.artist,
     album_art: rowWithMatch.album_art,
+    apple_url: rowWithMatch.apple_url,
+    spotify_url: rowWithMatch.spotify_url,
     art_source: artSource,
     source: rowWithMatch.source,
     matched_request_id: matchedRequestId,
