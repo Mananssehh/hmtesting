@@ -8,6 +8,8 @@ export interface NowPlayingRow {
   title: string;
   artist: string | null;
   album_art: string | null;
+  apple_url: string | null;
+  spotify_url: string | null;
   source: string | null;
   status: NowPlayingStatus;
   updated_at: string;
