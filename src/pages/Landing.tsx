@@ -6,6 +6,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { AppHeader } from "@/components/AppHeader";
 import { SEO } from "@/components/SEO";
+import { StartAsDjCta } from "@/components/StartAsDjCta";
 
 const features = [
   { icon: Vote, title: "Reddit-style voting", desc: "Upvote bangers, downvote skips. The crowd shapes the night." },
