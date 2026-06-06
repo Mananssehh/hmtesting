@@ -185,6 +185,10 @@ export function NowPlayingDisplay({ eventId, matchedRequest, fallbackRequest }: 
               <PlatformLinks
                 title={title}
                 artist={artist ?? ""}
+                appleMusicUrl={nowPlaying?.apple_url ?? null}
+                spotifyUrl={nowPlaying?.spotify_url ?? null}
+                externalUrl={request?.external_url ?? null}
+                sourcePlatform={request?.source_platform ?? null}
                 size="md"
               />
             </div>
