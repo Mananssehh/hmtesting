@@ -96,7 +96,7 @@ const Auth = () => {
           await refreshProfile();
         }
         toast.success("Account created! Welcome to Decks.");
-        navigate(wantsDJ ? "/dj" : "/", { replace: true });
+        navigate(wantsDJ ? (fromPath || "/dj") : (fromPath || "/"), { replace: true });
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email: emailParse.data,
@@ -118,6 +118,59 @@ const Auth = () => {
     }
   };
 
+  // Show a spinner while we're still figuring out auth state — avoids a flash
+  // of the login form for users who are already signed in.
+  if (authLoading) {
+    return (
+      <div className="min-h-screen">
+        <AppHeader />
+        <div className="container py-20 flex justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      </div>
+    );
+  }
+
+  if (signedInNeedsDJ) {
+    return (
+      <div className="min-h-screen">
+        <AppHeader />
+        <div className="container max-w-md py-10 sm:py-16">
+          <div className="text-center mb-8">
+            <Disc3 className="h-12 w-12 text-primary mx-auto mb-4 animate-float" strokeWidth={1.5} />
+            <h1 className="text-[28px] sm:text-3xl font-semibold tracking-tight">Unlock DJ access</h1>
+            <p className="text-muted-foreground mt-2 text-[15px]">
+              You're already signed in. Enter your DJ invite code to continue.
+            </p>
+          </div>
+          <form onSubmit={handleClaimOnly} className="p-6 sm:p-7 rounded-3xl glass-strong space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="invite-only">DJ invite code</Label>
+              <Input
+                id="invite-only"
+                value={inviteCode}
+                onChange={(e) => setInviteCode(e.target.value)}
+                placeholder="Paste your invite code"
+                autoComplete="off"
+                autoFocus
+              />
+              <p className="text-xs text-muted-foreground">
+                Don't have one? DJ access is invite-only during launch — email us.
+              </p>
+            </div>
+            <Button type="submit" disabled={claimLoading} variant="premium" className="w-full h-11">
+              {claimLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Unlock DJ access
+            </Button>
+            <p className="text-xs text-center text-muted-foreground">
+              Not a DJ? <Link to="/" className="text-primary hover:underline">Back to home →</Link>
+            </p>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen">
       <AppHeader />
@@ -127,6 +180,7 @@ const Auth = () => {
           <h1 className="text-[28px] sm:text-3xl font-semibold tracking-tight">Welcome to Decks</h1>
           <p className="text-muted-foreground mt-2 text-[15px]">Sign in to vote, request, and boost.</p>
         </div>
+
 
         <div className="p-6 sm:p-7 rounded-3xl glass-strong">
           <Tabs value={mode} onValueChange={(v) => setMode(v as "login" | "signup")}>
