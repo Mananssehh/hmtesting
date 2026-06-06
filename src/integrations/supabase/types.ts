@@ -445,6 +445,7 @@ export type Database = {
       now_playing: {
         Row: {
           album_art: string | null
+          apple_url: string | null
           artist: string | null
           created_at: string
           event_id: string
@@ -452,6 +453,7 @@ export type Database = {
           now_playing_request_id: string | null
           source: string | null
           source_track_id: string | null
+          spotify_url: string | null
           started_at: string | null
           status: string
           title: string
@@ -459,6 +461,7 @@ export type Database = {
         }
         Insert: {
           album_art?: string | null
+          apple_url?: string | null
           artist?: string | null
           created_at?: string
           event_id: string
@@ -466,6 +469,7 @@ export type Database = {
           now_playing_request_id?: string | null
           source?: string | null
           source_track_id?: string | null
+          spotify_url?: string | null
           started_at?: string | null
           status?: string
           title: string
@@ -473,6 +477,7 @@ export type Database = {
         }
         Update: {
           album_art?: string | null
+          apple_url?: string | null
           artist?: string | null
           created_at?: string
           event_id?: string
@@ -480,6 +485,7 @@ export type Database = {
           now_playing_request_id?: string | null
           source?: string | null
           source_track_id?: string | null
+          spotify_url?: string | null
           started_at?: string | null
           status?: string
           title?: string
