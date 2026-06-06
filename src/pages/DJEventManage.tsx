@@ -190,8 +190,13 @@ const DJEventManage = () => {
       const picked = songs.find((s) => s.id === songId);
       if (picked && event?.id) {
         const albumArt = picked.album_art || picked.album_art_url || "";
+        const sp = (picked.source_platform ?? "").toLowerCase();
+        const ext = (picked.external_url ?? "").trim();
+        const appleUrl = sp === "itunes" || sp === "apple_music" ? ext || null : null;
+        const spotifyUrl = sp === "spotify" ? ext || null : null;
         console.log("[np-write] manual_dj", {
-          id: picked.id, title: picked.title, artist: picked.artist, album_art: albumArt,
+          id: picked.id, title: picked.title, artist: picked.artist,
+          album_art: albumArt, apple_url: appleUrl, spotify_url: spotifyUrl,
         });
         try {
           await updateNowPlaying({
@@ -199,6 +204,8 @@ const DJEventManage = () => {
             title: picked.title,
             artist: picked.artist ?? "",
             albumArt,
+            appleUrl,
+            spotifyUrl,
             status: "playing",
             source: "manual_dj",
           });
