@@ -49,10 +49,11 @@ const DJDashboard = () => {
   const [qrEvent, setQrEvent] = useState<EventRow | null>(null);
 
   useEffect(() => {
-    if (!authLoading && !user) navigate("/auth", { replace: true });
-    if (!authLoading && user && !isDJ) {
-      toast.error("DJ access required");
-      navigate("/", { replace: true });
+    if (authLoading) return;
+    if (!user) {
+      navigate("/auth?role=dj", { replace: true, state: { from: "/dj" } });
+    } else if (!isDJ) {
+      navigate("/auth?role=dj", { replace: true });
     }
   }, [user, isDJ, authLoading, navigate]);
 

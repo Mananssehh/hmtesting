@@ -26,7 +26,7 @@ import { Badge } from "@/components/ui/badge";
 import { logCritical } from "@/lib/errorLogger";
 import { NowPlayingPanel } from "@/components/NowPlayingPanel";
 import { BridgePairing } from "@/components/BridgePairing";
-import { BridgeMonitor } from "@/components/BridgeMonitor";
+
 
 interface EventInfo {
   id: string;
@@ -72,7 +72,9 @@ const DJEventManage = () => {
   const [banTarget, setBanTarget] = useState<SongRequestRow | null>(null);
 
   useEffect(() => {
-    if (!authLoading && (!user || !isDJ)) navigate("/auth", { replace: true });
+    if (authLoading) return;
+    if (!user) navigate("/auth?role=dj", { replace: true, state: { from: `/dj` } });
+    else if (!isDJ) navigate("/auth?role=dj", { replace: true });
   }, [user, isDJ, authLoading, navigate]);
 
   useEffect(() => {
@@ -425,9 +427,9 @@ const DJEventManage = () => {
         {status !== "ended" && (
           <div className="mb-4 space-y-4">
             <BridgePairing eventId={event.id} />
-            <BridgeMonitor eventId={event.id} />
           </div>
         )}
+
 
         {/* DJ-controlled Now Playing panel (broadcasts to guests) */}
         {status !== "ended" && (

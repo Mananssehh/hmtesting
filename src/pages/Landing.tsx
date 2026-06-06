@@ -6,6 +6,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { AppHeader } from "@/components/AppHeader";
 import { SEO } from "@/components/SEO";
+import { StartAsDjCta } from "@/components/StartAsDjCta";
 
 const features = [
   { icon: Vote, title: "Reddit-style voting", desc: "Upvote bangers, downvote skips. The crowd shapes the night." },
@@ -68,12 +69,8 @@ const Landing = () => {
             Boosts raise visibility — the DJ still chooses what actually plays.
           </p>
           <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row gap-3 justify-center px-4">
-            <Button asChild size="lg" variant="premium">
-              <Link to="/auth?role=dj">
-                <Disc3 className="mr-2 h-5 w-5" />
-                Start as a DJ
-              </Link>
-            </Button>
+            <StartAsDjCta />
+
             <Button asChild size="lg" variant="outline" className="h-12 px-8 text-base border-primary/30 hover:bg-primary/10">
               <Link to="/join">
                 <Headphones className="mr-2 h-5 w-5" />
@@ -150,12 +147,16 @@ const Landing = () => {
                     </li>
                   ))}
                 </ul>
-                <Button asChild variant="outline" className="border-primary/30 hover:bg-primary/10">
-                  <Link to={cta.to}>
-                    <CtaIcon className="mr-2 h-4 w-4" />
-                    {cta.label} <ArrowRight className="ml-1 h-4 w-4" />
-                  </Link>
-                </Button>
+                {title === "For DJs" ? (
+                  <StartAsDjCta variant="outline" size="default" className="border-primary/30 hover:bg-primary/10" withIcon={false} label={cta.label} />
+                ) : (
+                  <Button asChild variant="outline" className="border-primary/30 hover:bg-primary/10">
+                    <Link to={cta.to}>
+                      <CtaIcon className="mr-2 h-4 w-4" />
+                      {cta.label} <ArrowRight className="ml-1 h-4 w-4" />
+                    </Link>
+                  </Button>
+                )}
               </div>
             );
           })}
@@ -198,9 +199,8 @@ const Landing = () => {
         <h2 className="text-3xl sm:text-4xl font-bold mb-3">The crowd picks. The DJ decides.</h2>
         <p className="text-muted-foreground mb-8">Spin up a live event in 30 seconds.</p>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Button asChild size="lg" variant="premium">
-            <Link to="/auth?role=dj">Start as a DJ</Link>
-          </Button>
+          <StartAsDjCta withIcon={false} />
+
           <Button asChild size="lg" variant="outline" className="h-12 px-8 border-primary/30 hover:bg-primary/10">
             <Link to="/join">Join an Event</Link>
           </Button>

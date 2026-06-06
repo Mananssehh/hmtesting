@@ -50,10 +50,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(async ({ data }) => {
       setSession(data.session);
       setUser(data.session?.user ?? null);
-      if (data.session?.user) loadProfile(data.session.user.id);
+      if (data.session?.user) {
+        // Await initial profile + role load so route guards see accurate isDJ
+        // on first render — prevents signed-in DJs from being bounced to /auth.
+        await loadProfile(data.session.user.id);
+      }
       setLoading(false);
     });
 
