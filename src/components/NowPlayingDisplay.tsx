@@ -24,18 +24,15 @@ export function NowPlayingDisplay({ eventId, matchedRequest, fallbackRequest }: 
   let title: string | null = null;
   let artist: string | null = null;
   let albumArt: string | null = null;
-  let sourceLabel: "broadcast" | "fallback" | null = null;
 
   if (nowPlaying?.title) {
     title = nowPlaying.title;
     artist = nowPlaying.artist ?? null;
     albumArt = nowPlaying.album_art || null;
-    sourceLabel = "broadcast";
   } else if (fallbackRequest?.title) {
     title = fallbackRequest.title;
     artist = fallbackRequest.artist ?? null;
     albumArt = fallbackRequest.album_art || fallbackRequest.album_art_url || null;
-    sourceLabel = "fallback";
   }
 
   const status: NowPlayingStatus =
