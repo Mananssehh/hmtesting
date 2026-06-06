@@ -19,21 +19,31 @@ export function NowPlayingDisplay({ eventId, matchedRequest, fallbackRequest }: 
   const { nowPlaying, loading } = useNowPlaying(eventId);
   const lastToastKey = useRef<string | null>(null);
 
-  // Compose display data: prefer broadcast row, fall back to the playing request.
-  const title = nowPlaying?.title ?? fallbackRequest?.title ?? null;
-  const artist = nowPlaying?.artist ?? fallbackRequest?.artist ?? null;
-  const albumArt =
-    nowPlaying?.album_art ||
-    matchedRequest?.album_art ||
-    matchedRequest?.album_art_url ||
-    fallbackRequest?.album_art ||
-    fallbackRequest?.album_art_url ||
-    null;
+  // Atomic per-source resolution: never mix title from one row with album_art from another.
+  // Broadcast row (now_playing) wins as a whole; otherwise fall back to the DJ-marked request.
+  let title: string | null = null;
+  let artist: string | null = null;
+  let albumArt: string | null = null;
+  let sourceLabel: "broadcast" | "fallback" | null = null;
+
+  if (nowPlaying?.title) {
+    title = nowPlaying.title;
+    artist = nowPlaying.artist ?? null;
+    albumArt = nowPlaying.album_art || null;
+    sourceLabel = "broadcast";
+  } else if (fallbackRequest?.title) {
+    title = fallbackRequest.title;
+    artist = fallbackRequest.artist ?? null;
+    albumArt = fallbackRequest.album_art || fallbackRequest.album_art_url || null;
+    sourceLabel = "fallback";
+  }
+
   const status: NowPlayingStatus =
     (nowPlaying?.status as NowPlayingStatus) ?? (fallbackRequest ? "playing" : "playing");
 
   const request = matchedRequest ?? fallbackRequest ?? null;
   const trackKey = title ? `${title}-${artist ?? ""}` : null;
+  const imgKey = `${title ?? ""}-${artist ?? ""}-${nowPlaying?.updated_at ?? ""}`;
 
   useEffect(() => {
     if (!title || !trackKey) return;
