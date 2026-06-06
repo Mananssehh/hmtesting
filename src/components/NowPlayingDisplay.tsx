@@ -121,6 +121,7 @@ export function NowPlayingDisplay({ eventId, matchedRequest, fallbackRequest }: 
         <div className="flex items-center gap-4 sm:gap-5">
           {albumArt ? (
             <img
+              key={imgKey}
               src={albumArt}
               alt=""
               className={cn(
