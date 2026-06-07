@@ -276,6 +276,12 @@ const Auth = () => {
           <p className="text-xs text-center text-muted-foreground mt-6">
             Just want to vote? <Link to="/join" className="text-primary hover:underline">Join an event with a code →</Link>
           </p>
+          <p className="text-[11px] text-center text-muted-foreground mt-3">
+            By continuing you agree to our <Link to="/terms" className="hover:text-primary underline-offset-2 hover:underline">Terms</Link> and{" "}
+            <Link to="/privacy" className="hover:text-primary underline-offset-2 hover:underline">Privacy Policy</Link>.
+            <br />
+            Need help? <a href="mailto:support@linku99.com" className="hover:text-primary">support@linku99.com</a>
+          </p>
         </div>
       </div>
     </div>
