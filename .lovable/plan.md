@@ -1,122 +1,142 @@
-# Decks Launch Readiness Board
+# Next build sequence
 
-Goal: smallest set of work to safely launch publicly, then unlock Stripe. No auto-refund mechanics — disclosures + acknowledgement instead.
-
-## Priority categories
-
-- **P0** — Required before public launch (free points only)
-- **P1** — Required before Stripe is turned on
-- **P2** — Recommended within ~30 days of launch
-- **P3** — Nice-to-have / defer until data justifies it
+Three deliverables, shipped in order. Each is independently mergeable.
 
 ---
 
-## Audit results
+## 1. Reporting System (Trust & Safety)
 
-| # | Item | Status | Category | Effort |
-|---|---|---|---|---|
-| 1 | `/terms` page | Missing | P0 | S |
-| 2 | `/privacy` page | Missing | P0 | S |
-| 3 | `/dmca` page + takedown email | Missing | P0 | S |
-| 4 | `/contact` page | Missing | P0 | XS |
-| 5 | `/trust-safety` page (community rules, reporting, enforcement) | Missing | P0 | S |
-| 6 | `/refund-policy` page ("Purchases are final, boosts = visibility only") | Missing | P1 | XS |
-| 7 | Site-wide footer with links to all six pages | Missing | P0 | XS |
-| 8 | Support email (`support@linku99.com`) shown on Contact + footer | Missing | P0 | XS |
-| 9 | Nickname profanity check on write (already have `profanity.ts`, not wired into nickname update) | Partial | P0 | XS |
-| 10 | Request rate limits (`cooldown_seconds`, `recent_request_count`) | Done | — | — |
-| 11 | Boost rate limits / per-request cap | Partial — boosts validated, no per-window cap | P1 | S |
-| 12 | User reporting flow (report request / report user → `reports` table → DJ + admin view) | Missing | P1 | M |
-| 13 | Transaction history (already in Profile "Recent activity") | Done | — | — |
-| 14 | Checkout acknowledgement modal (3 checkboxes, stored consent row) | Missing | P1 | S |
-| 15 | Stripe purchase caps (per-day spend ceiling, first-purchase smaller cap) | Missing | P1 | S |
-| 16 | Fraud protections (Turnstile/hCaptcha on auth + boost, IP velocity) | Missing | P1 | M |
-| 17 | Account deletion ("Delete my account" → RPC + cascade) | Missing | P2 | M |
-| 18 | Data export ("Download my data") | Missing | P2 | S |
-| 19 | Cookie banner / cookie policy | Missing | P2 | S |
-| 20 | CSP / security headers in `vercel.json` | Missing | P2 | XS |
-| 21 | RLS gap: `bridge_pair_attempts` has no policies | Open | P2 | XS |
-| 22 | Auto-refund credits on DJ reject / event end | Not building | P3 | — |
+Close the enforcement gap behind the Trust & Safety page. Guests can flag bad actors; DJs see reports for their events; admins see everything.
 
-Effort: XS <30m · S ~1h · M ~half-day
-
----
-
-## Counts
-
-- **P0 launch blockers: 6** (terms, privacy, dmca, contact, trust-safety, footer+support email — nickname profanity is bundled in)
-- **P1 Stripe blockers: 5** (refund policy, checkout acknowledgement, boost caps, reporting flow, fraud protections — purchase caps optional but recommended)
-- **P2 within 30 days: 5**
-- **P3 deferred: 1**
-
----
-
-## P0 implementation plan (this build)
-
-### 1. Legal/trust pages
-
-Create static React pages under `src/pages/legal/`:
-
-- `Terms.tsx` — service terms, virtual-currency clause ("Points and Boosts are a virtual item with no monetary value, non-refundable, non-transferable, non-redeemable for cash"), DJ discretion clause, age 13+ (16+ EU), governing law placeholder.
-- `Privacy.tsx` — data collected (email, nickname, requests, IP for abuse), processors (Lovable Cloud / Supabase, iTunes, Spotify), retention, user rights, contact.
-- `DMCA.tsx` — Decks stores metadata only, no audio hosted/streamed; takedown procedure; designated agent email `dmca@linku99.com`; repeat-infringer policy.
-- `Contact.tsx` — `support@linku99.com`, response window, link to Trust & Safety for reports.
-- `TrustSafety.tsx` — community rules, what's banned, reporting flow, enforcement ladder, appeal email.
-- `RefundPolicy.tsx` — stub now (P1 needs it live before Stripe), states: boosts increase visibility only; DJs are not required to play any track; all purchases final; chargeback policy.
-
-Routes added in `src/App.tsx`:
+### Database (`reports` table)
 
 ```text
-/terms /privacy /dmca /contact /trust-safety /refund-policy
+reports
+  id            uuid pk
+  reporter_id   uuid  (auth.uid)
+  event_id      uuid  nullable (null for nickname/profile reports)
+  target_type   text  check in ('request','user','nickname')
+  target_id     uuid  (song_request.id OR profile.id)
+  reason        text  check in ('inappropriate','harassment','spam','copyright','other')
+  details       text  nullable, max 500 chars
+  status        text  default 'open'  ('open','reviewing','resolved','dismissed')
+  resolution    text  nullable
+  created_at    timestamptz
+  updated_at    timestamptz
+  resolved_at   timestamptz nullable
+  resolved_by   uuid nullable
 ```
 
-Each page wrapped with `<SEO>` (title, description, canonical) and a single H1.
+RLS:
+- INSERT: authenticated, `reporter_id = auth.uid()`, rate-limited via trigger (max 10/hour/user).
+- SELECT: reporter sees own; event DJ sees reports on their event; admin sees all (`has_role(auth.uid(),'admin')`).
+- UPDATE: event DJ updates `status` + `resolution` for their event's reports; admin updates anything.
+- No DELETE for users (admin only).
 
-### 2. Footer component
+Indexes: `(event_id, status)`, `(target_type, target_id)`, `(reporter_id, created_at)`.
 
-New `src/components/SiteFooter.tsx`:
+GRANTs: `SELECT, INSERT, UPDATE` to authenticated; `ALL` to service_role.
 
-- Columns: Product · Legal · Support
-- Links to all six pages + `mailto:support@linku99.com`
-- Copyright + "Decks © {year}"
-- Mounted on `Landing`, `Join`, `EventPage`, `Profile`, `PublicProfile`, `Auth`, `Connect` (every guest/public surface). DJ workspace pages stay clean.
+### UI
 
-### 3. Nickname profanity check
+- **`ReportDialog.tsx`** — reusable modal: reason radio group + optional details textarea + submit. Props: `targetType`, `targetId`, `eventId?`.
+- **Report entry points**:
+  - `SongRequestCard.tsx` — overflow menu "Report request" (guest side).
+  - `NowPlayingDisplay.tsx` — overflow "Report current track" (guest side, when source is guest request).
+  - `PublicProfile.tsx` — "Report user" / "Report nickname" buttons.
+- **DJ view**: new section in `DJEventManage.tsx` ("Reports" tab/card) listing open reports for the event with a status dropdown and a quick-action ("Remove request", "Ban guest" — reusing existing flows).
+- **Admin view**: lightweight `/admin/reports` page (admin-only route) — list all, filter by status. Keep minimal.
 
-In `src/pages/Profile.tsx` `saveName()` and in `Join.tsx` nickname submit:
+### Acceptance
 
-- Run `containsProfanity` + `looksSpammy` from `src/lib/profanity.ts` before the Supabase update.
-- Reject with toast: "Please choose a different nickname."
-
-### 4. Support email surfacing
-
-- Footer `mailto:` link.
-- Contact page primary CTA.
-- Auth page small text: "Need help? support@linku99.com".
-
-### Out of scope for this build
-
-- Account deletion, data export, cookie banner, CSP headers, reports table, checkout modal, Stripe caps, Turnstile — all P1/P2, tracked above.
-- Auto-refund mechanics — explicitly **not building** (P3). Policy stance: boosts consumed on use, DJ has full discretion, purchases final.
+- Guest can report a request, nickname, or user; sees toast and cannot submit duplicates within 60s.
+- DJ sees open report count badge on event manage page.
+- Updating status logs `resolved_at` + `resolved_by` via trigger.
 
 ---
 
-## After P0 ships
+## 2. Activity Ledger UI
 
-Suggested launch sequence:
+Surface `points_transactions` (already populated) as a clean, scannable history. No schema changes.
 
-1. Ship P0 → publish → run real DJ event with free points only.
-2. Collect 2–4 weeks of usage data (chargeback signal would be N/A here since no money yet, but watch request abuse, nickname abuse, support volume).
-3. Build P1 stack (refund policy live copy, checkout acknowledgement modal + `purchase_consents` table, boost caps, reporting flow, Turnstile) → enable Stripe.
-4. P2 cleanup (account deletion, data export, cookie banner, CSP, RLS gap).
+### Where
+
+New tab inside `src/pages/Profile.tsx` → "Activity" (alongside existing "Recent activity"), OR a dedicated `/profile/activity` route. Pick the tab to keep nav flat.
+
+### Data
+
+Single query against `points_transactions` joined with `song_requests` (for title/artist) and `events` (for event name), filtered to `auth.uid()`, paginated (50 per page, "Load more").
+
+### Row format
+
+```text
++15  Starter points                                        Today, 9:14 AM
++1   Joined "Friday Night @ Capitol"                       Yesterday, 11:02 PM
++1   Requested "Tumo Weto" — Mavo                          Yesterday, 11:04 PM
+-5   Boosted "How" — Lil Baby                              Yesterday, 11:18 PM
++5   Refunded — request removed                            Yesterday, 11:25 PM
+```
+
+- Green for `+`, red for `-`, muted for refunds.
+- Running balance shown in header (current `profile.points`) + delta for current view.
+- Filters: All / Earned / Spent / Refunded.
+- Empty state copy: "No activity yet. Join an event to earn points."
+
+### Acceptance
+
+- Every row has a reason and a human timestamp.
+- Clicking a row with `song_request_id` jumps to that event page (when not archived).
+- Loads under 300ms for typical balances (<500 rows).
 
 ---
 
-## Technical notes
+## 3. `purchase_consents` table (Stripe foundation)
 
-- Acknowledgement modal (P1) will write a `purchase_consents` row `{ user_id, version, accepted_at, ip }` and gate the Stripe checkout call. Versioned so future ToS changes re-prompt.
-- `reports` table (P1) shape: `{ id, reporter_id, event_id, target_type ('request'|'user'|'nickname'), target_id, reason, status, created_at }` with RLS: reporter inserts own; DJ of event reads/updates; admin reads all.
-- Boost cap (P1): per-user-per-event window check inside `boost_request` RPC.
-- CSP (P2): add `Content-Security-Policy` header in `vercel.json` allowing self + Supabase + Lovable + iTunes/Spotify image CDNs.
+Pure plumbing. No UI yet — the checkout acknowledgement modal lands in the P1 Stripe build.
 
-Approve to build the P0 set (legal pages + footer + nickname profanity + support email).
+### Schema
+
+```text
+purchase_consents
+  id            uuid pk
+  user_id       uuid  (auth.uid)
+  version       text  not null    -- e.g. 'v1-2026-06-07'
+  accepted_at   timestamptz default now()
+  ip            inet  nullable
+  user_agent    text  nullable
+  unique (user_id, version)
+```
+
+RLS:
+- INSERT: authenticated, `user_id = auth.uid()`.
+- SELECT: own rows only; admin sees all via `has_role`.
+- No UPDATE / DELETE.
+
+GRANTs: `SELECT, INSERT` to authenticated; `ALL` to service_role.
+
+Constant `CURRENT_CONSENT_VERSION = 'v1-2026-06-07'` exported from `src/lib/consent.ts` so the future checkout modal and any server-side Stripe edge function reference the same value. Bumping the constant re-prompts users.
+
+### Acceptance
+
+- Migration applies cleanly.
+- Helper `recordConsent(version)` in `src/lib/consent.ts` ready for the future checkout modal to call.
+
+---
+
+## Out of scope (this build)
+
+- Checkout acknowledgement modal UI (waits for Stripe enable).
+- Boost caps, Turnstile, account deletion, data export, cookie banner — all tracked in `.lovable/plan.md`.
+- Search audit — manual QA pass, no code.
+- Real-world DJ stress test — operational, not code.
+
+## Build order in one pass
+
+1. Migration: `reports` + `purchase_consents` (single migration, separate sections).
+2. `ReportDialog.tsx` + wire into the three entry points.
+3. DJ reports section in `DJEventManage.tsx`.
+4. Admin reports page + route.
+5. Activity Ledger tab in Profile.
+6. `src/lib/consent.ts` helper.
+
+Approve to build all three in sequence.
