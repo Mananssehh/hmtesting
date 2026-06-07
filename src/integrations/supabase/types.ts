@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      boost_purchases: {
+        Row: {
+          amount_cents: number
+          consent_version: string | null
+          created_at: string
+          currency: string
+          event_id: string | null
+          id: string
+          song_request_id: string | null
+          status: string
+          stripe_payment_intent_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_cents: number
+          consent_version?: string | null
+          created_at?: string
+          currency?: string
+          event_id?: string | null
+          id?: string
+          song_request_id?: string | null
+          status?: string
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_cents?: number
+          consent_version?: string | null
+          created_at?: string
+          currency?: string
+          event_id?: string | null
+          id?: string
+          song_request_id?: string | null
+          status?: string
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       bridge_pair_attempts: {
         Row: {
           attempted_at: string
@@ -887,6 +929,10 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      check_boost_purchase_cap: {
+        Args: { _amount_cents: number; _event_id: string; _user_id: string }
+        Returns: undefined
       }
       claim_dj_role: { Args: { _invite_code: string }; Returns: undefined }
       create_dj_invite_code: {
