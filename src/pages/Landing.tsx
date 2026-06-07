@@ -208,9 +208,7 @@ const Landing = () => {
         </div>
       </section>
 
-      <footer className="container py-10 border-t border-border/40 text-center text-sm text-muted-foreground">
-        Built for the dancefloor. <span className="text-primary">♪</span>
-      </footer>
+      <SiteFooter />
     </div>
   );
 };
