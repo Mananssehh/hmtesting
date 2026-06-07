@@ -547,6 +547,17 @@ const DJEventManage = () => {
           </div>
         </div>
 
+        {/* Reports */}
+        <div className="mb-4">
+          <DJReportsPanel
+            eventId={event.id}
+            onRemoveRequest={async (songRequestId) => {
+              const { error } = await supabase.from("song_requests").delete().eq("id", songRequestId);
+              if (error) toast.error(error.message);
+            }}
+          />
+        </div>
+
         {/* Filter tabs */}
         <Tabs value={filter} onValueChange={(v) => setFilter(v as Filter)}>
           <TabsList className="flex flex-wrap w-full justify-start h-auto">
