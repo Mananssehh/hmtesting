@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppHeader } from "@/components/AppHeader";
 import { SongRequestCard, SongRequestRow } from "@/components/SongRequestCard";
+import { DJReportsPanel } from "@/components/DJReportsPanel";
 import { DJSongActions } from "@/components/DJSongActions";
 import { AwardPointsDialog } from "@/components/AwardPointsDialog";
 import { ArchivedEventSummary } from "@/components/ArchivedEventSummary";
