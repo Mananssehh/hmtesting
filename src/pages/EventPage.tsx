@@ -754,6 +754,7 @@ const EventPage = () => {
                 onVote={(v) => handleVote(s.id, v)}
                 onBoost={isLive ? () => setBoostTarget(s) : undefined}
                 onRemove={s.requested_by === user?.id && s.status === "pending" ? () => setRemoveTarget(s) : undefined}
+                onReport={user && s.requested_by !== user.id ? () => setReportTarget(s) : undefined}
                 disabled={!!pendingVotes[s.id]}
                 battle={battleIds.has(s.id)}
                 trending={sort === "trending" && trending.hotIds.has(s.id)}
@@ -796,6 +797,18 @@ const EventPage = () => {
           }}
         />
       )}
+
+      {reportTarget && (
+        <ReportDialog
+          open={!!reportTarget}
+          onOpenChange={(o) => !o && setReportTarget(null)}
+          targetType="request"
+          targetId={reportTarget.id}
+          eventId={eventInfo?.id ?? null}
+          contextLabel={`${reportTarget.title} — ${reportTarget.artist}`}
+        />
+      )}
+
 
       <AlertDialog open={!!removeTarget} onOpenChange={(o) => !o && !removing && setRemoveTarget(null)}>
         <AlertDialogContent>
