@@ -6,6 +6,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { AppHeader } from "@/components/AppHeader";
 import { SEO } from "@/components/SEO";
+import { SiteFooter } from "@/components/SiteFooter";
 import { StartAsDjCta } from "@/components/StartAsDjCta";
 
 const features = [
