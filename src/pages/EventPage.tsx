@@ -10,6 +10,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { SEO } from "@/components/SEO";
 import { SongRequestCard, SongRequestRow } from "@/components/SongRequestCard";
 import { BoostDialog } from "@/components/BoostDialog";
+import { ReportDialog } from "@/components/ReportDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -52,6 +53,7 @@ const EventPage = () => {
   const [loading, setLoading] = useState(true);
   const [requestOpen, setRequestOpen] = useState(false);
   const [boostTarget, setBoostTarget] = useState<SongRequestRow | null>(null);
+  const [reportTarget, setReportTarget] = useState<SongRequestRow | null>(null);
   const [removeTarget, setRemoveTarget] = useState<SongRequestRow | null>(null);
   const [removing, setRemoving] = useState(false);
   const [showHint, setShowHint] = useState(false);
