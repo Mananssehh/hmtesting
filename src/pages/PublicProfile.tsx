@@ -113,9 +113,21 @@ const PublicProfile = () => {
     <div className="min-h-screen">
       <AppHeader />
       <main className="container max-w-3xl py-8 space-y-6">
-        <Button variant="ghost" size="sm" className="-ml-3" onClick={handleBack}>
-          <ArrowLeft className="h-4 w-4 mr-1" />Back
-        </Button>
+        <div className="flex items-center justify-between">
+          <Button variant="ghost" size="sm" className="-ml-3" onClick={handleBack}>
+            <ArrowLeft className="h-4 w-4 mr-1" />Back
+          </Button>
+          {user && userId && user.id !== userId && (
+            <div className="flex gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setReportOpen("nickname")}>
+                <Flag className="h-3.5 w-3.5 mr-1" /> Report nickname
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setReportOpen("user")}>
+                <Flag className="h-3.5 w-3.5 mr-1" /> Report user
+              </Button>
+            </div>
+          )}
+        </div>
 
         {/* Identity card */}
         <Card className="glass overflow-hidden">
