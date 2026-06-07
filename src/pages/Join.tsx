@@ -131,6 +131,8 @@ const Join = () => {
           </p>
         </form>
       </div>
+      <div className="flex-1" />
+      <SiteFooter />
     </div>
   );
 };
