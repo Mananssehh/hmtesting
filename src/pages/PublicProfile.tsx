@@ -42,7 +42,9 @@ const PublicProfile = () => {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const backState = location.state as { from?: string; scrollY?: number } | null;
+  const [reportOpen, setReportOpen] = useState<null | "user" | "nickname">(null);
 
   const handleBack = () => {
     const from = backState?.from;
