@@ -241,10 +241,13 @@ const Profile = () => {
 
         {/* Transactions */}
         <Card>
-          <CardHeader className="pb-3">
+          <CardHeader className="pb-3 flex flex-row items-center justify-between">
             <CardTitle className="text-base flex items-center gap-2">
               <Award className="h-4 w-4 text-primary" /> Recent activity
             </CardTitle>
+            <Button asChild size="sm" variant="ghost">
+              <Link to="/profile/activity">View all →</Link>
+            </Button>
           </CardHeader>
           <CardContent className="p-0 divide-y">
             {loading ? (
