@@ -1,66 +1,122 @@
-## Root cause
+# Decks Launch Readiness Board
 
-Both bugs come from the same defect: **`now_playing` (broadcast row) and `song_requests.status='playing'` are two separate sources of truth that drift apart**, and `NowPlayingDisplay` merges fields across them.
+Goal: smallest set of work to safely launch publicly, then unlock Stripe. No auto-refund mechanics — disclosures + acknowledgement instead.
 
-### Bug 1 — Artwork mismatch
-`src/components/NowPlayingDisplay.tsx` resolves fields independently:
+## Priority categories
 
-```
-title    = nowPlaying?.title    ?? fallbackRequest?.title
-artist   = nowPlaying?.artist   ?? fallbackRequest?.artist
-albumArt = nowPlaying?.album_art || matchedRequest?.album_art
-                                 || matchedRequest?.album_art_url
-                                 || fallbackRequest?.album_art
-                                 || fallbackRequest?.album_art_url
-```
-
-When the Bridge posts a track Serato doesn't have artwork for, `now_playing.album_art` is `null` (see `supabase/functions/now-playing-ingest/index.ts`: `album_art: b.album_art ?? null`). Title/artist come from the bridge row, but `album_art` silently falls back to a **different track** — the previous `status='playing'` song_request, or a fuzzy-matched older request. Result: "Aimoye – Kayode" with Money Constant artwork. The DB is correct; the UI is mixing rows.
-
-The edge function logs confirm bridge posts (`Aimoye / Kayode`, `Abena / Joeboy`, `Accepting My Flaws / Future`) all returned `"no confident match"`, so `now_playing_request_id` stays `null` and the fallback art is whatever stale row remains.
-
-### Bug 2 — Manual "Set as Now Playing" not visible to guests
-`src/pages/DJEventManage.tsx` `updateStatus(id, "playing")` only writes `song_requests.status='playing'`. **It never writes the `now_playing` table.** When the Bridge is connected, `now_playing` keeps showing whatever bridge last posted; the DJ's manual pick only changes the local `fallbackRequest` on the DJ's own screen. Guests' `useNowPlaying` reads `now_playing` and sees the bridge's track. When bridge is disconnected the DJ click also doesn't update `now_playing`, but `NowPlayingDisplay` happens to pick it up via `fallbackRequest` — so it "looks like it works" only when no broadcast row exists.
-
-So: the last writer to `now_playing` is **always the bridge** (when connected). Manual selections are never written to that table.
+- **P0** — Required before public launch (free points only)
+- **P1** — Required before Stripe is turned on
+- **P2** — Recommended within ~30 days of launch
+- **P3** — Nice-to-have / defer until data justifies it
 
 ---
 
-## Fix
+## Audit results
 
-Make `now_playing` the single source of truth for what guests see, and always write all three fields (`title`, `artist`, `album_art`) together — never partial. Stop cross-row field merging in the display.
+| # | Item | Status | Category | Effort |
+|---|---|---|---|---|
+| 1 | `/terms` page | Missing | P0 | S |
+| 2 | `/privacy` page | Missing | P0 | S |
+| 3 | `/dmca` page + takedown email | Missing | P0 | S |
+| 4 | `/contact` page | Missing | P0 | XS |
+| 5 | `/trust-safety` page (community rules, reporting, enforcement) | Missing | P0 | S |
+| 6 | `/refund-policy` page ("Purchases are final, boosts = visibility only") | Missing | P1 | XS |
+| 7 | Site-wide footer with links to all six pages | Missing | P0 | XS |
+| 8 | Support email (`support@linku99.com`) shown on Contact + footer | Missing | P0 | XS |
+| 9 | Nickname profanity check on write (already have `profanity.ts`, not wired into nickname update) | Partial | P0 | XS |
+| 10 | Request rate limits (`cooldown_seconds`, `recent_request_count`) | Done | — | — |
+| 11 | Boost rate limits / per-request cap | Partial — boosts validated, no per-window cap | P1 | S |
+| 12 | User reporting flow (report request / report user → `reports` table → DJ + admin view) | Missing | P1 | M |
+| 13 | Transaction history (already in Profile "Recent activity") | Done | — | — |
+| 14 | Checkout acknowledgement modal (3 checkboxes, stored consent row) | Missing | P1 | S |
+| 15 | Stripe purchase caps (per-day spend ceiling, first-purchase smaller cap) | Missing | P1 | S |
+| 16 | Fraud protections (Turnstile/hCaptcha on auth + boost, IP velocity) | Missing | P1 | M |
+| 17 | Account deletion ("Delete my account" → RPC + cascade) | Missing | P2 | M |
+| 18 | Data export ("Download my data") | Missing | P2 | S |
+| 19 | Cookie banner / cookie policy | Missing | P2 | S |
+| 20 | CSP / security headers in `vercel.json` | Missing | P2 | XS |
+| 21 | RLS gap: `bridge_pair_attempts` has no policies | Open | P2 | XS |
+| 22 | Auto-refund credits on DJ reject / event end | Not building | P3 | — |
 
-### 1. Manual "Set as Now Playing" writes `now_playing`
-`src/pages/DJEventManage.tsx` — in `updateStatus`, when `status === "playing"`, after updating `song_requests`, call `updateNowPlaying({ eventId, title, artist, albumArt: album_art ?? album_art_url ?? "", source: "manual_dj", status: "playing" })` using the picked song's fields. This atomically replaces the broadcast row with the DJ's choice (title + artist + art together), overriding any bridge row.
-
-### 2. Bridge ingest: stamp source + don't leave art null when we have a match
-`supabase/functions/now-playing-ingest/index.ts` — when `matchedRequestId` is found, also copy `album_art` from the matched `song_request` into the `now_playing` row if `b.album_art` is null. Keep `source` as `"decks_bridge"`. This guarantees the broadcast row never has mixed title/art from different tracks.
-
-### 3. Display reads broadcast row only (no cross-row field merging)
-`src/components/NowPlayingDisplay.tsx` — change resolution to "all-or-nothing per source":
-
-- If `nowPlaying` exists → use **its** `title`, `artist`, `album_art` (art may be empty, then show the placeholder; never borrow art from another row).
-- Else if `fallbackRequest` exists → use **its** `title`, `artist`, and `album_art ?? album_art_url`.
-
-Remove the chained `||` that pulls art from `matchedRequest` / `fallbackRequest` when a broadcast row is present.
-
-Also key the `<img>` with `key={\`${title}-${artist}-${nowPlaying?.updated_at ?? ""}\`}` to defeat any image cache.
-
-### 4. Temporary diagnostics (kept short, removed after verification)
-- `now-playing-ingest`: keep existing `[bridge-match]` logs; add one line logging the final row `{ title, artist, album_art, source, matchedRequestId }` before insert/update.
-- `DJEventManage.updateStatus`: `console.log("[np-write] manual_dj", { id, title, artist, album_art })` right before/after the `updateNowPlaying` call.
-- `useNowPlaying`: already logs fetched rows — leave as is.
-
-### 5. Test matrix
-1. Bridge disconnected → DJ "Set as Now Playing" on Song A → guest sees A (title, artist, art all A). Switch to B → guest sees B.
-2. Bridge connected, posting C → guest sees C. DJ manually picks A → guest sees A (manual wins, last writer).
-3. Bridge posts D with no artwork → guest sees D's title/artist with placeholder art (NOT a previous track's art).
-4. Rapid A → B → C bridge posts → guest's title/artist/art stay aligned per track.
+Effort: XS <30m · S ~1h · M ~half-day
 
 ---
 
-## Files changed
-- `src/pages/DJEventManage.tsx` — write `now_playing` from `updateStatus` when marking playing.
-- `src/components/NowPlayingDisplay.tsx` — atomic per-source field resolution + img `key`.
-- `supabase/functions/now-playing-ingest/index.ts` — backfill `album_art` from matched request; final-row log.
+## Counts
 
-No DB schema or migration changes needed.
+- **P0 launch blockers: 6** (terms, privacy, dmca, contact, trust-safety, footer+support email — nickname profanity is bundled in)
+- **P1 Stripe blockers: 5** (refund policy, checkout acknowledgement, boost caps, reporting flow, fraud protections — purchase caps optional but recommended)
+- **P2 within 30 days: 5**
+- **P3 deferred: 1**
+
+---
+
+## P0 implementation plan (this build)
+
+### 1. Legal/trust pages
+
+Create static React pages under `src/pages/legal/`:
+
+- `Terms.tsx` — service terms, virtual-currency clause ("Points and Boosts are a virtual item with no monetary value, non-refundable, non-transferable, non-redeemable for cash"), DJ discretion clause, age 13+ (16+ EU), governing law placeholder.
+- `Privacy.tsx` — data collected (email, nickname, requests, IP for abuse), processors (Lovable Cloud / Supabase, iTunes, Spotify), retention, user rights, contact.
+- `DMCA.tsx` — Decks stores metadata only, no audio hosted/streamed; takedown procedure; designated agent email `dmca@linku99.com`; repeat-infringer policy.
+- `Contact.tsx` — `support@linku99.com`, response window, link to Trust & Safety for reports.
+- `TrustSafety.tsx` — community rules, what's banned, reporting flow, enforcement ladder, appeal email.
+- `RefundPolicy.tsx` — stub now (P1 needs it live before Stripe), states: boosts increase visibility only; DJs are not required to play any track; all purchases final; chargeback policy.
+
+Routes added in `src/App.tsx`:
+
+```text
+/terms /privacy /dmca /contact /trust-safety /refund-policy
+```
+
+Each page wrapped with `<SEO>` (title, description, canonical) and a single H1.
+
+### 2. Footer component
+
+New `src/components/SiteFooter.tsx`:
+
+- Columns: Product · Legal · Support
+- Links to all six pages + `mailto:support@linku99.com`
+- Copyright + "Decks © {year}"
+- Mounted on `Landing`, `Join`, `EventPage`, `Profile`, `PublicProfile`, `Auth`, `Connect` (every guest/public surface). DJ workspace pages stay clean.
+
+### 3. Nickname profanity check
+
+In `src/pages/Profile.tsx` `saveName()` and in `Join.tsx` nickname submit:
+
+- Run `containsProfanity` + `looksSpammy` from `src/lib/profanity.ts` before the Supabase update.
+- Reject with toast: "Please choose a different nickname."
+
+### 4. Support email surfacing
+
+- Footer `mailto:` link.
+- Contact page primary CTA.
+- Auth page small text: "Need help? support@linku99.com".
+
+### Out of scope for this build
+
+- Account deletion, data export, cookie banner, CSP headers, reports table, checkout modal, Stripe caps, Turnstile — all P1/P2, tracked above.
+- Auto-refund mechanics — explicitly **not building** (P3). Policy stance: boosts consumed on use, DJ has full discretion, purchases final.
+
+---
+
+## After P0 ships
+
+Suggested launch sequence:
+
+1. Ship P0 → publish → run real DJ event with free points only.
+2. Collect 2–4 weeks of usage data (chargeback signal would be N/A here since no money yet, but watch request abuse, nickname abuse, support volume).
+3. Build P1 stack (refund policy live copy, checkout acknowledgement modal + `purchase_consents` table, boost caps, reporting flow, Turnstile) → enable Stripe.
+4. P2 cleanup (account deletion, data export, cookie banner, CSP, RLS gap).
+
+---
+
+## Technical notes
+
+- Acknowledgement modal (P1) will write a `purchase_consents` row `{ user_id, version, accepted_at, ip }` and gate the Stripe checkout call. Versioned so future ToS changes re-prompt.
+- `reports` table (P1) shape: `{ id, reporter_id, event_id, target_type ('request'|'user'|'nickname'), target_id, reason, status, created_at }` with RLS: reporter inserts own; DJ of event reads/updates; admin reads all.
+- Boost cap (P1): per-user-per-event window check inside `boost_request` RPC.
+- CSP (P2): add `Content-Security-Policy` header in `vercel.json` allowing self + Supabase + Lovable + iTunes/Spotify image CDNs.
+
+Approve to build the P0 set (legal pages + footer + nickname profanity + support email).

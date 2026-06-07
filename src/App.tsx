@@ -21,6 +21,12 @@ import Analytics from "./pages/Analytics";
 import Archive from "./pages/Archive";
 
 import ErrorMonitor from "./pages/ErrorMonitor";
+import Terms from "./pages/legal/Terms";
+import Privacy from "./pages/legal/Privacy";
+import DMCA from "./pages/legal/DMCA";
+import Contact from "./pages/legal/Contact";
+import TrustSafety from "./pages/legal/TrustSafety";
+import RefundPolicy from "./pages/legal/RefundPolicy";
 import NotFound from "./pages/NotFound.tsx";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 
@@ -52,6 +58,14 @@ const App = () => (
               
               <Route path="/profile" element={<Profile />} />
               <Route path="/users/:userId" element={<PublicProfile />} />
+
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/dmca" element={<DMCA />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/trust-safety" element={<TrustSafety />} />
+              <Route path="/refund-policy" element={<RefundPolicy />} />
+              
               
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

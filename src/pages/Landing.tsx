@@ -6,6 +6,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { AppHeader } from "@/components/AppHeader";
 import { SEO } from "@/components/SEO";
+import { SiteFooter } from "@/components/SiteFooter";
 import { StartAsDjCta } from "@/components/StartAsDjCta";
 
 const features = [
@@ -207,9 +208,7 @@ const Landing = () => {
         </div>
       </section>
 
-      <footer className="container py-10 border-t border-border/40 text-center text-sm text-muted-foreground">
-        Built for the dancefloor. <span className="text-primary">♪</span>
-      </footer>
+      <SiteFooter />
     </div>
   );
 };

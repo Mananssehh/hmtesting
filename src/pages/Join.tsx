@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AppHeader } from "@/components/AppHeader";
 import { SEO } from "@/components/SEO";
+import { SiteFooter } from "@/components/SiteFooter";
 import { nicknameSchema, roomCodeSchema } from "@/lib/validation";
 import { containsProfanity, looksSpammy } from "@/lib/profanity";
 
@@ -82,7 +83,7 @@ const Join = () => {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen flex flex-col">
       <SEO title="Join the party" description="Enter the DJ's room code to request songs, vote, and boost tracks in real time." path="/join" />
       <AppHeader />
       <div className="container max-w-md py-12">
@@ -130,6 +131,8 @@ const Join = () => {
           </p>
         </form>
       </div>
+      <div className="flex-1" />
+      <SiteFooter />
     </div>
   );
 };

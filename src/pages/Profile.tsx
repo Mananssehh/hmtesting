@@ -12,6 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { nicknameSchema } from "@/lib/validation";
+import { containsProfanity, looksSpammy } from "@/lib/profanity";
+import { SiteFooter } from "@/components/SiteFooter";
 
 interface Stats {
   totalRequests: number;
@@ -97,8 +99,11 @@ const Profile = () => {
   };
 
   const saveName = async () => {
-    const parsed = nicknameSchema.safeParse(nickname);
+    const parsed = nicknameSchema.safeParse(nickname.trim());
     if (!parsed.success) return toast.error(parsed.error.issues[0].message);
+    if (containsProfanity(parsed.data) || looksSpammy(parsed.data)) {
+      return toast.error("Please choose a different nickname.");
+    }
     if (!user) return;
     setSavingName(true);
     const { error } = await supabase.from("profiles").update({ nickname: parsed.data }).eq("id", user.id);
@@ -279,6 +284,7 @@ const Profile = () => {
           <LogOut className="h-4 w-4 mr-2" /> Sign out
         </Button>
       </main>
+      <SiteFooter />
     </div>
   );
 };
