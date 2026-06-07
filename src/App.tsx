@@ -21,6 +21,7 @@ import Analytics from "./pages/Analytics";
 import Archive from "./pages/Archive";
 
 import ErrorMonitor from "./pages/ErrorMonitor";
+import Earnings from "./pages/Earnings";
 import Terms from "./pages/legal/Terms";
 import Privacy from "./pages/legal/Privacy";
 import DMCA from "./pages/legal/DMCA";
@@ -53,6 +54,7 @@ const App = () => (
               <Route path="/dj/:id/dev" element={<DJDevTools />} />
               <Route path="/dj/:id/analytics" element={<Analytics />} />
               <Route path="/dj/archive" element={<Archive />} />
+              <Route path="/dj/earnings" element={<Earnings />} />
               <Route path="/dj/errors" element={<ErrorMonitor />} />
               
               

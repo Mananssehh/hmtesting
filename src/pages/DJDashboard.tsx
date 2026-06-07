@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Archive as ArchiveIcon, Copy, Loader2, Plus, QrCode, Radio, Settings } from "lucide-react";
+import { Archive as ArchiveIcon, Copy, Loader2, Plus, QrCode, Radio, Settings, Zap } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -162,7 +162,7 @@ const DJDashboard = () => {
               <Link to="/dj/archive"><ArchiveIcon className="mr-1 h-4 w-4" /> Archive</Link>
             </Button>
             <Button asChild variant="outline">
-              <Link to="/dj/errors"><Settings className="mr-1 h-4 w-4" /> Error monitor</Link>
+              <Link to="/dj/earnings"><Zap className="mr-1 h-4 w-4" /> Earnings</Link>
             </Button>
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>
               <DialogTrigger asChild>
