@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppHeader } from "@/components/AppHeader";
 import { SongRequestCard, SongRequestRow } from "@/components/SongRequestCard";
+import { DJReportsPanel } from "@/components/DJReportsPanel";
 import { DJSongActions } from "@/components/DJSongActions";
 import { AwardPointsDialog } from "@/components/AwardPointsDialog";
 import { ArchivedEventSummary } from "@/components/ArchivedEventSummary";
@@ -544,6 +545,17 @@ const DJEventManage = () => {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Reports */}
+        <div className="mb-4">
+          <DJReportsPanel
+            eventId={event.id}
+            onRemoveRequest={async (songRequestId) => {
+              const { error } = await supabase.from("song_requests").delete().eq("id", songRequestId);
+              if (error) toast.error(error.message);
+            }}
+          />
         </div>
 
         {/* Filter tabs */}

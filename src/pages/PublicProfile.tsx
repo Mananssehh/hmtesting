@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link, useParams, useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, Loader2, Lock, Music2, Rocket, ThumbsUp, Trophy, Calendar, Sparkles } from "lucide-react";
+import { ArrowLeft, Loader2, Lock, Music2, Rocket, ThumbsUp, Trophy, Calendar, Sparkles, Flag } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ReportDialog } from "@/components/ReportDialog";
 
 interface RecentSong {
   id: string;
@@ -40,7 +42,9 @@ const PublicProfile = () => {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const backState = location.state as { from?: string; scrollY?: number } | null;
+  const [reportOpen, setReportOpen] = useState<null | "user" | "nickname">(null);
 
   const handleBack = () => {
     const from = backState?.from;
@@ -109,9 +113,21 @@ const PublicProfile = () => {
     <div className="min-h-screen">
       <AppHeader />
       <main className="container max-w-3xl py-8 space-y-6">
-        <Button variant="ghost" size="sm" className="-ml-3" onClick={handleBack}>
-          <ArrowLeft className="h-4 w-4 mr-1" />Back
-        </Button>
+        <div className="flex items-center justify-between">
+          <Button variant="ghost" size="sm" className="-ml-3" onClick={handleBack}>
+            <ArrowLeft className="h-4 w-4 mr-1" />Back
+          </Button>
+          {user && userId && user.id !== userId && (
+            <div className="flex gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setReportOpen("nickname")}>
+                <Flag className="h-3.5 w-3.5 mr-1" /> Report nickname
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setReportOpen("user")}>
+                <Flag className="h-3.5 w-3.5 mr-1" /> Report user
+              </Button>
+            </div>
+          )}
+        </div>
 
         {/* Identity card */}
         <Card className="glass overflow-hidden">
@@ -212,6 +228,15 @@ const PublicProfile = () => {
           </>
         )}
       </main>
+      {reportOpen && userId && (
+        <ReportDialog
+          open={!!reportOpen}
+          onOpenChange={(o) => !o && setReportOpen(null)}
+          targetType={reportOpen}
+          targetId={userId}
+          contextLabel={data?.nickname}
+        />
+      )}
     </div>
   );
 };

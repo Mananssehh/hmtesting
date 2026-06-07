@@ -19,6 +19,8 @@ import Profile from "./pages/Profile";
 import PublicProfile from "./pages/PublicProfile";
 import Analytics from "./pages/Analytics";
 import Archive from "./pages/Archive";
+import ActivityLedger from "./pages/ActivityLedger";
+import AdminReports from "./pages/AdminReports";
 
 import ErrorMonitor from "./pages/ErrorMonitor";
 import Earnings from "./pages/Earnings";
@@ -59,7 +61,9 @@ const App = () => (
               
               
               <Route path="/profile" element={<Profile />} />
+              <Route path="/profile/activity" element={<ActivityLedger />} />
               <Route path="/users/:userId" element={<PublicProfile />} />
+              <Route path="/admin/reports" element={<AdminReports />} />
 
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />

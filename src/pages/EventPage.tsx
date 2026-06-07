@@ -10,6 +10,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { SEO } from "@/components/SEO";
 import { SongRequestCard, SongRequestRow } from "@/components/SongRequestCard";
 import { BoostDialog } from "@/components/BoostDialog";
+import { ReportDialog } from "@/components/ReportDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -52,6 +53,7 @@ const EventPage = () => {
   const [loading, setLoading] = useState(true);
   const [requestOpen, setRequestOpen] = useState(false);
   const [boostTarget, setBoostTarget] = useState<SongRequestRow | null>(null);
+  const [reportTarget, setReportTarget] = useState<SongRequestRow | null>(null);
   const [removeTarget, setRemoveTarget] = useState<SongRequestRow | null>(null);
   const [removing, setRemoving] = useState(false);
   const [showHint, setShowHint] = useState(false);
@@ -752,6 +754,7 @@ const EventPage = () => {
                 onVote={(v) => handleVote(s.id, v)}
                 onBoost={isLive ? () => setBoostTarget(s) : undefined}
                 onRemove={s.requested_by === user?.id && s.status === "pending" ? () => setRemoveTarget(s) : undefined}
+                onReport={user && s.requested_by !== user.id ? () => setReportTarget(s) : undefined}
                 disabled={!!pendingVotes[s.id]}
                 battle={battleIds.has(s.id)}
                 trending={sort === "trending" && trending.hotIds.has(s.id)}
@@ -794,6 +797,18 @@ const EventPage = () => {
           }}
         />
       )}
+
+      {reportTarget && (
+        <ReportDialog
+          open={!!reportTarget}
+          onOpenChange={(o) => !o && setReportTarget(null)}
+          targetType="request"
+          targetId={reportTarget.id}
+          eventId={eventInfo?.id ?? null}
+          contextLabel={`${reportTarget.title} — ${reportTarget.artist}`}
+        />
+      )}
+
 
       <AlertDialog open={!!removeTarget} onOpenChange={(o) => !o && !removing && setRemoveTarget(null)}>
         <AlertDialogContent>

@@ -1,4 +1,4 @@
-import { ChevronUp, ChevronDown, Sparkles, Rocket, Clock, Flame, Swords, Crown, Pin, Shield, TrendingUp, ArrowUp, ArrowDown, Trash2 } from "lucide-react";
+import { ChevronUp, ChevronDown, Sparkles, Rocket, Clock, Flame, Swords, Crown, Pin, Shield, TrendingUp, ArrowUp, ArrowDown, Trash2, Flag } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -49,6 +49,7 @@ interface Props {
   onVote?: (value: 1 | -1) => void;
   onBoost?: () => void;
   onRemove?: () => void;
+  onReport?: () => void;
   disabled?: boolean;
   battle?: boolean;
   mostWanted?: boolean;
@@ -58,7 +59,7 @@ interface Props {
   movement?: "up" | "down" | "same" | "new";
 }
 
-export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, onRemove, disabled, battle, mostWanted, pinned, moderation, trending, movement }: Props) {
+export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, onRemove, onReport, disabled, battle, mostWanted, pinned, moderation, trending, movement }: Props) {
   const location = useLocation();
   const score = song.upvotes - song.downvotes + song.boost;
   const upvoted = myVote === 1;
@@ -269,6 +270,18 @@ export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, onRem
           className="shrink-0 h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground/70 hover:text-destructive hover:bg-destructive/10 transition-colors tap-target"
         >
           <Trash2 className="h-4 w-4" />
+        </button>
+      )}
+
+      {/* Report this request */}
+      {onReport && (
+        <button
+          onClick={onReport}
+          aria-label="Report this request"
+          title="Report"
+          className="shrink-0 h-8 w-8 rounded-full flex items-center justify-center text-muted-foreground/50 hover:text-destructive hover:bg-destructive/10 transition-colors tap-target"
+        >
+          <Flag className="h-3.5 w-3.5" />
         </button>
       )}
     </div>
