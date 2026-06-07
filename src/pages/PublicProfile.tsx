@@ -228,6 +228,15 @@ const PublicProfile = () => {
           </>
         )}
       </main>
+      {reportOpen && userId && (
+        <ReportDialog
+          open={!!reportOpen}
+          onOpenChange={(o) => !o && setReportOpen(null)}
+          targetType={reportOpen}
+          targetId={userId}
+          contextLabel={data?.nickname}
+        />
+      )}
     </div>
   );
 };
