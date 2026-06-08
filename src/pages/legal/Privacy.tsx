@@ -12,15 +12,15 @@ const Privacy = () => (
 
     <h2>1. Data we collect</h2>
     <ul>
-      <li><strong>Account data:</strong> email address (for DJs), nickname, password hash (managed by our authentication provider).</li>
-      <li><strong>Activity data:</strong> song requests, votes, boosts, points balance, events you join.</li>
+      <li><strong>Account data:</strong> email address, nickname, and password hash (managed by our authentication provider).</li>
+      <li><strong>Activity data:</strong> song requests, votes, boosts, points balance, reports you submit, and events you participate in.</li>
       <li><strong>Technical data:</strong> IP address, browser type, and timestamps — used for abuse prevention and debugging.</li>
       <li><strong>Guest sessions:</strong> if you join an event without signing up, we create an anonymous session linked to your nickname.</li>
     </ul>
 
     <h2>2. How we use it</h2>
     <ul>
-      <li>Operate the Service (show requests to DJs, rank queues, track points).</li>
+      <li>Operate the Service (show requests to DJs, rank queues, track points, handle reports).</li>
       <li>Prevent abuse, spam, and fraud.</li>
       <li>Communicate about your account (password resets, important changes).</li>
       <li>Improve the product through aggregated analytics.</li>
@@ -29,8 +29,10 @@ const Privacy = () => (
 
     <h2>3. Service providers</h2>
     <ul>
-      <li><strong>Lovable Cloud</strong> — application hosting, database, authentication.</li>
-      <li><strong>Apple Music &amp; Spotify</strong> — song metadata lookups (we send title/artist queries, no personal data).</li>
+      <li><strong>Supabase / Lovable Cloud</strong> — application hosting, database, authentication.</li>
+      <li><strong>Spotify</strong> — song metadata lookups.</li>
+      <li><strong>Apple / iTunes Search</strong> — song metadata and artwork lookups.</li>
+      <li><strong>Stripe</strong> — payment processing (only when paid Boost purchases are enabled).</li>
     </ul>
 
     <h2>4. Data retention</h2>
@@ -38,14 +40,20 @@ const Privacy = () => (
       <li>Account data: kept while your account is active.</li>
       <li>Event &amp; request data: kept for as long as the event archive exists.</li>
       <li>Abuse logs (IP, error logs): rotated after 90 days.</li>
-      <li>You can request deletion of your account by emailing <a href="mailto:support@linku99.com">support@linku99.com</a>.</li>
     </ul>
 
-    <h2>5. Your rights</h2>
+    <h2>5. Account deletion &amp; your rights</h2>
     <p>
-      Depending on your jurisdiction (EU/UK/California and others) you may have the right to access,
-      correct, export, or delete your personal data. Email <a href="mailto:support@linku99.com">support@linku99.com</a>{" "}
-      and we will respond within 30 days.
+      You can request deletion of your account at any time by emailing{" "}
+      <a href="mailto:support@linku99.com">support@linku99.com</a> from the email associated with
+      your account. We will confirm your identity and delete your account, personal data, and
+      associated activity within 30 days, except where we are legally required to retain certain
+      records (e.g. payment receipts).
+    </p>
+    <p>
+      Depending on your jurisdiction (EU/UK/California and others) you may also have the right to
+      access, correct, or export your personal data. Email the same address and we will respond
+      within 30 days.
     </p>
 
     <h2>6. Children</h2>
@@ -62,8 +70,8 @@ const Privacy = () => (
 
     <h2>8. Security</h2>
     <p>
-      We use industry-standard encryption in transit and at rest. No service is 100% secure, but we
-      work hard to protect your data.
+      We use industry-standard encryption in transit and at rest. No service is 100% secure, but
+      we work hard to protect your data.
     </p>
 
     <h2>9. Changes</h2>
@@ -73,7 +81,8 @@ const Privacy = () => (
 
     <h2>10. Contact</h2>
     <p>
-      Privacy questions? Email <a href="mailto:support@linku99.com">support@linku99.com</a>.
+      Privacy questions or account deletion requests? Email{" "}
+      <a href="mailto:support@linku99.com">support@linku99.com</a>.
     </p>
   </LegalLayout>
 );
