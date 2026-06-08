@@ -29,12 +29,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isDJ, setIsDJ] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const loadProfile = async (uid: string) => {
-    const [{ data: prof }, { data: roles }] = await Promise.all([
-      supabase.from("profiles").select("id, nickname, points, is_premium").eq("id", uid).maybeSingle(),
-      supabase.from("user_roles").select("role").eq("user_id", uid),
-    ]);
-    setProfile(prof ?? null);
+  const loadProfile = async (uid: string, { retryUntilFound = false }: { retryUntilFound?: boolean } = {}) => {
+    // After signup the handle_new_user trigger may not have inserted the
+    // profile row yet. When retryUntilFound is true (post-signup path) we
+    // retry a few times with backoff so the UI never sees a null profile
+    // for a fresh user.
+    const delays = retryUntilFound ? [0, 250, 500, 1000, 1500] : [0];
+    let prof: Profile | null = null;
+    let roles: { role: string }[] | null = null;
+    for (const delay of delays) {
+      if (delay) await new Promise((r) => setTimeout(r, delay));
+      const [pRes, rRes] = await Promise.all([
+        supabase.from("profiles").select("id, nickname, points, is_premium").eq("id", uid).maybeSingle(),
+        supabase.from("user_roles").select("role").eq("user_id", uid),
+      ]);
+      prof = (pRes.data as Profile | null) ?? null;
+      roles = rRes.data ?? null;
+      if (prof || !retryUntilFound) break;
+    }
+    setProfile(prof);
     setIsDJ(!!roles?.some((r) => r.role === "dj"));
   };
 
@@ -88,7 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const refreshProfile = async () => {
-    if (user) await loadProfile(user.id);
+    if (user) await loadProfile(user.id, { retryUntilFound: !profile });
   };
 
   const adjustProfilePoints = (delta: number) => {

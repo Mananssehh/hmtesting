@@ -24,19 +24,18 @@ interface Props {
 
 type Pack = {
   amount: number;
-  price: string;
-  save?: string;
   label: string;
   icon: React.ReactNode;
   accent: string;
   popular?: boolean;
+  highlight?: string;
 };
 
 const PACKS: Pack[] = [
-  { amount: 5,   price: "$0.99", label: "Spark",     icon: <Sparkles className="h-5 w-5" />, accent: "from-primary/30 to-primary/5" },
-  { amount: 25,  price: "$3.99", save: "SAVE 20%", label: "Boost", icon: <Rocket className="h-5 w-5" />, accent: "from-accent/40 to-primary/10", popular: true },
-  { amount: 100, price: "$9.99", save: "SAVE 50%", label: "Flame", icon: <Flame className="h-5 w-5" />, accent: "from-orange-500/40 to-primary/10" },
-  { amount: 250, price: "$19.99", save: "BEST DEAL", label: "Mega", icon: <Crown className="h-5 w-5" />, accent: "from-amber-400/40 to-orange-500/20" },
+  { amount: 5,   label: "Spark", icon: <Sparkles className="h-5 w-5" />, accent: "from-primary/30 to-primary/5" },
+  { amount: 25,  label: "Boost", icon: <Rocket className="h-5 w-5" />, accent: "from-accent/40 to-primary/10", popular: true },
+  { amount: 100, label: "Flame", icon: <Flame className="h-5 w-5" />, accent: "from-orange-500/40 to-primary/10", highlight: "BIG" },
+  { amount: 250, label: "Mega",  icon: <Crown className="h-5 w-5" />, accent: "from-amber-400/40 to-orange-500/20", highlight: "MAX" },
 ];
 
 export function BoostDialog({ open, onOpenChange, songRequestId, songTitle, onBoosted }: Props) {
@@ -134,15 +133,15 @@ export function BoostDialog({ open, onOpenChange, songRequestId, songTitle, onBo
                       Popular
                     </span>
                   )}
-                  {p.save && !p.popular && (
+                  {p.highlight && !p.popular && (
                     <span className="absolute top-1.5 right-1.5 text-[9px] font-bold tracking-wider uppercase px-1.5 py-0.5 rounded-full bg-accent/80 text-accent-foreground">
-                      {p.save}
+                      {p.highlight}
                     </span>
                   )}
                   <div className="flex items-center gap-2 text-primary mb-1.5">{p.icon}</div>
                   <div className="text-2xl font-bold tabular-nums tracking-tight">+{p.amount}</div>
                   <div className="text-[11px] text-muted-foreground uppercase tracking-wider mt-0.5">{p.label}</div>
-                  <div className="text-[11px] text-muted-foreground/70 mt-1 line-through">{p.price}</div>
+                  <div className="text-[11px] text-muted-foreground/70 mt-1 tabular-nums">{p.amount} pts</div>
                 </button>
               );
             })}
@@ -164,7 +163,7 @@ export function BoostDialog({ open, onOpenChange, songRequestId, songTitle, onBo
           </div>
 
           <p className="text-[10px] text-center text-muted-foreground/70 leading-relaxed">
-            Test mode — boosts use points. Real-money packs unlock when payments go live.
+            Boosts are spent in points and increase visibility only. DJs decide what plays.
           </p>
         </div>
 
