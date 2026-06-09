@@ -17,7 +17,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { searchMusic, MusicSearchResult, normalizeKey } from "@/lib/musicSearch";
+import { searchMusic, MusicSearchResult, normalizeKey, RateLimitedError } from "@/lib/musicSearch";
 import { formatDuration, platformLabel } from "@/lib/searchLinks";
 import { PreviewButton } from "@/components/PreviewButton";
 import { NowPlayingDisplay } from "@/components/NowPlayingDisplay";
@@ -866,32 +866,39 @@ function RequestPicker({ onPick, existing, allowExplicit = true }: { onPick: (so
   const [provider, setProvider] = useState<"spotify" | "itunes" | "none">("none");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
+  const [rateLimited, setRateLimited] = useState(false);
 
   useEffect(() => {
-    const t = setTimeout(() => setDebounced(q.trim()), 300);
+    const t = setTimeout(() => setDebounced(q.trim()), 500);
     return () => clearTimeout(t);
   }, [q]);
 
   useEffect(() => {
-    if (!debounced) {
+    if (!debounced || debounced.length < 2) {
       setResults([]);
       setProvider("none");
       setLoading(false);
       setError(false);
+      setRateLimited(false);
       return;
     }
     let cancelled = false;
     setLoading(true);
     setError(false);
+    setRateLimited(false);
     (async () => {
       try {
         const res = await searchMusic(debounced);
         if (cancelled) return;
         setResults(res.results);
         setProvider(res.provider);
-      } catch {
+      } catch (e) {
         if (cancelled) return;
-        setError(true);
+        if (e instanceof RateLimitedError) {
+          setRateLimited(true);
+        } else {
+          setError(true);
+        }
         setResults([]);
       } finally {
         if (!cancelled) setLoading(false);
@@ -909,9 +916,11 @@ function RequestPicker({ onPick, existing, allowExplicit = true }: { onPick: (so
       },
     );
 
-  const showInitialEmpty = !debounced && !loading;
-  const showNoResults = !!debounced && !loading && !error && results.length === 0;
-  const showError = !!debounced && !loading && error;
+  const hasQuery = debounced.length >= 2;
+  const showInitialEmpty = !hasQuery && !loading;
+  const showNoResults = hasQuery && !loading && !error && !rateLimited && results.length === 0;
+  const showError = hasQuery && !loading && error;
+  const showRateLimited = hasQuery && !loading && rateLimited;
   const showLoadingSkeleton = loading && results.length === 0;
 
   return (
@@ -971,6 +980,18 @@ function RequestPicker({ onPick, existing, allowExplicit = true }: { onPick: (so
             <ManualFallback query={debounced} onPick={onPick} compact />
           </div>
         )}
+
+        {showRateLimited && (
+          <div className="text-center py-12 px-6">
+            <Loader2 className="h-8 w-8 text-muted-foreground/60 mx-auto mb-2" />
+            <p className="text-sm font-medium">Search is busy. Try again in a moment.</p>
+            <p className="text-xs text-muted-foreground/80 mt-1">
+              You've searched a lot in the last minute. Wait a few seconds and try again.
+            </p>
+          </div>
+        )}
+
+
 
         {results.map((s) => {
           const already = isAlreadyRequested(s);

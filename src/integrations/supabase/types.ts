@@ -651,6 +651,30 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limit_logs: {
+        Row: {
+          created_at: string
+          endpoint: string
+          id: string
+          ip: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          endpoint: string
+          id?: string
+          ip?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          endpoint?: string
+          id?: string
+          ip?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       reports: {
         Row: {
           created_at: string
@@ -696,6 +720,57 @@ export type Database = {
           target_id?: string
           target_type?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      song_metadata: {
+        Row: {
+          album: string | null
+          album_art_url: string | null
+          apple_url: string | null
+          artist: string | null
+          cached_at: string
+          duration_ms: number | null
+          expires_at: string
+          explicit: boolean
+          id: string
+          normalized_query: string
+          provider_ids: Json
+          results: Json
+          spotify_url: string | null
+          title: string | null
+        }
+        Insert: {
+          album?: string | null
+          album_art_url?: string | null
+          apple_url?: string | null
+          artist?: string | null
+          cached_at?: string
+          duration_ms?: number | null
+          expires_at?: string
+          explicit?: boolean
+          id?: string
+          normalized_query: string
+          provider_ids?: Json
+          results?: Json
+          spotify_url?: string | null
+          title?: string | null
+        }
+        Update: {
+          album?: string | null
+          album_art_url?: string | null
+          apple_url?: string | null
+          artist?: string | null
+          cached_at?: string
+          duration_ms?: number | null
+          expires_at?: string
+          explicit?: boolean
+          id?: string
+          normalized_query?: string
+          provider_ids?: Json
+          results?: Json
+          spotify_url?: string | null
+          title?: string | null
         }
         Relationships: []
       }
@@ -1003,6 +1078,8 @@ export type Database = {
         Args: { _song_request_id: string }
         Returns: undefined
       }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
     }
     Enums: {
       app_role: "dj" | "guest" | "admin"
