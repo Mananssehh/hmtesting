@@ -56,7 +56,8 @@ async function spotifyOnce(q: string, token: string): Promise<SearchResult[]> {
   const url = `https://api.spotify.com/v1/search?type=track&limit=50&market=US&q=${encodeURIComponent(q)}`;
   const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
   if (!res.ok) {
-    console.warn("[music-search] spotify status", res.status, "q=", q);
+    const body = await res.text().catch(() => "");
+    console.warn("[music-search] spotify search failed", res.status, "q=", q, body.slice(0, 300));
     return [];
   }
   const j = await res.json();
