@@ -963,6 +963,7 @@ export type Database = {
           expires_at: string
         }[]
       }
+      get_ingest_token: { Args: { _event_id: string }; Returns: string }
       get_nickname: { Args: { _user_id: string }; Returns: string }
       get_public_profile: { Args: { _user_id: string }; Returns: Json }
       has_role: {
