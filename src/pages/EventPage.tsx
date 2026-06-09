@@ -866,32 +866,39 @@ function RequestPicker({ onPick, existing, allowExplicit = true }: { onPick: (so
   const [provider, setProvider] = useState<"spotify" | "itunes" | "none">("none");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
+  const [rateLimited, setRateLimited] = useState(false);
 
   useEffect(() => {
-    const t = setTimeout(() => setDebounced(q.trim()), 300);
+    const t = setTimeout(() => setDebounced(q.trim()), 500);
     return () => clearTimeout(t);
   }, [q]);
 
   useEffect(() => {
-    if (!debounced) {
+    if (!debounced || debounced.length < 2) {
       setResults([]);
       setProvider("none");
       setLoading(false);
       setError(false);
+      setRateLimited(false);
       return;
     }
     let cancelled = false;
     setLoading(true);
     setError(false);
+    setRateLimited(false);
     (async () => {
       try {
         const res = await searchMusic(debounced);
         if (cancelled) return;
         setResults(res.results);
         setProvider(res.provider);
-      } catch {
+      } catch (e) {
         if (cancelled) return;
-        setError(true);
+        if (e instanceof RateLimitedError) {
+          setRateLimited(true);
+        } else {
+          setError(true);
+        }
         setResults([]);
       } finally {
         if (!cancelled) setLoading(false);
@@ -909,9 +916,11 @@ function RequestPicker({ onPick, existing, allowExplicit = true }: { onPick: (so
       },
     );
 
-  const showInitialEmpty = !debounced && !loading;
-  const showNoResults = !!debounced && !loading && !error && results.length === 0;
-  const showError = !!debounced && !loading && error;
+  const hasQuery = debounced.length >= 2;
+  const showInitialEmpty = !hasQuery && !loading;
+  const showNoResults = hasQuery && !loading && !error && !rateLimited && results.length === 0;
+  const showError = hasQuery && !loading && error;
+  const showRateLimited = hasQuery && !loading && rateLimited;
   const showLoadingSkeleton = loading && results.length === 0;
 
   return (
