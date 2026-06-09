@@ -22,7 +22,10 @@ let spotifyToken: { value: string; exp: number } | null = null;
 async function getSpotifyToken(): Promise<string | null> {
   const id = Deno.env.get("SPOTIFY_CLIENT_ID");
   const secret = Deno.env.get("SPOTIFY_CLIENT_SECRET");
-  if (!id || !secret) return null;
+  if (!id || !secret) {
+    console.warn("[music-search] spotify creds missing", { has_id: !!id, has_secret: !!secret });
+    return null;
+  }
   if (spotifyToken && spotifyToken.exp > Date.now() + 30_000) return spotifyToken.value;
   try {
     const res = await fetch("https://accounts.spotify.com/api/token", {
