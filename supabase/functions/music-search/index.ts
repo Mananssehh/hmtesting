@@ -36,11 +36,16 @@ async function getSpotifyToken(): Promise<string | null> {
       },
       body: "grant_type=client_credentials",
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      console.warn("[music-search] spotify token failed", res.status, body.slice(0, 200));
+      return null;
+    }
     const j = await res.json();
     spotifyToken = { value: j.access_token, exp: Date.now() + (j.expires_in ?? 3600) * 1000 };
     return spotifyToken.value;
-  } catch {
+  } catch (e) {
+    console.warn("[music-search] spotify token error", String(e));
     return null;
   }
 }
