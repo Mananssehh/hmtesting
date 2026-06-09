@@ -42,30 +42,13 @@ export function IngestTestPanel({ eventId }: Props) {
 
   const loadToken = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("event_integrations")
-      .select("ingest_token")
-      .eq("event_id", eventId)
-      .maybeSingle();
-
+    const { data, error } = await supabase.rpc("get_ingest_token", { _event_id: eventId });
     if (error) {
       toast.error(error.message);
       setLoading(false);
       return;
     }
-
-    if (data?.ingest_token) {
-      setToken(data.ingest_token);
-    } else {
-      // Create one
-      const { data: created, error: insErr } = await supabase
-        .from("event_integrations")
-        .insert({ event_id: eventId, source_type: "manual" })
-        .select("ingest_token")
-        .single();
-      if (insErr) toast.error(insErr.message);
-      else setToken(created.ingest_token);
-    }
+    if (data) setToken(data as string);
     setLoading(false);
   };
 
