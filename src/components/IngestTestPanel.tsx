@@ -42,30 +42,13 @@ export function IngestTestPanel({ eventId }: Props) {
 
   const loadToken = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from("event_integrations")
-      .select("ingest_token")
-      .eq("event_id", eventId)
-      .maybeSingle();
-
+    const { data, error } = await supabase.rpc("get_ingest_token", { _event_id: eventId });
     if (error) {
       toast.error(error.message);
       setLoading(false);
       return;
     }
-
-    if (data?.ingest_token) {
-      setToken(data.ingest_token);
-    } else {
-      // Create one
-      const { data: created, error: insErr } = await supabase
-        .from("event_integrations")
-        .insert({ event_id: eventId, source_type: "manual" })
-        .select("ingest_token")
-        .single();
-      if (insErr) toast.error(insErr.message);
-      else setToken(created.ingest_token);
-    }
+    if (data) setToken(data as string);
     setLoading(false);
   };
 
@@ -127,28 +110,15 @@ export function IngestTestPanel({ eventId }: Props) {
     setSmokeSteps([...steps]);
 
     try {
-      // 1. Ensure integration row
+      // 1. Ensure integration row + token via secure RPC
       update(0, { status: "running" });
-      let { data: integ, error: integErr } = await supabase
-        .from("event_integrations")
-        .select("ingest_token")
-        .eq("event_id", eventId)
-        .maybeSingle();
-      if (integErr) throw new Error(`integrations select: ${integErr.message}`);
-      if (!integ) {
-        const { data: created, error: cErr } = await supabase
-          .from("event_integrations")
-          .insert({ event_id: eventId, source_type: "manual" })
-          .select("ingest_token")
-          .single();
-        if (cErr) throw new Error(`integrations insert: ${cErr.message}`);
-        integ = created;
-      }
+      const { data: tkData, error: tkErr } = await supabase.rpc("get_ingest_token", { _event_id: eventId });
+      if (tkErr) throw new Error(`get_ingest_token: ${tkErr.message}`);
       update(0, { status: "pass", detail: "row ready" });
 
       // 2. Token
       update(1, { status: "running" });
-      const tk = integ?.ingest_token as string | undefined;
+      const tk = (tkData as string | null) ?? undefined;
       if (!tk) throw new Error("ingest_token missing");
       setToken(tk);
       update(1, { status: "pass", detail: `${tk.slice(0, 6)}…${tk.slice(-4)}` });
