@@ -17,7 +17,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { searchMusic, MusicSearchResult, normalizeKey } from "@/lib/musicSearch";
+import { searchMusic, MusicSearchResult, normalizeKey, RateLimitedError } from "@/lib/musicSearch";
 import { formatDuration, platformLabel } from "@/lib/searchLinks";
 import { PreviewButton } from "@/components/PreviewButton";
 import { NowPlayingDisplay } from "@/components/NowPlayingDisplay";
