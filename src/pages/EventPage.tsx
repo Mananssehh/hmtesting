@@ -981,6 +981,18 @@ function RequestPicker({ onPick, existing, allowExplicit = true }: { onPick: (so
           </div>
         )}
 
+        {showRateLimited && (
+          <div className="text-center py-12 px-6">
+            <Loader2 className="h-8 w-8 text-muted-foreground/60 mx-auto mb-2" />
+            <p className="text-sm font-medium">Search is busy. Try again in a moment.</p>
+            <p className="text-xs text-muted-foreground/80 mt-1">
+              You've searched a lot in the last minute. Wait a few seconds and try again.
+            </p>
+          </div>
+        )}
+
+
+
         {results.map((s) => {
           const already = isAlreadyRequested(s);
           const dur = formatDuration(s.duration_ms);
