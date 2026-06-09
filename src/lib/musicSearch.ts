@@ -16,17 +16,40 @@ export interface MusicSearchResult {
 export interface MusicSearchResponse {
   provider: "spotify" | "itunes" | "none";
   results: MusicSearchResult[];
+  cached?: boolean;
+  stale?: boolean;
+}
+
+export class RateLimitedError extends Error {
+  retryAfter: number;
+  constructor(retryAfter: number) {
+    super("Search is busy. Try again in a moment.");
+    this.retryAfter = retryAfter;
+    this.name = "RateLimitedError";
+  }
 }
 
 export async function searchMusic(query: string): Promise<MusicSearchResponse> {
   const q = query.trim();
-  if (!q) return { provider: "none", results: [] };
+  if (q.length < 2) return { provider: "none", results: [] };
 
-  const { data, error } = await supabase.functions.invoke<MusicSearchResponse>(
+  const { data, error } = await supabase.functions.invoke<MusicSearchResponse & { error?: string }>(
     "music-search",
     { body: { q } },
   );
-  if (error) throw error;
+  if (error) {
+    // supabase-js FunctionsHttpError surfaces non-2xx; inspect context if present
+    const ctx: any = (error as any).context;
+    const status = ctx?.status ?? ctx?.response?.status;
+    if (status === 429) {
+      const retryAfter = Number(ctx?.response?.headers?.get?.("Retry-After")) || 60;
+      throw new RateLimitedError(retryAfter);
+    }
+    throw error;
+  }
+  if ((data as any)?.error === "rate_limited") {
+    throw new RateLimitedError(60);
+  }
   return data ?? { provider: "none", results: [] };
 }
 
