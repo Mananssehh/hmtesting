@@ -53,10 +53,11 @@ async function getSpotifyToken(): Promise<string | null> {
 async function spotifyOnce(q: string, token: string): Promise<SearchResult[]> {
   // market=US (client-credentials cannot use `from_token`; that was silently
   // filtering out region-restricted catalogs and missing many tracks).
-  const url = `https://api.spotify.com/v1/search?type=track&limit=50&market=US&q=${encodeURIComponent(q)}`;
+  const url = `https://api.spotify.com/v1/search?q=${encodeURIComponent(q)}&type=track`;
   const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
   if (!res.ok) {
-    console.warn("[music-search] spotify status", res.status, "q=", q);
+    const body = await res.text().catch(() => "");
+    console.warn("[music-search] spotify search failed", res.status, "q=", q, body.slice(0, 300));
     return [];
   }
   const j = await res.json();
