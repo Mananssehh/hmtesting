@@ -225,7 +225,8 @@ export function SongRequestCard({ rank, song, eventId, myVote = 0, onVote, onBoo
             {song.requested_by ? (
               <Link
                 to={`/users/${song.requested_by}`}
-                state={{ from: location.pathname + location.search, scrollY: typeof window !== "undefined" ? window.scrollY : 0 }}
+                state={{ from: location.pathname + location.search, scrollY: typeof window !== "undefined" ? window.scrollY : 0, eventId: eventId ?? null }}
+
                 onClick={(e) => {
                   e.stopPropagation();
                   try {
