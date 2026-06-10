@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Loader2, Trophy, Sparkles, RotateCcw, Award } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,6 +30,11 @@ const PAGE_SIZE = 50;
 export default function ActivityLedger() {
   const { user, profile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnTo = searchParams.get("returnTo");
+  const isEventReturn = returnTo && returnTo.startsWith("/event/");
+  const backHref = returnTo && returnTo.startsWith("/") ? returnTo : "/profile";
+  const backLabel = isEventReturn ? "Back to event" : "Back to profile";
   const [rows, setRows] = useState<LedgerRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
