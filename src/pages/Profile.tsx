@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Loader2, LogOut, Music2, Pencil, Settings, ThumbsUp, Trophy, Sparkles, Award, Lock } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -38,6 +38,12 @@ interface MyEvent {
 const Profile = () => {
   const { user, profile, isDJ, loading: authLoading, signOut, refreshProfile } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnTo = searchParams.get("returnTo");
+  const backHref = returnTo && returnTo.startsWith("/") ? returnTo : "/";
+  const activityHref = returnTo
+    ? `/profile/activity?returnTo=${encodeURIComponent(returnTo)}`
+    : "/profile/activity";
 
   const [stats, setStats] = useState<Stats>({ totalRequests: 0, totalUpvotes: 0 });
   const [txs, setTxs] = useState<TxRow[]>([]);
