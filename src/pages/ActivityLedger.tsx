@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Loader2, Trophy, Sparkles, RotateCcw, Award } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,6 +30,11 @@ const PAGE_SIZE = 50;
 export default function ActivityLedger() {
   const { user, profile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnTo = searchParams.get("returnTo");
+  const isEventReturn = returnTo && returnTo.startsWith("/event/");
+  const backHref = returnTo && returnTo.startsWith("/") ? returnTo : "/profile";
+  const backLabel = isEventReturn ? "Back to event" : "Back to profile";
   const [rows, setRows] = useState<LedgerRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
@@ -124,7 +129,7 @@ export default function ActivityLedger() {
       <main className="container max-w-3xl py-8 space-y-6">
         <div>
           <Button asChild variant="ghost" size="sm" className="mb-2 -ml-3">
-            <Link to="/profile"><ArrowLeft className="h-4 w-4 mr-1" />Back to profile</Link>
+            <Link to={backHref}><ArrowLeft className="h-4 w-4 mr-1" />{backLabel}</Link>
           </Button>
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
             <Award className="h-7 w-7 text-primary" /> Activity

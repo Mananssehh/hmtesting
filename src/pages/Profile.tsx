@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Loader2, LogOut, Music2, Pencil, Settings, ThumbsUp, Trophy, Sparkles, Award, Lock } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
@@ -38,6 +38,12 @@ interface MyEvent {
 const Profile = () => {
   const { user, profile, isDJ, loading: authLoading, signOut, refreshProfile } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnTo = searchParams.get("returnTo");
+  const backHref = returnTo && returnTo.startsWith("/") ? returnTo : "/";
+  const activityHref = returnTo
+    ? `/profile/activity?returnTo=${encodeURIComponent(returnTo)}`
+    : "/profile/activity";
 
   const [stats, setStats] = useState<Stats>({ totalRequests: 0, totalUpvotes: 0 });
   const [txs, setTxs] = useState<TxRow[]>([]);
@@ -136,7 +142,7 @@ const Profile = () => {
       <main className="container max-w-3xl py-8 space-y-6">
         <div>
           <Button asChild variant="ghost" size="sm" className="mb-2 -ml-3">
-            <Link to="/"><ArrowLeft className="h-4 w-4 mr-1" />Back</Link>
+            <Link to={backHref}><ArrowLeft className="h-4 w-4 mr-1" />Back</Link>
           </Button>
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
             <Settings className="h-7 w-7 text-primary" /> Profile
@@ -201,7 +207,7 @@ const Profile = () => {
 
         {/* Stats grid */}
         <div className="grid grid-cols-3 gap-3">
-          <StatCard icon={<Trophy className="h-4 w-4" />} label="Points" value={profile.points} highlight />
+          <StatCard icon={<Trophy className="h-4 w-4" />} label="Points" value={profile.points} highlight to={activityHref} />
           <StatCard icon={<Music2 className="h-4 w-4" />} label="Requests" value={stats.totalRequests} />
           <StatCard icon={<ThumbsUp className="h-4 w-4" />} label="Upvotes" value={stats.totalUpvotes} />
         </div>
@@ -246,7 +252,7 @@ const Profile = () => {
               <Award className="h-4 w-4 text-primary" /> Recent activity
             </CardTitle>
             <Button asChild size="sm" variant="ghost">
-              <Link to="/profile/activity">View all →</Link>
+              <Link to={activityHref}>View all →</Link>
             </Button>
           </CardHeader>
           <CardContent className="p-0 divide-y">
@@ -292,17 +298,21 @@ const Profile = () => {
   );
 };
 
-function StatCard({ icon, label, value, highlight }: { icon: React.ReactNode; label: string; value: number; highlight?: boolean }) {
-  return (
-    <Card className={highlight ? "border-primary/40 bg-primary/5" : ""}>
-      <CardContent className="p-4">
-        <div className={`flex items-center gap-1.5 text-xs ${highlight ? "text-primary" : "text-muted-foreground"}`}>
-          {icon}<span className="uppercase tracking-wider">{label}</span>
-        </div>
-        <div className={`text-2xl font-bold tabular-nums mt-1 ${highlight ? "text-primary" : ""}`}>{value}</div>
-      </CardContent>
+function StatCard({ icon, label, value, highlight, to }: { icon: React.ReactNode; label: string; value: number; highlight?: boolean; to?: string }) {
+  const inner = (
+    <CardContent className="p-4">
+      <div className={`flex items-center gap-1.5 text-xs ${highlight ? "text-primary" : "text-muted-foreground"}`}>
+        {icon}<span className="uppercase tracking-wider">{label}</span>
+      </div>
+      <div className={`text-2xl font-bold tabular-nums mt-1 ${highlight ? "text-primary" : ""}`}>{value}</div>
+    </CardContent>
+  );
+  const card = (
+    <Card className={`${highlight ? "border-primary/40 bg-primary/5" : ""} ${to ? "hover:bg-primary/10 transition-colors cursor-pointer" : ""}`}>
+      {inner}
     </Card>
   );
+  return to ? <Link to={to} aria-label={`${label} — view activity`}>{card}</Link> : card;
 }
 
 export default Profile;
