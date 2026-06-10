@@ -13,6 +13,7 @@ import EventPage from "./pages/EventPage";
 import DJDashboard from "./pages/DJDashboard";
 import DJEventManage from "./pages/DJEventManage";
 import DJDevTools from "./pages/DJDevTools";
+import DJOnboarding from "./pages/DJOnboarding";
 
 
 import Profile from "./pages/Profile";
@@ -52,6 +53,7 @@ const App = () => (
               <Route path="/connect" element={<Connect />} />
               <Route path="/event/:code" element={<EventPage />} />
               <Route path="/dj" element={<DJDashboard />} />
+              <Route path="/dj/onboarding" element={<DJOnboarding />} />
               <Route path="/dj/:id" element={<DJEventManage />} />
               <Route path="/dj/:id/dev" element={<DJDevTools />} />
               <Route path="/dj/:id/analytics" element={<Analytics />} />

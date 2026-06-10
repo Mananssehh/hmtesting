@@ -110,33 +110,6 @@ export type Database = {
         }
         Relationships: []
       }
-      dj_invite_codes: {
-        Row: {
-          code: string
-          created_at: string
-          created_by: string | null
-          expires_at: string | null
-          id: string
-          uses_remaining: number
-        }
-        Insert: {
-          code: string
-          created_at?: string
-          created_by?: string | null
-          expires_at?: string | null
-          id?: string
-          uses_remaining?: number
-        }
-        Update: {
-          code?: string
-          created_at?: string
-          created_by?: string | null
-          expires_at?: string | null
-          id?: string
-          uses_remaining?: number
-        }
-        Relationships: []
-      }
       dj_role_claims: {
         Row: {
           attempted_at: string
@@ -1009,11 +982,7 @@ export type Database = {
         Args: { _amount_cents: number; _event_id: string; _user_id: string }
         Returns: undefined
       }
-      claim_dj_role: { Args: { _invite_code: string }; Returns: undefined }
-      create_dj_invite_code: {
-        Args: { _expires_at?: string; _uses?: number }
-        Returns: string
-      }
+      claim_dj_role: { Args: never; Returns: undefined }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
