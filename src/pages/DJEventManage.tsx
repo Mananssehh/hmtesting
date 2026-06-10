@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
-  Award, Check, Copy, Loader2, Play, SkipForward, Sparkles, Trophy,
+  Check, Copy, Loader2, Play, SkipForward, Sparkles, Trophy,
   PauseCircle, PlayCircle, XCircle, Music, Rocket, ListMusic,
   Maximize2, Minimize2, BarChart3, Shield, UserX, EyeOff,
 } from "lucide-react";
@@ -12,7 +12,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { SongRequestCard, SongRequestRow } from "@/components/SongRequestCard";
 import { DJReportsPanel } from "@/components/DJReportsPanel";
 import { DJSongActions } from "@/components/DJSongActions";
-import { AwardPointsDialog } from "@/components/AwardPointsDialog";
+
 import { ArchivedEventSummary } from "@/components/ArchivedEventSummary";
 import { ModerationDialog } from "@/components/ModerationDialog";
 import { EventQR } from "@/components/EventQR";
@@ -66,7 +66,7 @@ const DJEventManage = () => {
   const [songs, setSongs] = useState<SongRequestRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<Filter>("queue");
-  const [awardOpen, setAwardOpen] = useState(false);
+  
   const [removeTarget, setRemoveTarget] = useState<SongRequestRow | null>(null);
   const [endConfirmOpen, setEndConfirmOpen] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
@@ -370,9 +370,6 @@ const DJEventManage = () => {
               <Button variant="outline" onClick={copyJoinLink}>
                 <Copy className="mr-2 h-4 w-4" /> Copy join link
               </Button>
-              <Button variant="outline" onClick={() => setAwardOpen(true)} disabled={status === "ended"}>
-                <Award className="mr-2 h-4 w-4" /> Award points
-              </Button>
               <Button variant="outline" onClick={() => setFocusMode(true)} disabled={status === "ended"}>
                 <Maximize2 className="mr-2 h-4 w-4" /> Focus mode
               </Button>
@@ -621,7 +618,7 @@ const DJEventManage = () => {
         </Tabs>
       </div>
 
-      <AwardPointsDialog open={awardOpen} onOpenChange={setAwardOpen} eventId={event.id} />
+      
 
       {/* Confirm remove */}
       <AlertDialog open={!!removeTarget} onOpenChange={(o) => !o && setRemoveTarget(null)}>
