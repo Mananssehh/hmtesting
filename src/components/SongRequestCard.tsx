@@ -45,6 +45,7 @@ const statusStyles: Record<SongRequestRow["status"], string> = {
 interface Props {
   rank?: number;
   song: SongRequestRow;
+  eventId?: string | null;
   myVote?: 1 | -1 | 0;
   onVote?: (value: 1 | -1) => void;
   onBoost?: () => void;
@@ -58,6 +59,7 @@ interface Props {
   trending?: boolean;
   movement?: "up" | "down" | "same" | "new";
 }
+
 
 export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, onRemove, onReport, disabled, battle, mostWanted, pinned, moderation, trending, movement }: Props) {
   const location = useLocation();
