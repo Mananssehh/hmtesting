@@ -12,12 +12,11 @@ interface Props {
 }
 
 /**
- * Routes "Start as a DJ" by current auth state so signed-in users
- * never get bounced through the login form again.
+ * Routes "Start as a DJ" by current auth state.
  *  - loading           → disabled button
  *  - signed-in + DJ    → /dj
- *  - signed-in + guest → /auth?role=dj (invite-code-only panel)
- *  - signed-out        → /auth?role=dj (signup/login + invite)
+ *  - signed-in + guest → /dj/onboarding (self-serve)
+ *  - signed-out        → /auth?role=dj
  */
 export function StartAsDjCta({
   variant = "premium",
@@ -54,7 +53,7 @@ export function StartAsDjCta({
       size={size}
       variant={variant}
       className={className}
-      onClick={() => navigate(isDJ ? "/dj" : "/auth?role=dj")}
+      onClick={() => navigate(isDJ ? "/dj" : "/dj/onboarding")}
     >
       {withIcon && <Disc3 className="mr-2 h-5 w-5" />}
       {label}
