@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS public.dj_award_points(uuid, uuid, integer, text);
