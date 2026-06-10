@@ -45,6 +45,7 @@ const statusStyles: Record<SongRequestRow["status"], string> = {
 interface Props {
   rank?: number;
   song: SongRequestRow;
+  eventId?: string | null;
   myVote?: 1 | -1 | 0;
   onVote?: (value: 1 | -1) => void;
   onBoost?: () => void;
@@ -59,7 +60,8 @@ interface Props {
   movement?: "up" | "down" | "same" | "new";
 }
 
-export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, onRemove, onReport, disabled, battle, mostWanted, pinned, moderation, trending, movement }: Props) {
+
+export function SongRequestCard({ rank, song, eventId, myVote = 0, onVote, onBoost, onRemove, onReport, disabled, battle, mostWanted, pinned, moderation, trending, movement }: Props) {
   const location = useLocation();
   const score = song.upvotes - song.downvotes + song.boost;
   const upvoted = myVote === 1;
@@ -223,7 +225,8 @@ export function SongRequestCard({ rank, song, myVote = 0, onVote, onBoost, onRem
             {song.requested_by ? (
               <Link
                 to={`/users/${song.requested_by}`}
-                state={{ from: location.pathname + location.search, scrollY: typeof window !== "undefined" ? window.scrollY : 0 }}
+                state={{ from: location.pathname + location.search, scrollY: typeof window !== "undefined" ? window.scrollY : 0, eventId: eventId ?? null }}
+
                 onClick={(e) => {
                   e.stopPropagation();
                   try {

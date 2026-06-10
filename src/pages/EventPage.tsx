@@ -720,7 +720,7 @@ const EventPage = () => {
             <div className="space-y-2 opacity-95">
               {playedSongs.map((s) => (
                 <div key={s.id} className="space-y-1">
-                  <SongRequestCard song={s} myVote={myVotes[s.id] ?? 0} />
+                  <SongRequestCard song={s} eventId={eventInfo?.id} myVote={myVotes[s.id] ?? 0} />
                   {s.played_by_source === "bridge" && (
                     <p className="pl-2 text-[11px] text-muted-foreground/70 italic">
                       Auto-marked played by Decks Bridge
@@ -750,7 +750,9 @@ const EventPage = () => {
                 key={s.id}
                 rank={sort === "top" ? i + 1 : undefined}
                 song={s}
+                eventId={eventInfo?.id}
                 myVote={myVotes[s.id] ?? 0}
+
                 onVote={(v) => handleVote(s.id, v)}
                 onBoost={isLive ? () => setBoostTarget(s) : undefined}
                 onRemove={s.requested_by === user?.id && s.status === "pending" ? () => setRemoveTarget(s) : undefined}
