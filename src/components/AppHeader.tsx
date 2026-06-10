@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Disc3, LogOut, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,11 +7,18 @@ import { Badge } from "@/components/ui/badge";
 export function AppHeader() {
   const { user, profile, isDJ, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleSignOut = async () => {
     await signOut();
     navigate("/");
   };
+
+  // Preserve event context so Profile → Activity can come back
+  const inEvent = location.pathname.startsWith("/event/");
+  const profileHref = inEvent
+    ? `/profile?returnTo=${encodeURIComponent(location.pathname)}`
+    : "/profile";
 
   return (
     <header className="sticky top-0 z-40 backdrop-blur-2xl bg-background/70 border-b border-white/[0.05]">
@@ -35,7 +42,7 @@ export function AppHeader() {
                 </Button>
               )}
               <Link
-                to="/profile"
+                to={profileHref}
                 className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/60 hover:bg-secondary text-sm transition-colors"
               >
                 <UserIcon className="h-3.5 w-3.5 text-muted-foreground" />
@@ -47,7 +54,7 @@ export function AppHeader() {
                 )}
               </Link>
               <Button asChild variant="ghost" size="icon" className="sm:hidden" aria-label="Profile">
-                <Link to="/profile"><UserIcon className="h-4 w-4" /></Link>
+                <Link to={profileHref}><UserIcon className="h-4 w-4" /></Link>
               </Button>
               <Button variant="ghost" size="icon" onClick={handleSignOut} aria-label="Sign out">
                 <LogOut className="h-4 w-4" />
