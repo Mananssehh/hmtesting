@@ -129,7 +129,7 @@ export default function ActivityLedger() {
       <main className="container max-w-3xl py-8 space-y-6">
         <div>
           <Button asChild variant="ghost" size="sm" className="mb-2 -ml-3">
-            <Link to="/profile"><ArrowLeft className="h-4 w-4 mr-1" />Back to profile</Link>
+            <Link to={backHref}><ArrowLeft className="h-4 w-4 mr-1" />{backLabel}</Link>
           </Button>
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-2">
             <Award className="h-7 w-7 text-primary" /> Activity
