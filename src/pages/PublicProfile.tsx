@@ -43,8 +43,10 @@ const PublicProfile = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const backState = location.state as { from?: string; scrollY?: number } | null;
+  const backState = location.state as { from?: string; scrollY?: number; eventId?: string | null } | null;
   const [reportOpen, setReportOpen] = useState<null | "user" | "nickname">(null);
+  const reportEventId = backState?.eventId ?? null;
+
 
   const handleBack = () => {
     const from = backState?.from;
@@ -234,9 +236,11 @@ const PublicProfile = () => {
           onOpenChange={(o) => !o && setReportOpen(null)}
           targetType={reportOpen}
           targetId={userId}
+          eventId={reportEventId}
           contextLabel={data?.nickname}
         />
       )}
+
     </div>
   );
 };
