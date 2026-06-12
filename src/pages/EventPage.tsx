@@ -528,7 +528,7 @@ const EventPage = () => {
 
   return (
     <div className="min-h-screen pb-28 sm:pb-10" style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 6rem)" }}>
-      <SEO title="Live event" description="Request songs, vote, and boost your favorites in real time on Decks." path="/event" noindex />
+      <SEO title="Live event" description="Request songs, vote, and tip the DJ in real time on Decks." path="/event" noindex />
       <AppHeader />
       <div className="container max-w-3xl px-4 sm:px-6 py-5 sm:py-10">
         {/* Event header */}
