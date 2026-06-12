@@ -167,8 +167,8 @@ export function NowPlayingDisplay({ eventId, matchedRequest, fallbackRequest }: 
                   </span>
                 )}
                 {(request.boost ?? 0) > 0 && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] bg-orange-500/15 text-orange-300 border border-orange-500/30">
-                    <Flame className="h-3 w-3" />
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                    <CircleDollarSign className="h-3 w-3" />
                     {request.boost}
                   </span>
                 )}

@@ -80,7 +80,6 @@ export function SongRequestCard({ rank, song, eventId, myVote = 0, onVote, onTip
   const heatClass = battle
     ? (boost >= 100 ? "boost-heat-3" : boost >= 25 ? "boost-heat-2" : "boost-heat-1")
     : (boost >= 5 ? "boost-heat-1" : "");
-  const showFlame = boost >= 25;
 
   return (
     <div
@@ -149,10 +148,9 @@ export function SongRequestCard({ rank, song, eventId, myVote = 0, onVote, onTip
         ) : (
           <div className="h-full w-full bg-gradient-to-br from-primary/30 to-accent/30" />
         )}
-        {showFlame && <div className="flame" aria-hidden />}
-        {song.boost > 0 && !showFlame && (
+        {song.boost > 0 && (
           <div className="absolute top-1 right-1 bg-primary/90 text-primary-foreground rounded-full p-0.5 shadow-sm">
-            <Sparkles className="h-2.5 w-2.5" />
+            <CircleDollarSign className="h-2.5 w-2.5" />
           </div>
         )}
       </div>
@@ -172,11 +170,11 @@ export function SongRequestCard({ rank, song, eventId, myVote = 0, onVote, onTip
           {song.boost > 0 && (
             <Badge className={cn(
               "text-[10px] px-1.5 py-0 border rounded-md gap-1",
-              boost >= 100 ? "bg-orange-500/20 text-orange-300 border-orange-500/40" :
+              boost >= 100 ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40" :
               boost >= 25  ? "bg-primary/25 text-primary-foreground border-primary/40" :
               "bg-primary/15 text-primary border-primary/25"
             )}>
-              {boost >= 25 ? <Flame className="h-2.5 w-2.5" /> : <Sparkles className="h-2.5 w-2.5" />}
+              <CircleDollarSign className="h-2.5 w-2.5" />
               +{song.boost}
             </Badge>
           )}
