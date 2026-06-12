@@ -645,13 +645,7 @@ const EventPage = () => {
           </Dialog>
         </div>
 
-        {/* Boost social layer: dominator + live activity */}
-        {!isEnded && sort !== "played" && dominatingSong && (
-          <DominatingBanner song={dominatingSong} lead={dominatingLead} />
-        )}
-        {!isEnded && sort !== "played" && (
-          <BoostActivityStrip events={boostEvents} />
-        )}
+        {/* Boost FX paused with ENABLE_BOOSTS=false. Tips never affect placement. */}
 
         {/* Sort tabs */}
         <Tabs value={sort} onValueChange={(v) => setSort(v as SortMode)} className="mb-4">
@@ -708,7 +702,7 @@ const EventPage = () => {
                 myVote={myVotes[s.id] ?? 0}
 
                 onVote={(v) => handleVote(s.id, v)}
-                onBoost={isLive ? () => setBoostTarget(s) : undefined}
+                onTip={isLive ? () => setBoostTarget(s) : undefined}
                 onRemove={s.requested_by === user?.id && s.status === "pending" ? () => setRemoveTarget(s) : undefined}
                 onReport={user && s.requested_by !== user.id ? () => setReportTarget(s) : undefined}
                 disabled={!!pendingVotes[s.id]}
@@ -721,8 +715,7 @@ const EventPage = () => {
         )}
       </div>
 
-      {/* Live boost FX overlay (toasts + mega) */}
-      <BoostFX events={boostEvents} />
+      {/* Boost FX overlay removed — paused with ENABLE_BOOSTS=false */}
 
       {/* Mobile sticky request CTA */}
       {isLive && (
@@ -738,19 +731,12 @@ const EventPage = () => {
       )}
 
       {boostTarget && (
-        <BoostDialog
+        <TipDialog
           open={!!boostTarget}
           onOpenChange={(o) => !o && setBoostTarget(null)}
-          songRequestId={boostTarget.id}
+          eventId={eventInfo?.id ?? null}
+          djName={eventInfo?.dj_name ?? null}
           songTitle={`${boostTarget.title} — ${boostTarget.artist}`}
-          onBoosted={(nextBoost) => {
-            setSongs((prev) =>
-              prev.map((song) =>
-                song.id === boostTarget.id ? { ...song, boost: nextBoost } : song,
-              ),
-            );
-            setBoostTarget(null);
-          }}
         />
       )}
 
