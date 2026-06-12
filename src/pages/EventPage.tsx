@@ -9,7 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { AppHeader } from "@/components/AppHeader";
 import { SEO } from "@/components/SEO";
 import { SongRequestCard, SongRequestRow } from "@/components/SongRequestCard";
-import { BoostDialog } from "@/components/BoostDialog";
+import { TipDialog } from "@/components/TipDialog";
 import { ReportDialog } from "@/components/ReportDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,11 +21,8 @@ import { searchMusic, MusicSearchResult, normalizeKey, RateLimitedError } from "
 import { formatDuration, platformLabel } from "@/lib/searchLinks";
 import { PreviewButton } from "@/components/PreviewButton";
 import { NowPlayingDisplay } from "@/components/NowPlayingDisplay";
-import { useBoostFeed } from "@/hooks/useBoostFeed";
 import { useTrending } from "@/hooks/useTrending";
-import { BoostFX } from "@/components/BoostFX";
-import { BoostActivityStrip } from "@/components/BoostActivityStrip";
-import { DominatingBanner } from "@/components/DominatingBanner";
+import { ENABLE_BOOSTS } from "@/lib/featureFlags";
 
 import { useNowPlaying } from "@/hooks/useNowPlaying";
 
