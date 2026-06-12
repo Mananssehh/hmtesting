@@ -930,6 +930,18 @@ export type Database = {
         }
         Relationships: []
       }
+      tip_analytics: {
+        Row: {
+          amount_cents: number | null
+          dj_id: string | null
+          event_id: string | null
+          purchase_id: string | null
+          status: string | null
+          tipped_at: string | null
+          tipper_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       award_points: {
