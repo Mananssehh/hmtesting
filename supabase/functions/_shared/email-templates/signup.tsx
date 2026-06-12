@@ -39,7 +39,7 @@ export const SignupEmail = ({
 
         <Text style={text}>
           Decks connects DJs and guests in real time. Request songs, vote on what the crowd
-          wants, and use your starter points to boost your favorite tracks higher in the queue.
+          wants, and tip the DJ if you love the set.
         </Text>
 
         <Section style={pointsBox}>
@@ -51,8 +51,8 @@ export const SignupEmail = ({
         <Text style={listItem}>+1 Join an event</Text>
         <Text style={listItem}>+1 Request a song</Text>
 
-        <Heading as="h2" style={h2}>Ways to use points</Heading>
-        <Text style={listItem}>Boost songs to increase visibility in the DJ's queue</Text>
+        <Heading as="h2" style={h2}>Show the DJ some love</Heading>
+        <Text style={listItem}>Tip the DJ in-app to say thanks</Text>
 
         <Hr style={hr} />
 
@@ -60,7 +60,7 @@ export const SignupEmail = ({
           <strong>The crowd picks. The DJ decides.</strong>
         </Text>
         <Text style={textMuted}>
-          Boosts increase visibility only. DJs stay in full control of what gets played.
+          Tips support the DJ and do not affect song placement or guarantee playback.
         </Text>
 
         <Section style={{ textAlign: 'center', margin: '28px 0' }}>
