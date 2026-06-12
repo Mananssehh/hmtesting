@@ -1011,6 +1011,7 @@ export type Database = {
         }[]
       }
       get_ingest_token: { Args: { _event_id: string }; Returns: string }
+      get_my_profile: { Args: never; Returns: Json }
       get_nickname: { Args: { _user_id: string }; Returns: string }
       get_public_profile: { Args: { _user_id: string }; Returns: Json }
       has_role: {

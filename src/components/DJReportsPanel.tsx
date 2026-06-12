@@ -44,15 +44,11 @@ export function DJReportsPanel({ eventId, onRemoveRequest }: Props) {
 
   useEffect(() => {
     void load();
-    const channel = supabase
-      .channel(`reports-${eventId}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "reports", filter: `event_id=eq.${eventId}` },
-        () => void load(),
-      )
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    // Reports are no longer in the realtime publication (the postgres_changes
+    // stream would leak report rows to every authenticated subscriber, since
+    // realtime cannot honor row-level SELECT policies). Poll every 5s.
+    const interval = setInterval(() => { void load(); }, 5000);
+    return () => { clearInterval(interval); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId]);
 
