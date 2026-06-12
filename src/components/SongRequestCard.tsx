@@ -263,7 +263,7 @@ export function SongRequestCard({ rank, song, eventId, myVote = 0, onVote, onTip
           title="Tip the DJ (does not affect placement)"
           className="shrink-0 h-8 px-3 rounded-full flex items-center gap-1 text-[12px] font-semibold border transition-all duration-200 active:scale-95 tap-target bg-primary/10 text-primary border-primary/25 hover:bg-primary/15"
         >
-          <HandCoins className="h-3.5 w-3.5" />
+          <CircleDollarSign className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">Tip DJ</span>
         </button>
       )}
