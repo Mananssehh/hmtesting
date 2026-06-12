@@ -1,4 +1,4 @@
-import { ChevronUp, ChevronDown, Sparkles, HandCoins, Clock, Flame, Swords, Crown, Pin, Shield, TrendingUp, ArrowUp, ArrowDown, Trash2, Flag } from "lucide-react";
+import { ChevronUp, ChevronDown, CircleDollarSign, Clock, Swords, Crown, Pin, Shield, TrendingUp, ArrowUp, ArrowDown, Trash2, Flag } from "lucide-react";
 import { ENABLE_BOOSTS, ENABLE_TIPS } from "@/lib/featureFlags";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
@@ -80,7 +80,6 @@ export function SongRequestCard({ rank, song, eventId, myVote = 0, onVote, onTip
   const heatClass = battle
     ? (boost >= 100 ? "boost-heat-3" : boost >= 25 ? "boost-heat-2" : "boost-heat-1")
     : (boost >= 5 ? "boost-heat-1" : "");
-  const showFlame = boost >= 25;
 
   return (
     <div
@@ -149,10 +148,9 @@ export function SongRequestCard({ rank, song, eventId, myVote = 0, onVote, onTip
         ) : (
           <div className="h-full w-full bg-gradient-to-br from-primary/30 to-accent/30" />
         )}
-        {showFlame && <div className="flame" aria-hidden />}
-        {song.boost > 0 && !showFlame && (
+        {song.boost > 0 && (
           <div className="absolute top-1 right-1 bg-primary/90 text-primary-foreground rounded-full p-0.5 shadow-sm">
-            <Sparkles className="h-2.5 w-2.5" />
+            <CircleDollarSign className="h-2.5 w-2.5" />
           </div>
         )}
       </div>
@@ -172,11 +170,11 @@ export function SongRequestCard({ rank, song, eventId, myVote = 0, onVote, onTip
           {song.boost > 0 && (
             <Badge className={cn(
               "text-[10px] px-1.5 py-0 border rounded-md gap-1",
-              boost >= 100 ? "bg-orange-500/20 text-orange-300 border-orange-500/40" :
+              boost >= 100 ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40" :
               boost >= 25  ? "bg-primary/25 text-primary-foreground border-primary/40" :
               "bg-primary/15 text-primary border-primary/25"
             )}>
-              {boost >= 25 ? <Flame className="h-2.5 w-2.5" /> : <Sparkles className="h-2.5 w-2.5" />}
+              <CircleDollarSign className="h-2.5 w-2.5" />
               +{song.boost}
             </Badge>
           )}
@@ -265,7 +263,7 @@ export function SongRequestCard({ rank, song, eventId, myVote = 0, onVote, onTip
           title="Tip the DJ (does not affect placement)"
           className="shrink-0 h-8 px-3 rounded-full flex items-center gap-1 text-[12px] font-semibold border transition-all duration-200 active:scale-95 tap-target bg-primary/10 text-primary border-primary/25 hover:bg-primary/15"
         >
-          <HandCoins className="h-3.5 w-3.5" />
+          <CircleDollarSign className="h-3.5 w-3.5" />
           <span className="hidden sm:inline">Tip DJ</span>
         </button>
       )}

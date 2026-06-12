@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { HandCoins, Loader2, Heart } from "lucide-react";
+import { CircleDollarSign, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -112,7 +112,7 @@ export function TipDialog({ open, onOpenChange, eventId, djName, songTitle }: Pr
         <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_top,hsl(var(--primary)/0.15),transparent_60%)]" />
         <DialogHeader className="relative">
           <DialogTitle className="flex items-center gap-2 text-xl tracking-tight">
-            <HandCoins className="h-5 w-5 text-primary" /> Tip the DJ
+            <CircleDollarSign className="h-5 w-5 text-primary" /> Tip the DJ
           </DialogTitle>
           <DialogDescription>
             {djName ? `Send DJ ${djName} a tip` : "Send the DJ a tip"}
@@ -201,7 +201,7 @@ export function TipDialog({ open, onOpenChange, eventId, djName, songTitle }: Pr
             {submitting ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
-              <Heart className="mr-2 h-4 w-4" />
+              <CircleDollarSign className="mr-2 h-4 w-4" />
             )}
             Tip ${amountDollars || 0}
           </Button>
