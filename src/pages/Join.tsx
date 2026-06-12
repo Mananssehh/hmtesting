@@ -84,7 +84,7 @@ const Join = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <SEO title="Join the party" description="Enter the DJ's room code to request songs, vote, and boost tracks in real time." path="/join" />
+      <SEO title="Join the party" description="Enter the DJ's room code to request songs, vote, and tip the DJ in real time." path="/join" />
       <AppHeader />
       <div className="container max-w-md py-12">
         <div className="text-center mb-8">

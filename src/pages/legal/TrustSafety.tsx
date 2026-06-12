@@ -16,7 +16,7 @@ const TrustSafety = () => (
       <li><strong>No harassment or hate speech</strong> — including slurs, threats, or targeting people based on identity.</li>
       <li><strong>No offensive nicknames</strong> — nicknames must be appropriate for a public venue. We filter and may rename violators.</li>
       <li><strong>No sexual content or grooming</strong> — directed at anyone, especially minors.</li>
-      <li><strong>No spam or flooding</strong> — rate limits apply to requests and boosts.</li>
+      <li><strong>No spam or flooding</strong> — rate limits apply to requests and tips.</li>
       <li><strong>No queue manipulation</strong> — botting, multi-accounting, or coordinated abuse will result in a ban.</li>
       <li><strong>No illegal activity</strong> — including doxxing, fraud, or sharing illegal content.</li>
     </ul>
