@@ -40,7 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     for (const delay of delays) {
       if (delay) await new Promise((r) => setTimeout(r, delay));
       const [pRes, rRes] = await Promise.all([
-        supabase.from("profiles").select("id, nickname, points, is_premium").eq("id", uid).maybeSingle(),
+        (supabase as any).rpc("get_my_profile"),
         supabase.from("user_roles").select("role").eq("user_id", uid),
       ]);
       prof = (pRes.data as Profile | null) ?? null;
@@ -77,7 +77,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  // Realtime subscription to keep points balance fresh
+  // Realtime: detect profile updates and re-fetch via RPC (points/is_premium
+  // are column-secured and no longer included in realtime payloads).
   useEffect(() => {
     if (!user) return;
     const channel = supabase
@@ -85,10 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${user.id}` },
-        (payload) => {
-          const p = payload.new as Profile;
-          setProfile((prev) => (prev ? { ...prev, points: p.points, nickname: p.nickname, is_premium: p.is_premium } : p));
-        },
+        () => { void loadProfile(user.id); },
       )
       .subscribe();
     return () => {
