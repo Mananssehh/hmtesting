@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Music, Pause, Disc3, Flame, ArrowBigUp, User } from "lucide-react";
+import { Music, Pause, Disc3, CircleDollarSign, ArrowBigUp, User } from "lucide-react";
 import { toast } from "sonner";
 import { useNowPlaying } from "@/hooks/useNowPlaying";
 import { NowPlayingStatus } from "@/lib/nowPlaying";

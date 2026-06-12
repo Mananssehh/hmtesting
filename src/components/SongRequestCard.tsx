@@ -1,4 +1,4 @@
-import { ChevronUp, ChevronDown, Sparkles, HandCoins, Clock, Flame, Swords, Crown, Pin, Shield, TrendingUp, ArrowUp, ArrowDown, Trash2, Flag } from "lucide-react";
+import { ChevronUp, ChevronDown, CircleDollarSign, Clock, Swords, Crown, Pin, Shield, TrendingUp, ArrowUp, ArrowDown, Trash2, Flag } from "lucide-react";
 import { ENABLE_BOOSTS, ENABLE_TIPS } from "@/lib/featureFlags";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";

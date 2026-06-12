@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { HandCoins, Loader2, Heart } from "lucide-react";
+import { CircleDollarSign, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
