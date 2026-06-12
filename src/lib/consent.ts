@@ -4,7 +4,8 @@
 // with any server-side enforcement in Stripe edge functions.
 import { supabase } from "@/integrations/supabase/client";
 
-export const CURRENT_CONSENT_VERSION = "v1-2026-06-07";
+// Bumped when tip disclaimer/limit copy changes — forces a fresh consent prompt.
+export const CURRENT_CONSENT_VERSION = "v2-tips-2026-06-12";
 
 export interface ConsentRow {
   id: string;

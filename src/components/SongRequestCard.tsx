@@ -1,4 +1,5 @@
-import { ChevronUp, ChevronDown, Sparkles, Rocket, Clock, Flame, Swords, Crown, Pin, Shield, TrendingUp, ArrowUp, ArrowDown, Trash2, Flag } from "lucide-react";
+import { ChevronUp, ChevronDown, Sparkles, HandCoins, Clock, Flame, Swords, Crown, Pin, Shield, TrendingUp, ArrowUp, ArrowDown, Trash2, Flag } from "lucide-react";
+import { ENABLE_BOOSTS, ENABLE_TIPS } from "@/lib/featureFlags";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -48,7 +49,8 @@ interface Props {
   eventId?: string | null;
   myVote?: 1 | -1 | 0;
   onVote?: (value: 1 | -1) => void;
-  onBoost?: () => void;
+  /** Open the Tip-the-DJ flow (or Boost flow when ENABLE_BOOSTS). */
+  onTip?: () => void;
   onRemove?: () => void;
   onReport?: () => void;
   disabled?: boolean;
@@ -61,9 +63,13 @@ interface Props {
 }
 
 
-export function SongRequestCard({ rank, song, eventId, myVote = 0, onVote, onBoost, onRemove, onReport, disabled, battle, mostWanted, pinned, moderation, trending, movement }: Props) {
+export function SongRequestCard({ rank, song, eventId, myVote = 0, onVote, onTip, onRemove, onReport, disabled, battle, mostWanted, pinned, moderation, trending, movement }: Props) {
   const location = useLocation();
-  const score = song.upvotes - song.downvotes + song.boost;
+  // Score is votes only — tips never affect placement.
+  // When boosts are re-enabled, boost is added back as a visibility-only weight.
+  const score = ENABLE_BOOSTS
+    ? song.upvotes - song.downvotes + (song.boost ?? 0)
+    : song.upvotes - song.downvotes;
   const upvoted = myVote === 1;
   const downvoted = myVote === -1;
 
