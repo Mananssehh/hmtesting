@@ -9,9 +9,12 @@
 import { supabase } from "@/integrations/supabase/client";
 
 export const PURCHASE_CAPS = {
-  maxSingleCents: 2000, // $20
-  max24hCents: 5000, // $50
-  maxPerEvent: 10,
+  /** Maximum single tip: $50.00 */
+  maxSingleCents: 5000,
+  /** Maximum tips in a rolling 24h window across all events: $100.00 */
+  max24hCents: 10000,
+  /** Maximum tips per event/night for one user: $100.00 */
+  maxPerEventCents: 10000,
 } as const;
 
 export interface CapCheckResult {

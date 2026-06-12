@@ -13,18 +13,19 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { recordConsent, CURRENT_CONSENT_VERSION } from "@/lib/consent";
+import { TIP_DISCLAIMER } from "@/components/TipDialog";
 
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Called only after all three boxes are ticked and consent is recorded. */
+  /** Called only after all boxes are ticked and consent is recorded. */
   onConfirm: () => void | Promise<void>;
   /** Label for the continue button (e.g. "Continue to checkout"). */
   confirmLabel?: string;
 }
 
 /**
- * Reusable Stripe-readiness consent modal.
+ * Reusable Stripe-readiness consent modal for tips.
  *
  * Three required acknowledgements must be ticked before `onConfirm` fires.
  * On confirm, the user's acceptance is stored in `purchase_consents` with the
@@ -35,14 +36,14 @@ export function CheckoutConsentModal({
   open,
   onOpenChange,
   onConfirm,
-  confirmLabel = "Continue to checkout",
+  confirmLabel = "Continue",
 }: Props) {
-  const [visibility, setVisibility] = useState(false);
+  const [noPlacement, setNoPlacement] = useState(false);
   const [discretion, setDiscretion] = useState(false);
   const [nonRefundable, setNonRefundable] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  const allChecked = visibility && discretion && nonRefundable;
+  const allChecked = noPlacement && discretion && nonRefundable;
 
   const handleConfirm = async () => {
     if (!allChecked || submitting) return;
@@ -51,8 +52,7 @@ export function CheckoutConsentModal({
       await recordConsent(CURRENT_CONSENT_VERSION);
       await onConfirm();
       onOpenChange(false);
-      // Reset for next open
-      setVisibility(false);
+      setNoPlacement(false);
       setDiscretion(false);
       setNonRefundable(false);
     } catch (e: any) {
@@ -70,23 +70,19 @@ export function CheckoutConsentModal({
     <Dialog open={open} onOpenChange={(o) => !submitting && onOpenChange(o)}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Before you continue</DialogTitle>
-          <DialogDescription>
-            Boosts increase visibility only. DJs decide what plays. Please
-            confirm you understand before purchasing.
-          </DialogDescription>
+          <DialogTitle>Before you tip</DialogTitle>
+          <DialogDescription>{TIP_DISCLAIMER}</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3 py-2">
           <label className="flex items-start gap-3 cursor-pointer">
             <Checkbox
-              checked={visibility}
-              onCheckedChange={(v) => setVisibility(!!v)}
+              checked={noPlacement}
+              onCheckedChange={(v) => setNoPlacement(!!v)}
               className="mt-0.5"
             />
             <span className="text-sm leading-relaxed">
-              I understand that boosts only increase a song's{" "}
-              <strong>visibility</strong> in the queue.
+              I understand my tip <strong>does not affect</strong> song placement, prioritization, or queue position.
             </span>
           </label>
 
@@ -97,8 +93,7 @@ export function CheckoutConsentModal({
               className="mt-0.5"
             />
             <span className="text-sm leading-relaxed">
-              I understand that DJs are <strong>not required</strong> to play
-              any song, regardless of boosts.
+              I understand DJs are <strong>not required</strong> to play any song, regardless of tips.
             </span>
           </label>
 
@@ -109,8 +104,7 @@ export function CheckoutConsentModal({
               className="mt-0.5"
             />
             <span className="text-sm leading-relaxed">
-              I understand that purchases are{" "}
-              <strong>final and non-refundable</strong>.
+              I understand tips are <strong>final and non-refundable</strong>.
             </span>
           </label>
         </div>
