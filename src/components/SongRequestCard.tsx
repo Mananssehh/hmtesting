@@ -1,4 +1,5 @@
-import { ChevronUp, ChevronDown, Sparkles, Rocket, Clock, Flame, Swords, Crown, Pin, Shield, TrendingUp, ArrowUp, ArrowDown, Trash2, Flag } from "lucide-react";
+import { ChevronUp, ChevronDown, Sparkles, HandCoins, Clock, Flame, Swords, Crown, Pin, Shield, TrendingUp, ArrowUp, ArrowDown, Trash2, Flag } from "lucide-react";
+import { ENABLE_BOOSTS, ENABLE_TIPS } from "@/lib/featureFlags";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -48,7 +49,8 @@ interface Props {
   eventId?: string | null;
   myVote?: 1 | -1 | 0;
   onVote?: (value: 1 | -1) => void;
-  onBoost?: () => void;
+  /** Open the Tip-the-DJ flow (or Boost flow when ENABLE_BOOSTS). */
+  onTip?: () => void;
   onRemove?: () => void;
   onReport?: () => void;
   disabled?: boolean;
@@ -61,9 +63,13 @@ interface Props {
 }
 
 
-export function SongRequestCard({ rank, song, eventId, myVote = 0, onVote, onBoost, onRemove, onReport, disabled, battle, mostWanted, pinned, moderation, trending, movement }: Props) {
+export function SongRequestCard({ rank, song, eventId, myVote = 0, onVote, onTip, onRemove, onReport, disabled, battle, mostWanted, pinned, moderation, trending, movement }: Props) {
   const location = useLocation();
-  const score = song.upvotes - song.downvotes + song.boost;
+  // Score is votes only — tips never affect placement.
+  // When boosts are re-enabled, boost is added back as a visibility-only weight.
+  const score = ENABLE_BOOSTS
+    ? song.upvotes - song.downvotes + (song.boost ?? 0)
+    : song.upvotes - song.downvotes;
   const upvoted = myVote === 1;
   const downvoted = myVote === -1;
 
@@ -251,16 +257,16 @@ export function SongRequestCard({ rank, song, eventId, myVote = 0, onVote, onBoo
         </div>
       </div>
 
-      {/* Boost */}
-      {onBoost && song.status !== "played" && song.status !== "skipped" && (
+      {/* Tip the DJ */}
+      {onTip && ENABLE_TIPS && song.status !== "played" && song.status !== "skipped" && (
         <button
-          onClick={onBoost}
-          aria-label="Boost"
-          title="Boost"
+          onClick={onTip}
+          aria-label="Tip the DJ"
+          title="Tip the DJ (does not affect placement)"
           className="shrink-0 h-8 px-3 rounded-full flex items-center gap-1 text-[12px] font-semibold border transition-all duration-200 active:scale-95 tap-target bg-primary/10 text-primary border-primary/25 hover:bg-primary/15"
         >
-          <Rocket className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Boost</span>
+          <HandCoins className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Tip DJ</span>
         </button>
       )}
 

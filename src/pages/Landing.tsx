@@ -12,7 +12,7 @@ import { StartAsDjCta } from "@/components/StartAsDjCta";
 const features = [
   { icon: Vote, title: "Reddit-style voting", desc: "Upvote bangers, downvote skips. The crowd shapes the night." },
   { icon: Radio, title: "Realtime DJ queue", desc: "DJs see top requests update instantly. No more shouting at the booth." },
-  { icon: Sparkles, title: "Boost requests", desc: "Spend points to push a song up the queue — the DJ still picks what plays." },
+  { icon: Sparkles, title: "Tip the DJ", desc: "Tip the DJ in-app to say thanks. Tips don't affect placement — the DJ still picks what plays." },
 ];
 
 const sides = [
@@ -36,7 +36,7 @@ const sides = [
       "Join with a simple event code",
       "Request your favorite songs",
       "Vote songs up or down",
-      "Boost requests to get the DJ’s attention",
+      "Tip the DJ to say thanks (no placement effect)",
       "See what’s playing live",
     ],
     cta: { to: "/join", label: "Join an Event", icon: Headphones },
@@ -67,7 +67,7 @@ const Landing = () => {
           </h1>
           <p className="mt-6 text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto px-2">
             Decks is the live link between DJs and the dancefloor. Guests request and vote on songs in real time.
-            Boosts raise visibility — the DJ still chooses what actually plays.
+            Guests can tip the DJ to show love — tips never affect what gets played.
           </p>
           <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row gap-3 justify-center px-4">
             <StartAsDjCta />
@@ -169,20 +169,21 @@ const Landing = () => {
         <div className="rounded-3xl p-6 sm:p-10 glass-strong">
           <div className="grid md:grid-cols-2 gap-8 items-center">
             <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-primary mb-2">Points &amp; boosts</p>
-              <h2 className="text-2xl sm:text-3xl font-bold mb-3">Earn points. Boost your song’s visibility.</h2>
+              <p className="text-xs uppercase tracking-[0.2em] text-primary mb-2">Points &amp; tips</p>
+              <h2 className="text-2xl sm:text-3xl font-bold mb-3">Earn points. Tip the DJ.</h2>
               <p className="text-muted-foreground mb-6">
                 Every new guest starts with <span className="text-primary font-medium">15 points</span>.
                 Earn more by joining events and requesting songs.
-                Spend points to <span className="text-primary font-medium">boost</span> a request higher in the queue —
-                the DJ still decides what actually plays.
+                Love the set? <span className="text-primary font-medium">Tip the DJ</span> directly —
+                tips support the DJ and don't affect song placement.
               </p>
-...
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {[
                 { v: "+15", l: "Starter points" },
                 { v: "+1", l: "Join an event" },
                 { v: "+1", l: "Request a song" },
-                { v: "1:1", l: "Points → boost" },
+                { v: "$1–$50", l: "Tip the DJ" },
               ].map((s) => (
                 <div key={s.l} className="p-4 rounded-2xl bg-background/60 border border-border/60 text-center">
                   <div className="text-2xl font-bold text-gradient">{s.v}</div>

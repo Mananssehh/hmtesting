@@ -1,142 +1,99 @@
-# Next build sequence
 
-Three deliverables, shipped in order. Each is independently mergeable.
+# Decks Tips Pivot — Implementation Plan
 
----
+This is a large, multi-area change. Calling it out before I start writing code so we agree on scope and the irreversible behavioral changes (especially queue ordering).
 
-## 1. Reporting System (Trust & Safety)
+## 1. Critical behavioral change: tips do NOT affect the queue
 
-Close the enforcement gap behind the Trust & Safety page. Guests can flag bad actors; DJs see reports for their events; admins see everything.
+Today `boost` directly influences ranking. Found in `src/pages/EventPage.tsx`:
 
-### Database (`reports` table)
-
-```text
-reports
-  id            uuid pk
-  reporter_id   uuid  (auth.uid)
-  event_id      uuid  nullable (null for nickname/profile reports)
-  target_type   text  check in ('request','user','nickname')
-  target_id     uuid  (song_request.id OR profile.id)
-  reason        text  check in ('inappropriate','harassment','spam','copyright','other')
-  details       text  nullable, max 500 chars
-  status        text  default 'open'  ('open','reviewing','resolved','dismissed')
-  resolution    text  nullable
-  created_at    timestamptz
-  updated_at    timestamptz
-  resolved_at   timestamptz nullable
-  resolved_by   uuid nullable
+```
+score = (upvotes - downvotes) + (boost * 2)   // line ~334
+secondary sort uses boost desc                 // line ~337
+TRENDING uses boost momentum                   // line ~342
+dominating/battle detection uses boost         // lines 271-301
 ```
 
-RLS:
-- INSERT: authenticated, `reporter_id = auth.uid()`, rate-limited via trigger (max 10/hour/user).
-- SELECT: reporter sees own; event DJ sees reports on their event; admin sees all (`has_role(auth.uid(),'admin')`).
-- UPDATE: event DJ updates `status` + `resolution` for their event's reports; admin updates anything.
-- No DELETE for users (admin only).
+The spec requires tips never affect placement. I will:
 
-Indexes: `(event_id, status)`, `(target_type, target_id)`, `(reporter_id, created_at)`.
+- Change the queue score to `upvotes - downvotes`, then created_at asc. DJ actions (status, played_at) already short-circuit ordering — unchanged.
+- Trending: switch to recent upvote velocity only (no boost term).
+- Remove the "dominating" / "boost battle" overlays (`DominatingBanner`, `BoostFX`, `BoostActivityStrip`, `useBoostFeed`) from the guest event view. They're tied to boost mechanics and conflict with the tips-don't-affect-playback promise.
+- DB column `song_requests.boost` is **left in place** (used by historical analytics + future boost flag). It just stops being read by the sort. Aggregated `total_boosts` in `get_public_profile` will be renamed in the UI to "Tips sent" — value still comes from the same column for now.
 
-GRANTs: `SELECT, INSERT, UPDATE` to authenticated; `ALL` to service_role.
+If you'd rather keep the dominating/battle FX (rebranded as "Top Tipped"), say so and I'll keep them as pure visual flair with no ordering effect.
 
-### UI
+## 2. Rename UI Boost → Tip (guest-facing only)
 
-- **`ReportDialog.tsx`** — reusable modal: reason radio group + optional details textarea + submit. Props: `targetType`, `targetId`, `eventId?`.
-- **Report entry points**:
-  - `SongRequestCard.tsx` — overflow menu "Report request" (guest side).
-  - `NowPlayingDisplay.tsx` — overflow "Report current track" (guest side, when source is guest request).
-  - `PublicProfile.tsx` — "Report user" / "Report nickname" buttons.
-- **DJ view**: new section in `DJEventManage.tsx` ("Reports" tab/card) listing open reports for the event with a status dropdown and a quick-action ("Remove request", "Ban guest" — reusing existing flows).
-- **Admin view**: lightweight `/admin/reports` page (admin-only route) — list all, filter by status. Keep minimal.
+Files to update (text + component renames where it makes sense):
 
-### Acceptance
+- `src/components/BoostDialog.tsx` → `TipDialog.tsx`. "Boost the Vibe" → "Tip the DJ". Pack labels become dollar amounts ($1/$3/$5/$10/$20). Custom min $1, max $50. Mandatory disclaimer + acknowledge checkbox required before the Tip button enables.
+- `src/components/SongRequestCard.tsx` — "Boost" button → "Tip DJ", rocket icon → `HandCoins` (lucide).
+- `src/pages/EventPage.tsx` — copy, SEO description, modal labels.
+- `src/pages/Earnings.tsx` → "Tip earnings", stats: Total tips, Today, Week, Month, Tip count.
+- `src/pages/Profile.tsx` / `PublicProfile.tsx` — "Boosts" stat → "Tips".
+- `src/pages/Analytics.tsx` — chart/table labels.
+- `src/pages/Landing.tsx`, `src/pages/Auth.tsx`, `src/pages/Join.tsx`, `signup.tsx` email, legal pages (`Terms`, `Privacy`, `RefundPolicy`, `TrustSafety`) — replace user-facing "boost" copy.
+- Internal vars (`boostTarget`, `useBoostFeed`, `BoostFX`) stay named as-is in code where their files are deleted/kept behind the flag; no functional impact.
 
-- Guest can report a request, nickname, or user; sees toast and cannot submit duplicates within 60s.
-- DJ sees open report count badge on event manage page.
-- Updating status logs `resolved_at` + `resolved_by` via trigger.
+DB column names, RPC names (`boost_request`, `boost` column), and `boost_purchases` table are **not** renamed — too risky for a copy change. They're hidden behind the feature flag layer.
 
----
+## 3. Feature flag
 
-## 2. Activity Ledger UI
-
-Surface `points_transactions` (already populated) as a clean, scannable history. No schema changes.
-
-### Where
-
-New tab inside `src/pages/Profile.tsx` → "Activity" (alongside existing "Recent activity"), OR a dedicated `/profile/activity` route. Pick the tab to keep nav flat.
-
-### Data
-
-Single query against `points_transactions` joined with `song_requests` (for title/artist) and `events` (for event name), filtered to `auth.uid()`, paginated (50 per page, "Load more").
-
-### Row format
-
-```text
-+15  Starter points                                        Today, 9:14 AM
-+1   Joined "Friday Night @ Capitol"                       Yesterday, 11:02 PM
-+1   Requested "Tumo Weto" — Mavo                          Yesterday, 11:04 PM
--5   Boosted "How" — Lil Baby                              Yesterday, 11:18 PM
-+5   Refunded — request removed                            Yesterday, 11:25 PM
+New `src/lib/featureFlags.ts`:
+```ts
+export const ENABLE_TIPS = true;
+export const ENABLE_BOOSTS = false;
 ```
 
-- Green for `+`, red for `-`, muted for refunds.
-- Running balance shown in header (current `profile.points`) + delta for current view.
-- Filters: All / Earned / Spent / Refunded.
-- Empty state copy: "No activity yet. Join an event to earn points."
+`TipDialog` reads `ENABLE_TIPS`. Old `BoostDialog` is removed from the EventPage import chain. Re-enabling boosts later = flip the flag and swap dialog import; no schema work needed.
 
-### Acceptance
+## 4. New limits + server enforcement
 
-- Every row has a reason and a human timestamp.
-- Clicking a row with `song_request_id` jumps to that event page (when not archived).
-- Loads under 300ms for typical balances (<500 rows).
+Update `public.check_boost_purchase_cap` (renamed conceptually, function name kept):
+- max single: 2000¢ → **5000¢ ($50)**
+- max 24h: 5000¢ → **10000¢ ($100)**
+- max per event: keep count cap but also enforce **10000¢ ($100) sum per event**
 
----
+Add a new column `boost_purchases.event_id` is already present. Sum by event_id over status in ('pending','succeeded').
 
-## 3. `purchase_consents` table (Stripe foundation)
+`src/lib/purchaseCaps.ts` constants updated to match. Client pre-check shows the friendly message; server is source of truth.
 
-Pure plumbing. No UI yet — the checkout acknowledgement modal lands in the P1 Stripe build.
+Stripe stays OFF. No checkout edge function is enabled. The cap function is still called by the consent modal so the UX is real.
 
-### Schema
+## 5. Mandatory disclaimer
 
-```text
-purchase_consents
-  id            uuid pk
-  user_id       uuid  (auth.uid)
-  version       text  not null    -- e.g. 'v1-2026-06-07'
-  accepted_at   timestamptz default now()
-  ip            inet  nullable
-  user_agent    text  nullable
-  unique (user_id, version)
-```
+Exact text, shown in TipDialog and CheckoutConsentModal:
 
-RLS:
-- INSERT: authenticated, `user_id = auth.uid()`.
-- SELECT: own rows only; admin sees all via `has_role`.
-- No UPDATE / DELETE.
+> Tips support the DJ. Tips do not affect song placement and do not guarantee playback, prioritization, or any specific action by the DJ.
 
-GRANTs: `SELECT, INSERT` to authenticated; `ALL` to service_role.
+Acknowledge checkbox required. `purchase_consents` row continues to be written on confirm (already implemented).
 
-Constant `CURRENT_CONSENT_VERSION = 'v1-2026-06-07'` exported from `src/lib/consent.ts` so the future checkout modal and any server-side Stripe edge function reference the same value. Bumping the constant re-prompts users.
+## 6. Analytics fields
 
-### Acceptance
+`boost_purchases` already has: user_id, event_id, amount_cents, status, created_at. The DJ id is derivable via `events.dj_id`. I'll add a view `public.tip_analytics` joining those so future reporting is one query. No new write paths.
 
-- Migration applies cleanly.
-- Helper `recordConsent(version)` in `src/lib/consent.ts` ready for the future checkout modal to call.
+## 7. Removed surfaces
 
----
+- `BoostFX`, `BoostActivityStrip`, `DominatingBanner`, `useBoostFeed` removed from EventPage. Files stay on disk in case ENABLE_BOOSTS flips back, but unused.
+- Boost-history list (if any in profile) relabeled "Tip history".
 
-## Out of scope (this build)
+## 8. Acceptance checks I will run after implementation
 
-- Checkout acknowledgement modal UI (waits for Stripe enable).
-- Boost caps, Turnstile, account deletion, data export, cookie banner — all tracked in `.lovable/plan.md`.
-- Search audit — manual QA pass, no code.
-- Real-world DJ stress test — operational, not code.
+- grep audit: zero guest-facing "Boost"/"boost" strings outside DB internals and the disabled boost code path. Report attached.
+- `EventPage` ordering test: a request with boost=0 and 5 upvotes beats a request with boost=100 and 0 upvotes.
+- Cap function:
+  - $1, $20, $50 single → allowed
+  - $51 single → blocked ("exceeds single-purchase limit")
+  - 5 × $20 in one event → allowed; 6th → blocked at $100 event cap
+  - $101 in 24h across events → blocked
+- ENABLE_BOOSTS=true flip restores Tip→Boost label and re-mounts FX components (smoke test only).
+- Stripe checkout edge function: not created.
 
-## Build order in one pass
+## Files touched (estimate)
 
-1. Migration: `reports` + `purchase_consents` (single migration, separate sections).
-2. `ReportDialog.tsx` + wire into the three entry points.
-3. DJ reports section in `DJEventManage.tsx`.
-4. Admin reports page + route.
-5. Activity Ledger tab in Profile.
-6. `src/lib/consent.ts` helper.
+- New: `src/components/TipDialog.tsx`, `src/lib/featureFlags.ts`, migration for cap function + tip_analytics view.
+- Edited: `EventPage.tsx`, `SongRequestCard.tsx`, `Earnings.tsx`, `Profile.tsx`, `PublicProfile.tsx`, `Analytics.tsx`, `Landing.tsx`, `Auth.tsx`, `Join.tsx`, legal pages, signup email, `purchaseCaps.ts`, `CheckoutConsentModal.tsx`.
+- Removed from render tree (files kept): `BoostDialog`, `BoostFX`, `BoostActivityStrip`, `DominatingBanner`, `useBoostFeed`.
 
-Approve to build all three in sequence.
+Approve and I'll ship it in one batch. Speak up now if you want the dominating/battle FX rebranded instead of removed, or if any DB rename is required.

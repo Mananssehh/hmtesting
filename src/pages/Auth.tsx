@@ -93,7 +93,7 @@ const Auth = () => {
           <Disc3 className="h-12 w-12 text-primary mx-auto mb-4 animate-float" strokeWidth={1.5} />
           <h1 className="text-[28px] sm:text-3xl font-semibold tracking-tight">Welcome to Decks</h1>
           <p className="text-muted-foreground mt-2 text-[15px]">
-            {djIntent ? "Create your account to start DJing." : "Sign in to vote, request, and boost."}
+            {djIntent ? "Create your account to start DJing." : "Sign in to vote, request, and tip the DJ."}
           </p>
         </div>
 

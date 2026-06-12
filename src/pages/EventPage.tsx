@@ -9,7 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { AppHeader } from "@/components/AppHeader";
 import { SEO } from "@/components/SEO";
 import { SongRequestCard, SongRequestRow } from "@/components/SongRequestCard";
-import { BoostDialog } from "@/components/BoostDialog";
+import { TipDialog } from "@/components/TipDialog";
 import { ReportDialog } from "@/components/ReportDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,11 +21,8 @@ import { searchMusic, MusicSearchResult, normalizeKey, RateLimitedError } from "
 import { formatDuration, platformLabel } from "@/lib/searchLinks";
 import { PreviewButton } from "@/components/PreviewButton";
 import { NowPlayingDisplay } from "@/components/NowPlayingDisplay";
-import { useBoostFeed } from "@/hooks/useBoostFeed";
 import { useTrending } from "@/hooks/useTrending";
-import { BoostFX } from "@/components/BoostFX";
-import { BoostActivityStrip } from "@/components/BoostActivityStrip";
-import { DominatingBanner } from "@/components/DominatingBanner";
+import { ENABLE_BOOSTS } from "@/lib/featureFlags";
 
 import { useNowPlaying } from "@/hooks/useNowPlaying";
 
@@ -260,49 +257,9 @@ const EventPage = () => {
     );
   }, [nowPlaying, broadcastNowPlaying, songs]);
 
-  // Live boost activity (derived from realtime song updates)
-  const boostEvents = useBoostFeed(songs);
-
-  // "Currently dominating" + boost battle detection (active queue only).
-  // Battle glow only when songs are genuinely neck-and-neck — not just high score.
-  const { dominatingSong, dominatingLead, battleIds } = useMemo(() => {
-    const active = songs
-      .filter((s) => s.status !== "removed" && s.status !== "playing" && s.status !== "played" && s.status !== "skipped")
-      .filter((s) => (s.boost ?? 0) > 0)
-      .sort((a, b) => (b.boost ?? 0) - (a.boost ?? 0));
-    const top = active[0];
-    const second = active[1];
-    const lead = top && second ? (top.boost ?? 0) - (second.boost ?? 0) : (top?.boost ?? 0);
-
-    // Cluster songs from the top while each is "close" to the previous one.
-    // Close = diff <= 5 points OR within 10% of the higher value.
-    const battle = new Set<string>();
-    const CLOSE_ABS = 5;
-    const CLOSE_PCT = 0.10;
-    const isClose = (hi: number, lo: number) => {
-      const diff = hi - lo;
-      return diff <= CLOSE_ABS || diff <= hi * CLOSE_PCT;
-    };
-    if (top && second) {
-      const cluster: typeof active = [top];
-      for (let i = 1; i < active.length; i++) {
-        const prev = cluster[cluster.length - 1].boost ?? 0;
-        const cur = active[i].boost ?? 0;
-        if (isClose(prev, cur)) cluster.push(active[i]);
-        else break;
-      }
-      // Only mark a battle if at least 2 songs cluster AND they have meaningful boost.
-      if (cluster.length >= 2 && (top.boost ?? 0) >= 10) {
-        cluster.forEach((s) => battle.add(s.id));
-      }
-    }
-
-    return {
-      dominatingSong: top && (top.boost ?? 0) >= 25 ? top : null,
-      dominatingLead: lead,
-      battleIds: battle,
-    };
-  }, [songs]);
+  // Boost-driven "dominating" / "battle" overlays are paused along with ENABLE_BOOSTS.
+  // Queue ordering is strictly votes + recency + DJ actions — tips never affect placement.
+  const battleIds = useMemo(() => new Set<string>(), []);
 
   const playedSongs = useMemo(() => {
     return songs
@@ -328,24 +285,21 @@ const EventPage = () => {
     const ts = (s: SongRequestRow) => +new Date(s.created_at);
 
     if (sort === "top") {
-      // TOP = best overall. Boost weighted 2x (purchased intent),
-      // plus net upvotes, then recency as tiebreaker.
-      const topScore = (s: SongRequestRow) =>
-        (s.upvotes - s.downvotes) + (s.boost ?? 0) * 2;
+      // TOP = votes only. Tips MUST NOT affect placement.
+      // Tiebreakers: earlier request wins (FIFO fairness), then id for stability.
+      const netVotes = (s: SongRequestRow) => s.upvotes - s.downvotes;
       list = [...list].sort((a, b) =>
-        topScore(b) - topScore(a) ||
-        (b.boost ?? 0) - (a.boost ?? 0) ||
-        ts(b) - ts(a) ||
+        netVotes(b) - netVotes(a) ||
+        ts(a) - ts(b) ||
         a.id.localeCompare(b.id),
       );
     } else {
-      // TRENDING = hottest right now. Heavy weight on recent boost momentum.
+      // TRENDING = recent upvote velocity. No boost/tip term.
       list = [...list].sort((a, b) => {
         const sa = trending.scoreMap.get(a.id) ?? 0;
         const sb = trending.scoreMap.get(b.id) ?? 0;
         return (
           sb - sa ||
-          (trending.recentBoostMap.get(b.id) ?? 0) - (trending.recentBoostMap.get(a.id) ?? 0) ||
           ts(b) - ts(a) ||
           a.id.localeCompare(b.id)
         );
@@ -574,7 +528,7 @@ const EventPage = () => {
 
   return (
     <div className="min-h-screen pb-28 sm:pb-10" style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 6rem)" }}>
-      <SEO title="Live event" description="Request songs, vote, and boost your favorites in real time on Decks." path="/event" noindex />
+      <SEO title="Live event" description="Request songs, vote, and tip the DJ in real time on Decks." path="/event" noindex />
       <AppHeader />
       <div className="container max-w-3xl px-4 sm:px-6 py-5 sm:py-10">
         {/* Event header */}
@@ -691,13 +645,7 @@ const EventPage = () => {
           </Dialog>
         </div>
 
-        {/* Boost social layer: dominator + live activity */}
-        {!isEnded && sort !== "played" && dominatingSong && (
-          <DominatingBanner song={dominatingSong} lead={dominatingLead} />
-        )}
-        {!isEnded && sort !== "played" && (
-          <BoostActivityStrip events={boostEvents} />
-        )}
+        {/* Boost FX paused with ENABLE_BOOSTS=false. Tips never affect placement. */}
 
         {/* Sort tabs */}
         <Tabs value={sort} onValueChange={(v) => setSort(v as SortMode)} className="mb-4">
@@ -754,7 +702,7 @@ const EventPage = () => {
                 myVote={myVotes[s.id] ?? 0}
 
                 onVote={(v) => handleVote(s.id, v)}
-                onBoost={isLive ? () => setBoostTarget(s) : undefined}
+                onTip={isLive ? () => setBoostTarget(s) : undefined}
                 onRemove={s.requested_by === user?.id && s.status === "pending" ? () => setRemoveTarget(s) : undefined}
                 onReport={user && s.requested_by !== user.id ? () => setReportTarget(s) : undefined}
                 disabled={!!pendingVotes[s.id]}
@@ -767,8 +715,7 @@ const EventPage = () => {
         )}
       </div>
 
-      {/* Live boost FX overlay (toasts + mega) */}
-      <BoostFX events={boostEvents} />
+      {/* Boost FX overlay removed — paused with ENABLE_BOOSTS=false */}
 
       {/* Mobile sticky request CTA */}
       {isLive && (
@@ -784,19 +731,12 @@ const EventPage = () => {
       )}
 
       {boostTarget && (
-        <BoostDialog
+        <TipDialog
           open={!!boostTarget}
           onOpenChange={(o) => !o && setBoostTarget(null)}
-          songRequestId={boostTarget.id}
+          eventId={eventInfo?.id ?? null}
+          djName={eventInfo?.dj_name ?? null}
           songTitle={`${boostTarget.title} — ${boostTarget.artist}`}
-          onBoosted={(nextBoost) => {
-            setSongs((prev) =>
-              prev.map((song) =>
-                song.id === boostTarget.id ? { ...song, boost: nextBoost } : song,
-              ),
-            );
-            setBoostTarget(null);
-          }}
         />
       )}
 

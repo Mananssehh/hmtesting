@@ -133,12 +133,11 @@ const DJEventManage = () => {
         if (ap != null && bp != null) return ap - bp;
         if (ap != null) return -1;
         if (bp != null) return 1;
-        // 1) Boost, 2) net upvotes, 3) recent activity
-        if ((b.boost ?? 0) !== (a.boost ?? 0)) return (b.boost ?? 0) - (a.boost ?? 0);
+        // Tips never affect ordering. Sort by net upvotes, then earliest request wins.
         const netA = a.upvotes - a.downvotes;
         const netB = b.upvotes - b.downvotes;
         if (netB !== netA) return netB - netA;
-        return +new Date(b.created_at) - +new Date(a.created_at);
+        return +new Date(a.created_at) - +new Date(b.created_at);
       }),
     [songs],
   );
@@ -162,7 +161,7 @@ const DJEventManage = () => {
     if (filter === "played") return [...songs].filter((s) => s.status === "played" || s.status === "skipped")
       .sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at));
     return [...songs].filter((s) => s.status !== "removed")
-      .sort((a, b) => (b.upvotes - b.downvotes + b.boost) - (a.upvotes - a.downvotes + a.boost));
+      .sort((a, b) => (b.upvotes - b.downvotes) - (a.upvotes - a.downvotes));
   }, [songs, queueSongs, filter]);
 
   const counts = useMemo(() => ({
