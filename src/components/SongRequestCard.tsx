@@ -257,16 +257,16 @@ export function SongRequestCard({ rank, song, eventId, myVote = 0, onVote, onTip
         </div>
       </div>
 
-      {/* Boost */}
-      {onBoost && song.status !== "played" && song.status !== "skipped" && (
+      {/* Tip the DJ */}
+      {onTip && ENABLE_TIPS && song.status !== "played" && song.status !== "skipped" && (
         <button
-          onClick={onBoost}
-          aria-label="Boost"
-          title="Boost"
+          onClick={onTip}
+          aria-label="Tip the DJ"
+          title="Tip the DJ (does not affect placement)"
           className="shrink-0 h-8 px-3 rounded-full flex items-center gap-1 text-[12px] font-semibold border transition-all duration-200 active:scale-95 tap-target bg-primary/10 text-primary border-primary/25 hover:bg-primary/15"
         >
-          <Rocket className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Boost</span>
+          <HandCoins className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Tip DJ</span>
         </button>
       )}
 
