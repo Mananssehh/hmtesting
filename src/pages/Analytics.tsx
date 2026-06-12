@@ -147,10 +147,10 @@ const Analytics = () => {
       { metric: "Total guests", value: participants },
       { metric: "Total requests", value: reqs.length },
       { metric: "Total votes", value: voteCount },
-      { metric: "Total boosts (pts)", value: totalBoosts },
+      { metric: "Total tips (pts)", value: totalBoosts },
       { metric: "Total points spent", value: pointsSpent },
       { metric: "Top requested", value: topRequested[0] ? `${topRequested[0].title} — ${topRequested[0].artist}` : "" },
-      { metric: "Top boosted", value: topBoosted[0] ? `${topBoosted[0].title} — ${topBoosted[0].artist}` : "" },
+      { metric: "Top tipped", value: topBoosted[0] ? `${topBoosted[0].title} — ${topBoosted[0].artist}` : "" },
       { metric: "Most active guest", value: mostActive ? `${mostActive[0]} (${mostActive[1]})` : "" },
       { metric: "Most played artist", value: topArtist ? `${topArtist[0]} (${topArtist[1]})` : "" },
       { metric: "Peak hour", value: peakHour ? `${peakHour[0]} (${peakHour[1]} requests)` : "" },
@@ -194,7 +194,7 @@ const Analytics = () => {
           <Stat icon={<Users className="h-4 w-4" />} label="Guests" value={participants} />
           <Stat icon={<Music className="h-4 w-4" />} label="Requests" value={reqs.length} />
           <Stat icon={<Vote className="h-4 w-4" />} label="Votes" value={voteCount} />
-          <Stat icon={<Rocket className="h-4 w-4" />} label="Boosts (pts)" value={totalBoosts} />
+          <Stat icon={<Rocket className="h-4 w-4" />} label="Tips (pts)" value={totalBoosts} />
           <Stat icon={<Sparkles className="h-4 w-4" />} label="Points spent" value={pointsSpent} />
           <Stat icon={<Trophy className="h-4 w-4" />} label="Most played artist" value={topArtist?.[0] ?? "—"} small />
           <Stat icon={<Users className="h-4 w-4" />} label="Most active guest" value={mostActive?.[0] ?? "—"} small />
@@ -208,7 +208,7 @@ const Analytics = () => {
               <ListRow key={r.id} index={i + 1} title={r.title} sub={r.artist} value={`${r.score} pts`} />
             ))}
           </ListCard>
-          <ListCard title="Top 10 boosted">
+          <ListCard title="Top 10 tipped">
             {topBoosted.length === 0 && <Empty />}
             {topBoosted.map((r, i) => (
               <ListRow key={r.id} index={i + 1} title={r.title} sub={r.artist} value={`+${r.boost}`} />

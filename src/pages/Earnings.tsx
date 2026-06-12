@@ -167,9 +167,9 @@ export default function Earnings() {
             <Button asChild variant="ghost" size="sm" className="mb-2 -ml-2">
               <Link to="/dj"><ArrowLeft className="h-4 w-4 mr-1" /> Dashboard</Link>
             </Button>
-            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Earnings</h1>
+            <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">Tip earnings</h1>
             <p className="text-muted-foreground mt-1">
-              Boost activity across your events{profile?.nickname ? `, ${profile.nickname}` : ""}.
+              Tip activity across your events{profile?.nickname ? `, ${profile.nickname}` : ""}.
             </p>
           </div>
           <Badge variant="outline" className="border-primary/40 text-primary">
@@ -182,16 +182,16 @@ export default function Earnings() {
           <CardContent className="p-5 sm:p-7">
             <div className="grid sm:grid-cols-2 gap-6 items-center">
               <div>
-                <div className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Boost Activity</div>
+                <div className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Tip Activity</div>
                 <div className="mt-2 flex items-baseline gap-2">
                   <span className="text-5xl sm:text-6xl font-bold tabular-nums text-primary drop-shadow-[0_0_20px_hsl(var(--primary)/0.4)]">
                     {loading ? "—" : stats.totalBoosts.toLocaleString()}
                   </span>
-                  <span className="text-muted-foreground text-sm">boosts used</span>
+                  <span className="text-muted-foreground text-sm">tip points</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-3 leading-relaxed">
-                  Real cash payouts unlock when Stripe Connect is enabled. For now, this is the
-                  monetization signal we'll convert into revenue.
+                  Cash payouts unlock when Stripe Connect is enabled. Tips do not affect song placement —
+                  they're a way for guests to thank you for the set.
                 </p>
               </div>
               {/* Mini bar chart */}
@@ -218,9 +218,9 @@ export default function Earnings() {
 
         {/* Time windows */}
         <div className="grid grid-cols-3 gap-3">
-          <Mini label="Today" value={stats.boostsToday} suffix="boosts" loading={loading} />
-          <Mini label="Last 7 days" value={stats.boostsWeek} suffix="boosts" loading={loading} />
-          <Mini label="Last 30 days" value={stats.boostsMonth} suffix="boosts" loading={loading} />
+          <Mini label="Today" value={stats.boostsToday} suffix="tips" loading={loading} />
+          <Mini label="Last 7 days" value={stats.boostsWeek} suffix="tips" loading={loading} />
+          <Mini label="Last 30 days" value={stats.boostsMonth} suffix="tips" loading={loading} />
         </div>
 
         {/* Engagement */}
@@ -228,7 +228,7 @@ export default function Earnings() {
           <h2 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-3">Engagement</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Stat icon={<Music className="h-4 w-4" />} label="Requests" value={stats.totalRequests} loading={loading} />
-            <Stat icon={<Zap className="h-4 w-4" />} label="Boosts" value={stats.totalBoosts} loading={loading} />
+            <Stat icon={<Zap className="h-4 w-4" />} label="Tips" value={stats.totalBoosts} loading={loading} />
             <Stat icon={<Users className="h-4 w-4" />} label="Guests" value={stats.uniqueGuests} loading={loading} />
             <Stat
               icon={<TrendingUp className="h-4 w-4" />}
@@ -241,7 +241,7 @@ export default function Earnings() {
 
         {/* Top songs */}
         <section className="grid lg:grid-cols-3 gap-4">
-          <SongList title="Most boosted" rows={stats.mostBoosted} metric="boost" loading={loading} />
+          <SongList title="Most tipped" rows={stats.mostBoosted} metric="boost" loading={loading} />
           <SongList title="Most requested" rows={stats.mostRequested} metric="count" loading={loading} />
           <SongList title="Most played" rows={stats.mostPlayed} metric="played" loading={loading} />
         </section>
@@ -269,7 +269,7 @@ export default function Earnings() {
                     </div>
                     <div className="text-right">
                       <div className="font-bold tabular-nums text-primary">{g.boost}</div>
-                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">boosts</div>
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">tips</div>
                     </div>
                   </div>
                 ))
@@ -338,7 +338,7 @@ function SongList({
   metric: "boost" | "count" | "played";
   loading: boolean;
 }) {
-  const metricLabel = metric === "boost" ? "boosts" : metric === "count" ? "requests" : "plays";
+  const metricLabel = metric === "boost" ? "tips" : metric === "count" ? "requests" : "plays";
   return (
     <Card className="bg-card/60">
       <CardContent className="p-4">
