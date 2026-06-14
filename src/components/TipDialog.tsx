@@ -92,8 +92,6 @@ export function TipDialog({ open, onOpenChange, eventId, djName, songTitle }: Pr
       } else {
         toast.error(msg);
       }
-    } catch_legacy: {
-      toast.error(e?.message ?? "Couldn't process tip");
     } finally {
       setSubmitting(false);
     }
