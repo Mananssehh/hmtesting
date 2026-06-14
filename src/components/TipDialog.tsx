@@ -11,9 +11,10 @@ import {
 } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
-import { checkBoostPurchaseCap, PURCHASE_CAPS } from "@/lib/purchaseCaps";
+import { PURCHASE_CAPS } from "@/lib/purchaseCaps";
 import { recordConsent, CURRENT_CONSENT_VERSION } from "@/lib/consent";
 import { ENABLE_LIVE_STRIPE } from "@/lib/featureFlags";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Props {
   open: boolean;
@@ -62,23 +63,7 @@ export function TipDialog({ open, onOpenChange, eventId, djName, songTitle }: Pr
 
     setSubmitting(true);
     try {
-      // Server-side cap check (single $50, $100/event, $100/24h)
-      const cap = await checkBoostPurchaseCap({ amountCents, eventId });
-      if (!cap.ok) {
-        const msg = cap.error ?? "Tip blocked";
-        if (/single-purchase/i.test(msg)) {
-          toast.error(`You can tip up to $${MAX_TIP_DOLLARS} in a single tip.`);
-        } else if (/24h|daily/i.test(msg)) {
-          toast.error("You've reached today's tip limit. Try again later.");
-        } else if (/event/i.test(msg)) {
-          toast.error(`You've reached the $${PURCHASE_CAPS.maxPerEventCents / 100} tip limit for this event.`);
-        } else {
-          toast.error(msg);
-        }
-        return;
-      }
-
-      // Record consent against current version (idempotent).
+      // Record consent (server-side checkout re-verifies both consent and caps).
       await recordConsent(CURRENT_CONSENT_VERSION);
 
       if (!ENABLE_LIVE_STRIPE) {
@@ -90,9 +75,24 @@ export function TipDialog({ open, onOpenChange, eventId, djName, songTitle }: Pr
         return;
       }
 
-      // Future: open Stripe Checkout edge function here.
-      toast.error("Payments aren't live yet.");
+      const { data, error } = await supabase.functions.invoke("tip-create-checkout", {
+        body: { event_id: eventId, amount_cents: amountCents },
+      });
+      if (error) throw error;
+      if (!data?.url) throw new Error("Couldn't start checkout");
+      window.location.href = data.url as string;
     } catch (e: any) {
+      const msg = e?.message ?? "Couldn't process tip";
+      if (/single-tip|single-purchase/i.test(msg)) {
+        toast.error(`You can tip up to $${MAX_TIP_DOLLARS} in a single tip.`);
+      } else if (/24h|daily/i.test(msg)) {
+        toast.error("You've reached today's tip limit. Try again later.");
+      } else if (/event/i.test(msg)) {
+        toast.error(`You've reached the $${PURCHASE_CAPS.maxPerEventCents / 100} tip limit for this event.`);
+      } else {
+        toast.error(msg);
+      }
+    } catch_legacy: {
       toast.error(e?.message ?? "Couldn't process tip");
     } finally {
       setSubmitting(false);

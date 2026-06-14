@@ -17,4 +17,4 @@ export const ENABLE_BOOSTS = false;
  * "Tips launching soon" toast instead of opening Stripe Checkout.
  * Flip to true only after a live Stripe Connect integration ships.
  */
-export const ENABLE_LIVE_STRIPE = false;
+export const ENABLE_LIVE_STRIPE = true;
