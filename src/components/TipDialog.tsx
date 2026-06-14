@@ -218,6 +218,12 @@ export function TipDialog({ open, onOpenChange, eventId, djName, songTitle }: Pr
               DJ plays, prioritizes, or queues any song.
             </span>
           </label>
+
+          {payoutReady === false && (
+            <div className="rounded-xl border border-rose-500/30 bg-rose-500/[0.08] p-3 text-[12px] leading-relaxed text-rose-100">
+              {payoutMessage || "This DJ hasn't set up payouts yet — tips aren't available for this event."}
+            </div>
+          )}
         </div>
 
         <div className="relative flex gap-2">
@@ -232,7 +238,7 @@ export function TipDialog({ open, onOpenChange, eventId, djName, songTitle }: Pr
           <Button
             variant="premium"
             onClick={submit}
-            disabled={submitting || !validAmount || !acknowledged}
+            disabled={submitting || !validAmount || !acknowledged || payoutReady === false}
             className="flex-[2] h-11 text-base font-semibold"
           >
             {submitting ? (
