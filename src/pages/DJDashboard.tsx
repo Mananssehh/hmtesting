@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { PayoutStatusCard } from "@/components/PayoutStatusCard";
 import { eventSchema, roomCodeSchema } from "@/lib/validation";
 import { generateRoomCode } from "@/lib/roomCode";
 import { EventQR } from "@/components/EventQR";
@@ -181,11 +182,16 @@ const DJDashboard = () => {
         </div>
 
         {/* Quick stats */}
-        <div className="grid grid-cols-3 gap-3 mb-8">
+        <div className="grid grid-cols-3 gap-3 mb-6">
           <StatCard label="Active events" value={active.length} />
           <StatCard label="Past events" value={past.length} />
           <StatCard label="Total" value={events.length} />
         </div>
+
+        <div className="mb-8">
+          <PayoutStatusCard />
+        </div>
+
 
         {events.length === 0 ? (
           <div className="text-center py-16 sm:py-20 rounded-2xl glass px-4">

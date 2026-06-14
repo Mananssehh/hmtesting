@@ -1,0 +1,88 @@
+import { useEffect, useState } from "react";
+import { CircleDollarSign, ExternalLink, Loader2, RefreshCw, ShieldCheck } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+
+type Status = "not_started" | "pending" | "action_required" | "ready" | "loading";
+
+const LABELS: Record<Exclude<Status, "loading">, { label: string; tone: string }> = {
+  not_started: { label: "Not Started", tone: "bg-muted text-muted-foreground" },
+  pending: { label: "Pending Verification", tone: "bg-amber-500/20 text-amber-200" },
+  action_required: { label: "Action Required", tone: "bg-orange-500/20 text-orange-200" },
+  ready: { label: "Ready for Tips", tone: "bg-emerald-500/20 text-emerald-200" },
+};
+
+export function PayoutStatusCard() {
+  const [status, setStatus] = useState<Status>("loading");
+  const [busy, setBusy] = useState(false);
+
+  const refresh = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke("stripe-connect-refresh");
+      if (error) throw error;
+      setStatus((data?.status as Status) ?? "not_started");
+    } catch (e: any) {
+      console.error(e);
+      setStatus("not_started");
+    }
+  };
+
+  useEffect(() => { refresh(); }, []);
+
+  const onSetUp = async () => {
+    setBusy(true);
+    try {
+      const origin = window.location.origin;
+      const { data, error } = await supabase.functions.invoke("stripe-connect-onboard", {
+        body: { return_url: `${origin}/dj?stripe=return`, refresh_url: `${origin}/dj?stripe=refresh` },
+      });
+      if (error) throw error;
+      if (data?.url) window.location.href = data.url;
+    } catch (e: any) {
+      toast.error(e?.message ?? "Couldn't start onboarding");
+      setBusy(false);
+    }
+  };
+
+  const meta = status === "loading" ? null : LABELS[status];
+  const isReady = status === "ready";
+
+  return (
+    <Card className="bg-card/60 border-white/[0.08]">
+      <CardContent className="py-5 space-y-3">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-2">
+            <CircleDollarSign className="h-5 w-5 text-primary" />
+            <h3 className="font-semibold">Payout Status</h3>
+          </div>
+          {meta ? (
+            <Badge className={`${meta.tone} border-0`}>{meta.label}</Badge>
+          ) : (
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          )}
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Connect your secure Stripe payout account to receive tips directly through Stripe.
+          Decks keeps a 30% platform fee; you receive 70% of every tip.
+        </p>
+        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+          <ShieldCheck className="h-3.5 w-3.5" /> Test mode · No banking forms inside Decks
+        </div>
+        <div className="flex flex-wrap gap-2 pt-1">
+          {!isReady && (
+            <Button onClick={onSetUp} disabled={busy} variant="premium">
+              {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ExternalLink className="mr-2 h-4 w-4" />}
+              {status === "not_started" ? "Set Up Payouts" : "Continue Setup"}
+            </Button>
+          )}
+          <Button onClick={refresh} variant="outline" size="sm" disabled={status === "loading"}>
+            <RefreshCw className="mr-1 h-3.5 w-3.5" /> Refresh
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}

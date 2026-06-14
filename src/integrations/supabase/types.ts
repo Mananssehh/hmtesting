@@ -110,6 +110,42 @@ export type Database = {
         }
         Relationships: []
       }
+      dj_payout_accounts: {
+        Row: {
+          charges_enabled: boolean
+          created_at: string
+          details_submitted: boolean
+          last_synced_at: string | null
+          livemode: boolean
+          payouts_enabled: boolean
+          stripe_account_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          charges_enabled?: boolean
+          created_at?: string
+          details_submitted?: boolean
+          last_synced_at?: string | null
+          livemode?: boolean
+          payouts_enabled?: boolean
+          stripe_account_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          charges_enabled?: boolean
+          created_at?: string
+          details_submitted?: boolean
+          last_synced_at?: string | null
+          livemode?: boolean
+          payouts_enabled?: boolean
+          stripe_account_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       dj_role_claims: {
         Row: {
           attempted_at: string
@@ -130,6 +166,71 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      dj_tips: {
+        Row: {
+          created_at: string
+          currency: string
+          dj_id: string
+          event_id: string | null
+          failure_reason: string | null
+          gross_amount_cents: number
+          id: string
+          livemode: boolean
+          net_amount_cents: number
+          platform_fee_cents: number
+          status: string
+          stripe_checkout_session_id: string | null
+          stripe_destination_account: string | null
+          stripe_payment_intent_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          dj_id: string
+          event_id?: string | null
+          failure_reason?: string | null
+          gross_amount_cents: number
+          id?: string
+          livemode?: boolean
+          net_amount_cents: number
+          platform_fee_cents: number
+          status?: string
+          stripe_checkout_session_id?: string | null
+          stripe_destination_account?: string | null
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          dj_id?: string
+          event_id?: string | null
+          failure_reason?: string | null
+          gross_amount_cents?: number
+          id?: string
+          livemode?: boolean
+          net_amount_cents?: number
+          platform_fee_cents?: number
+          status?: string
+          stripe_checkout_session_id?: string | null
+          stripe_destination_account?: string | null
+          stripe_payment_intent_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dj_tips_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       email_send_log: {
         Row: {
@@ -991,6 +1092,10 @@ export type Database = {
         }
       }
       check_boost_purchase_cap: {
+        Args: { _amount_cents: number; _event_id: string; _user_id: string }
+        Returns: undefined
+      }
+      check_tip_cap: {
         Args: { _amount_cents: number; _event_id: string; _user_id: string }
         Returns: undefined
       }
