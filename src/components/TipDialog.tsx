@@ -49,16 +49,24 @@ export function TipDialog({ open, onOpenChange, eventId, djName, songTitle }: Pr
     }
     let cancelled = false;
     (async () => {
-      const { data } = await supabase.functions.invoke("tip-create-checkout", {
+      const { data, error } = await supabase.functions.invoke("tip-create-checkout", {
         body: { event_id: eventId, check_only: true },
       });
       if (cancelled) return;
-      if (data?.ready) {
+      let payload: any = data;
+      if (!payload && error && (error as any).context) {
+        const ctx = (error as any).context;
+        try {
+          if (typeof ctx.json === "function") payload = await ctx.json();
+          else if (typeof ctx.text === "function") payload = JSON.parse(await ctx.text());
+        } catch { /* ignore */ }
+      }
+      if (payload?.ready) {
         setPayoutReady(true);
         setPayoutMessage("");
-      } else if (data?.error_code) {
+      } else if (payload?.error_code) {
         setPayoutReady(false);
-        setPayoutMessage(data.message ?? "Tips aren't available right now.");
+        setPayoutMessage(payload.message ?? "Tips aren't available right now.");
       } else {
         // Unknown — allow attempt; server will re-validate.
         setPayoutReady(true);
