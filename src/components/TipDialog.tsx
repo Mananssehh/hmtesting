@@ -49,16 +49,24 @@ export function TipDialog({ open, onOpenChange, eventId, djName, songTitle }: Pr
     }
     let cancelled = false;
     (async () => {
-      const { data } = await supabase.functions.invoke("tip-create-checkout", {
+      const { data, error } = await supabase.functions.invoke("tip-create-checkout", {
         body: { event_id: eventId, check_only: true },
       });
       if (cancelled) return;
-      if (data?.ready) {
+      let payload: any = data;
+      if (!payload && error && (error as any).context) {
+        const ctx = (error as any).context;
+        try {
+          if (typeof ctx.json === "function") payload = await ctx.json();
+          else if (typeof ctx.text === "function") payload = JSON.parse(await ctx.text());
+        } catch { /* ignore */ }
+      }
+      if (payload?.ready) {
         setPayoutReady(true);
         setPayoutMessage("");
-      } else if (data?.error_code) {
+      } else if (payload?.error_code) {
         setPayoutReady(false);
-        setPayoutMessage(data.message ?? "Tips aren't available right now.");
+        setPayoutMessage(payload.message ?? "Tips aren't available right now.");
       } else {
         // Unknown — allow attempt; server will re-validate.
         setPayoutReady(true);
@@ -110,25 +118,42 @@ export function TipDialog({ open, onOpenChange, eventId, djName, songTitle }: Pr
       const { data, error } = await supabase.functions.invoke("tip-create-checkout", {
         body: { event_id: eventId, amount_cents: amountCents },
       });
-      if (error && !data) throw error;
-      if (data?.error_code) {
+
+      // supabase-js can wrap a structured-error body in `error` (FunctionsHttpError)
+      // even when the function returned 200. Recover the JSON from error.context.
+      let payload: any = data;
+      if (!payload && error && (error as any).context) {
+        const ctx = (error as any).context;
+        try {
+          if (typeof ctx.json === "function") payload = await ctx.json();
+          else if (typeof ctx.text === "function") payload = JSON.parse(await ctx.text());
+        } catch { /* ignore */ }
+      }
+
+      if (payload?.error_code) {
         const friendly: Record<string, string> = {
-          DJ_PAYOUTS_NOT_READY: data.message,
-          STRIPE_CONFIG_ERROR: "Tips are temporarily unavailable.",
-          TIP_LIMIT_REACHED: "You've reached a tip limit. Try again later.",
+          DJ_PAYOUTS_NOT_READY: payload.message ?? "This DJ hasn't set up payouts yet — tips aren't available for this event.",
+          STRIPE_CONFIG_ERROR: "Tips are temporarily unavailable (payment provider not configured).",
+          TIP_LIMIT_REACHED: payload.message ?? "You've reached a tip limit. Try again later.",
           CONSENT_REQUIRED: "Please acknowledge the tip notice to continue.",
           SELF_TIP: "You cannot tip yourself.",
           EVENT_NOT_FOUND: "Event not found.",
           STRIPE_CHECKOUT_FAILED: "Payment setup failed. Please try again.",
           UNAUTHORIZED: "Please sign in to tip.",
-          INVALID_REQUEST: data.message ?? "Invalid request.",
+          INVALID_REQUEST: payload.message ?? "Invalid request.",
           SERVICE_FAILED: "Something went wrong. Please try again.",
         };
-        toast.error(friendly[data.error_code] ?? data.message ?? "Couldn't process tip");
+        toast.error(friendly[payload.error_code] ?? payload.message ?? "Couldn't process tip");
+        if (payload.error_code === "DJ_PAYOUTS_NOT_READY") {
+          setPayoutReady(false);
+          setPayoutMessage(friendly.DJ_PAYOUTS_NOT_READY);
+        }
         return;
       }
-      if (!data?.url) throw new Error("Couldn't start checkout");
-      window.location.href = data.url as string;
+
+      if (error) throw error;
+      if (!payload?.url) throw new Error("Checkout session missing URL — please try again.");
+      window.location.href = payload.url as string;
     } catch (e: any) {
       toast.error(e?.message ?? "Couldn't process tip");
     } finally {
