@@ -39,9 +39,35 @@ export function PayoutStatusCard() {
       const { data, error } = await supabase.functions.invoke("stripe-connect-onboard", {
         body: { return_url: `${origin}/dj?stripe=return`, refresh_url: `${origin}/dj?stripe=refresh` },
       });
-      if (error) throw error;
-      if (data?.url) window.location.href = data.url;
+
+      // Recover structured error body if supabase-js wrapped a non-2xx response
+      let payload: any = data;
+      if (error) {
+        try {
+          const ctx: any = (error as any).context;
+          if (ctx?.json) payload = await ctx.json();
+          else if (ctx?.text) {
+            const t = await ctx.text();
+            try { payload = JSON.parse(t); } catch { payload = { error: t }; }
+          }
+        } catch { /* ignore */ }
+      }
+
+      if (payload?.url) {
+        window.location.href = payload.url;
+        return;
+      }
+
+      const msg =
+        payload?.message ||
+        payload?.error ||
+        (error as any)?.message ||
+        "Couldn't start onboarding";
+      console.error("[PayoutStatusCard] onboard error", { error, payload });
+      toast.error(msg);
+      setBusy(false);
     } catch (e: any) {
+      console.error(e);
       toast.error(e?.message ?? "Couldn't start onboarding");
       setBusy(false);
     }
