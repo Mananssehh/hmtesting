@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CircleDollarSign, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,38 @@ export function TipDialog({ open, onOpenChange, eventId, djName, songTitle }: Pr
   const [custom, setCustom] = useState<string>("");
   const [acknowledged, setAcknowledged] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [payoutReady, setPayoutReady] = useState<boolean | null>(null);
+  const [payoutMessage, setPayoutMessage] = useState<string>("");
+
+  // Precheck DJ payout readiness when dialog opens so we can disable the
+  // Tip button up-front instead of failing inside Stripe Checkout.
+  useEffect(() => {
+    if (!open || !eventId || !ENABLE_LIVE_STRIPE) {
+      setPayoutReady(null);
+      setPayoutMessage("");
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.functions.invoke("tip-create-checkout", {
+        body: { event_id: eventId, check_only: true },
+      });
+      if (cancelled) return;
+      if (data?.ready) {
+        setPayoutReady(true);
+        setPayoutMessage("");
+      } else if (data?.error_code) {
+        setPayoutReady(false);
+        setPayoutMessage(data.message ?? "Tips aren't available right now.");
+      } else {
+        // Unknown — allow attempt; server will re-validate.
+        setPayoutReady(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, eventId]);
 
   const customAmount = Math.max(0, parseInt(custom || "0", 10) || 0);
   const amountDollars = custom ? customAmount : selected;
@@ -78,20 +110,27 @@ export function TipDialog({ open, onOpenChange, eventId, djName, songTitle }: Pr
       const { data, error } = await supabase.functions.invoke("tip-create-checkout", {
         body: { event_id: eventId, amount_cents: amountCents },
       });
-      if (error) throw error;
+      if (error && !data) throw error;
+      if (data?.error_code) {
+        const friendly: Record<string, string> = {
+          DJ_PAYOUTS_NOT_READY: data.message,
+          STRIPE_CONFIG_ERROR: "Tips are temporarily unavailable.",
+          TIP_LIMIT_REACHED: "You've reached a tip limit. Try again later.",
+          CONSENT_REQUIRED: "Please acknowledge the tip notice to continue.",
+          SELF_TIP: "You cannot tip yourself.",
+          EVENT_NOT_FOUND: "Event not found.",
+          STRIPE_CHECKOUT_FAILED: "Payment setup failed. Please try again.",
+          UNAUTHORIZED: "Please sign in to tip.",
+          INVALID_REQUEST: data.message ?? "Invalid request.",
+          SERVICE_FAILED: "Something went wrong. Please try again.",
+        };
+        toast.error(friendly[data.error_code] ?? data.message ?? "Couldn't process tip");
+        return;
+      }
       if (!data?.url) throw new Error("Couldn't start checkout");
       window.location.href = data.url as string;
     } catch (e: any) {
-      const msg = e?.message ?? "Couldn't process tip";
-      if (/single-tip|single-purchase/i.test(msg)) {
-        toast.error(`You can tip up to $${MAX_TIP_DOLLARS} in a single tip.`);
-      } else if (/24h|daily/i.test(msg)) {
-        toast.error("You've reached today's tip limit. Try again later.");
-      } else if (/event/i.test(msg)) {
-        toast.error(`You've reached the $${PURCHASE_CAPS.maxPerEventCents / 100} tip limit for this event.`);
-      } else {
-        toast.error(msg);
-      }
+      toast.error(e?.message ?? "Couldn't process tip");
     } finally {
       setSubmitting(false);
     }
@@ -179,6 +218,12 @@ export function TipDialog({ open, onOpenChange, eventId, djName, songTitle }: Pr
               DJ plays, prioritizes, or queues any song.
             </span>
           </label>
+
+          {payoutReady === false && (
+            <div className="rounded-xl border border-rose-500/30 bg-rose-500/[0.08] p-3 text-[12px] leading-relaxed text-rose-100">
+              {payoutMessage || "This DJ hasn't set up payouts yet — tips aren't available for this event."}
+            </div>
+          )}
         </div>
 
         <div className="relative flex gap-2">
@@ -193,7 +238,7 @@ export function TipDialog({ open, onOpenChange, eventId, djName, songTitle }: Pr
           <Button
             variant="premium"
             onClick={submit}
-            disabled={submitting || !validAmount || !acknowledged}
+            disabled={submitting || !validAmount || !acknowledged || payoutReady === false}
             className="flex-[2] h-11 text-base font-semibold"
           >
             {submitting ? (
