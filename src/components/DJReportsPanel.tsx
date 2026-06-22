@@ -258,7 +258,7 @@ export function DJReportsPanel({ eventId, onRemoveRequest }: Props) {
                   )}
                   {isUserTarget && (
                     <Button size="sm" variant="outline" asChild>
-                      <Link to={`/u/${r.target_id}`} target="_blank" rel="noreferrer">
+                      <Link to={`/users/${r.target_id}`} target="_blank" rel="noreferrer">
                         <ExternalLink className="h-3.5 w-3.5 mr-1" /> View Profile
                       </Link>
                     </Button>
