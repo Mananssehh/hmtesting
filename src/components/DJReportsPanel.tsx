@@ -54,6 +54,7 @@ export function DJReportsPanel({ eventId, onRemoveRequest }: Props) {
 
   const load = async (isInitial = false) => {
     if (isInitial) setLoading(true);
+    let rows: Report[] = [];
     try {
       const { data, error } = await (supabase as any)
         .from("reports")
@@ -62,15 +63,26 @@ export function DJReportsPanel({ eventId, onRemoveRequest }: Props) {
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) {
-        console.error("[DJReportsPanel] reports fetch failed:", error.message);
+        console.error("[DJReportsPanel] reports fetch failed:", error.message, { eventId });
         setErrorMsg(error.message || "Failed to load reports");
         setReports([]);
         return;
       }
-      const rows = (data ?? []) as Report[];
+      rows = (data ?? []) as Report[];
       setReports(rows);
       setErrorMsg(null);
+    } catch (e: any) {
+      console.error("[DJReportsPanel] base reports query threw:", e, { eventId });
+      setErrorMsg(e?.message || "Failed to load reports");
+      setReports([]);
+      return;
+    } finally {
+      // Render whatever we have, even if enrichment below fails.
+      setLoading(false);
+    }
 
+    // Enrichment — never block rendering of report cards.
+    try {
       const userIds = new Set<string>();
       const requestIds = new Set<string>();
       for (const r of rows) {
@@ -79,37 +91,54 @@ export function DJReportsPanel({ eventId, onRemoveRequest }: Props) {
         if (r.target_type === "request") requestIds.add(r.target_id);
       }
 
+      const songsPromise =
+        requestIds.size > 0
+          ? (supabase as any)
+              .from("song_requests")
+              .select("id, title, artist, requested_by")
+              .in("id", Array.from(requestIds))
+          : Promise.resolve({ data: [], error: null });
+
+      const profilesPromise = (ids: string[]) =>
+        ids.length > 0
+          ? (supabase as any).from("profiles").select("id, nickname").in("id", ids)
+          : Promise.resolve({ data: [], error: null });
+
+      const [songsResult] = await Promise.allSettled([songsPromise]);
+
       const songMap: Record<string, SongInfo> = {};
-      if (requestIds.size > 0) {
-        try {
-          const { data: srData, error: srErr } = await (supabase as any)
-            .from("song_requests")
-            .select("id, title, artist, requested_by")
-            .in("id", Array.from(requestIds));
-          if (srErr) console.error("[DJReportsPanel] song enrichment failed:", srErr.message);
+      if (songsResult.status === "fulfilled") {
+        const { data: srData, error: srErr } = songsResult.value as any;
+        if (srErr) {
+          console.error("[DJReportsPanel] song_requests enrichment query failed:", srErr.message, {
+            ids: Array.from(requestIds),
+          });
+        } else {
           for (const s of (srData ?? []) as SongInfo[]) {
             songMap[s.id] = s;
             if (s.requested_by) userIds.add(s.requested_by);
           }
-        } catch (e) {
-          console.error("[DJReportsPanel] song enrichment threw:", e);
         }
+      } else {
+        console.error("[DJReportsPanel] song_requests enrichment rejected:", songsResult.reason);
       }
 
+      const [profilesResult] = await Promise.allSettled([profilesPromise(Array.from(userIds))]);
+
       const nickMap: Record<string, string> = {};
-      if (userIds.size > 0) {
-        try {
-          const { data: profData, error: pErr } = await (supabase as any)
-            .from("profiles")
-            .select("id, nickname")
-            .in("id", Array.from(userIds));
-          if (pErr) console.error("[DJReportsPanel] profile enrichment failed:", pErr.message);
+      if (profilesResult.status === "fulfilled") {
+        const { data: profData, error: pErr } = profilesResult.value as any;
+        if (pErr) {
+          console.error("[DJReportsPanel] profiles enrichment query failed:", pErr.message, {
+            ids: Array.from(userIds),
+          });
+        } else {
           for (const p of (profData ?? []) as { id: string; nickname: string }[]) {
-            nickMap[p.id] = p.nickname;
+            if (p?.id && p?.nickname) nickMap[p.id] = p.nickname;
           }
-        } catch (e) {
-          console.error("[DJReportsPanel] profile enrichment threw:", e);
         }
+      } else {
+        console.error("[DJReportsPanel] profiles enrichment rejected:", profilesResult.reason);
       }
 
       for (const id of Object.keys(songMap)) {
@@ -119,11 +148,9 @@ export function DJReportsPanel({ eventId, onRemoveRequest }: Props) {
 
       setNicknames(nickMap);
       setSongs(songMap);
-    } catch (e: any) {
-      console.error("[DJReportsPanel] load threw:", e);
-      setErrorMsg(e?.message || "Failed to load reports");
-    } finally {
-      setLoading(false);
+    } catch (e) {
+      console.error("[DJReportsPanel] enrichment block threw:", e);
+      // Keep existing nicknames/songs; report cards still render with fallbacks.
     }
   };
 
@@ -171,7 +198,7 @@ export function DJReportsPanel({ eventId, onRemoveRequest }: Props) {
         </div>
       );
     }
-    const nick = nicknames[r.target_id] ?? "Unknown";
+    const nick = nicknames[r.target_id] ?? "Unknown User";
     return (
       <div className="flex items-start gap-2">
         <User className="h-4 w-4 mt-0.5 text-primary shrink-0" />
@@ -220,7 +247,7 @@ export function DJReportsPanel({ eventId, onRemoveRequest }: Props) {
         ) : (
           visible.map((r) => {
             const isOpen = !!expanded[r.id];
-            const reporterNick = nicknames[r.reporter_id] ?? "Unknown";
+            const reporterNick = nicknames[r.reporter_id] ?? "Unknown Reporter";
             const reasonLabel = REASON_LABELS[r.reason] ?? r.reason;
             const isUserTarget = r.target_type === "user" || r.target_type === "nickname";
             return (
