@@ -247,7 +247,7 @@ export function DJReportsPanel({ eventId, onRemoveRequest }: Props) {
         ) : (
           visible.map((r) => {
             const isOpen = !!expanded[r.id];
-            const reporterNick = nicknames[r.reporter_id] ?? "Unknown";
+            const reporterNick = nicknames[r.reporter_id] ?? "Unknown Reporter";
             const reasonLabel = REASON_LABELS[r.reason] ?? r.reason;
             const isUserTarget = r.target_type === "user" || r.target_type === "nickname";
             return (
