@@ -40,6 +40,11 @@ const EventPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, profile, loading: authLoading } = useAuth();
+  // Nickname carried over from /join — used as a fallback so we never write
+  // "Guest" into event_participants/song_requests while AuthContext is still
+  // loading the profile on first render.
+  const navNickname: string | null =
+    (location.state as { nickname?: string } | null)?.nickname?.trim() || null;
 
   const [eventInfo, setEventInfo] = useState<EventInfo | null>(null);
   const [songs, setSongs] = useState<SongRequestRow[]>([]);
