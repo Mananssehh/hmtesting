@@ -99,7 +99,20 @@ const EventPage = () => {
         localStorage.setItem(hintKey, "1");
       }
 
-      const nick = profile?.nickname || "Guest";
+      // Source of truth for display nickname: live profile fetch > in-memory
+      // profile > nickname passed from /join > "Guest" as a last resort.
+      const { data: liveProf } = await supabase
+        .from("profiles")
+        .select("nickname")
+        .eq("id", user.id)
+        .maybeSingle();
+      const nick =
+        (liveProf?.nickname && liveProf.nickname !== "Guest" ? liveProf.nickname : null) ||
+        (profile?.nickname && profile.nickname !== "Guest" ? profile.nickname : null) ||
+        navNickname ||
+        liveProf?.nickname ||
+        profile?.nickname ||
+        "Guest";
       const nowIso = new Date().toISOString();
       // Upsert participant row: avoids 409 on revisit, preserves joined_at, refreshes last_seen_at.
       await supabase
@@ -115,6 +128,17 @@ const EventPage = () => {
           { onConflict: "event_id,user_id", ignoreDuplicates: true },
         )
         .then(() => null, () => null);
+
+      // If the participant row already existed but with a stale "Guest"
+      // nickname (e.g. a previous visit before this fix), refresh it now.
+      if (nick && nick !== "Guest") {
+        await supabase
+          .from("event_participants")
+          .update({ nickname: nick, last_seen_at: nowIso })
+          .eq("event_id", ev.id)
+          .eq("user_id", user.id)
+          .then(() => null, () => null);
+      }
 
       // Always bump last_seen_at for returning guests (ignoreDuplicates skips update on conflict).
       await supabase
