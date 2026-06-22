@@ -1108,6 +1108,7 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      ensure_profile: { Args: { p_nickname: string }; Returns: Json }
       generate_bridge_pairing_code: {
         Args: { _event_id: string }
         Returns: {

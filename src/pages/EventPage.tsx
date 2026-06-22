@@ -40,6 +40,11 @@ const EventPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, profile, loading: authLoading } = useAuth();
+  // Nickname carried over from /join — used as a fallback so we never write
+  // "Guest" into event_participants/song_requests while AuthContext is still
+  // loading the profile on first render.
+  const navNickname: string | null =
+    (location.state as { nickname?: string } | null)?.nickname?.trim() || null;
 
   const [eventInfo, setEventInfo] = useState<EventInfo | null>(null);
   const [songs, setSongs] = useState<SongRequestRow[]>([]);
@@ -94,7 +99,20 @@ const EventPage = () => {
         localStorage.setItem(hintKey, "1");
       }
 
-      const nick = profile?.nickname || "Guest";
+      // Source of truth for display nickname: live profile fetch > in-memory
+      // profile > nickname passed from /join > "Guest" as a last resort.
+      const { data: liveProf } = await supabase
+        .from("profiles")
+        .select("nickname")
+        .eq("id", user.id)
+        .maybeSingle();
+      const nick =
+        (liveProf?.nickname && liveProf.nickname !== "Guest" ? liveProf.nickname : null) ||
+        (profile?.nickname && profile.nickname !== "Guest" ? profile.nickname : null) ||
+        navNickname ||
+        liveProf?.nickname ||
+        profile?.nickname ||
+        "Guest";
       const nowIso = new Date().toISOString();
       // Upsert participant row: avoids 409 on revisit, preserves joined_at, refreshes last_seen_at.
       await supabase
@@ -110,6 +128,17 @@ const EventPage = () => {
           { onConflict: "event_id,user_id", ignoreDuplicates: true },
         )
         .then(() => null, () => null);
+
+      // If the participant row already existed but with a stale "Guest"
+      // nickname (e.g. a previous visit before this fix), refresh it now.
+      if (nick && nick !== "Guest") {
+        await supabase
+          .from("event_participants")
+          .update({ nickname: nick, last_seen_at: nowIso })
+          .eq("event_id", ev.id)
+          .eq("user_id", user.id)
+          .then(() => null, () => null);
+      }
 
       // Always bump last_seen_at for returning guests (ignoreDuplicates skips update on conflict).
       await supabase
@@ -465,14 +494,29 @@ const EventPage = () => {
       return;
     }
 
-    const { data: prof } = await supabase.from("profiles").select("nickname").eq("id", user.id).maybeSingle();
+    // Resolve display nickname: live DB read > in-memory profile > nav state >
+    // last-resort "Guest". If the profile row is somehow still missing, repair
+    // it via ensure_profile so future reads find a real nickname.
+    let { data: prof } = await supabase.from("profiles").select("nickname").eq("id", user.id).maybeSingle();
+    const fallbackNick =
+      (profile?.nickname && profile.nickname !== "Guest" ? profile.nickname : null) || navNickname;
+    if ((!prof || !prof.nickname || prof.nickname === "Guest") && fallbackNick) {
+      await (supabase as any).rpc("ensure_profile", { p_nickname: fallbackNick }).then(() => null, () => null);
+      const refetch = await supabase.from("profiles").select("nickname").eq("id", user.id).maybeSingle();
+      prof = refetch.data ?? prof;
+    }
+    const requesterName =
+      (prof?.nickname && prof.nickname !== "Guest" ? prof.nickname : null) ||
+      fallbackNick ||
+      prof?.nickname ||
+      "Guest";
 
     const { data: inserted, error } = await supabase
       .from("song_requests")
       .insert({
         event_id: eventInfo.id,
         requested_by: user.id,
-        requester_name: prof?.nickname ?? "Guest",
+        requester_name: requesterName,
         title: song.title,
         artist: song.artist,
         album: song.album,

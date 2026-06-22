@@ -16,7 +16,7 @@ import { containsProfanity, looksSpammy } from "@/lib/profanity";
 const Join = () => {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const [code, setCode] = useState(params.get("code")?.toUpperCase() ?? "");
   const initialNickname = profile?.nickname && profile.nickname !== "Guest" ? profile.nickname : "";
   const [nickname, setNickname] = useState(initialNickname);
@@ -52,13 +52,17 @@ const Join = () => {
           options: { data: { nickname: nickParse.data } },
         });
         if (anonError) throw anonError;
-        const { data: { user: newUser } } = await supabase.auth.getUser();
-        if (newUser) {
-          await supabase.from("profiles").update({ nickname: nickParse.data }).eq("id", newUser.id);
-        }
-      } else if (profile?.nickname !== nickParse.data) {
-        await supabase.from("profiles").update({ nickname: nickParse.data }).eq("id", user.id);
       }
+
+      // Guarantee a profile row exists AND its nickname matches what the
+      // guest just typed. Uses a SECURITY DEFINER RPC that upserts the row,
+      // so we no longer depend on the handle_new_user trigger having created
+      // the profile (it occasionally misses for anonymous sign-ins, which
+      // caused the displayed name to fall back to "Guest").
+      const { error: ensureErr } = await (supabase as any).rpc("ensure_profile", {
+        p_nickname: nickParse.data,
+      });
+      if (ensureErr) throw new Error(ensureErr.message || "Could not save nickname");
 
       // Verify event exists & is active
       const { data: event, error: eventError } = await supabase
@@ -73,8 +77,12 @@ const Join = () => {
         throw new Error("This event has ended");
       }
 
+      // Refresh the in-memory profile so EventPage sees the correct nickname
+      // on first render (avoids the "Guest" fallback during AuthContext load).
+      await refreshProfile();
+
       toast.success(`Joining as ${nickParse.data}`);
-      navigate(`/event/${codeParse.data}`);
+      navigate(`/event/${codeParse.data}`, { state: { nickname: nickParse.data } });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not join");
     } finally {
