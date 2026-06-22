@@ -697,6 +697,7 @@ const DJEventManage = () => {
 interface FocusProps {
   event: EventInfo;
   nowPlaying: SongRequestRow | undefined;
+  broadcastNowPlaying: import("@/lib/nowPlaying").NowPlayingRow | null;
   queue: SongRequestRow[];
   boosted: SongRequestRow[];
   onPlay: (id: string) => void;
@@ -705,13 +706,30 @@ interface FocusProps {
   onExit: () => void;
 }
 
-function FocusView({ event, nowPlaying, queue, boosted, onPlay, onPlayed, onSkip, onExit }: FocusProps) {
+function FocusView({ event, nowPlaying, broadcastNowPlaying, queue, boosted, onPlay, onPlayed, onSkip, onExit }: FocusProps) {
   const top5 = queue.slice(0, 5);
   const next = queue[0];
   const copy = (s: SongRequestRow) => {
     navigator.clipboard.writeText(`${s.title} - ${s.artist}`);
     toast.success("Copied for DJ");
   };
+  // Atomic resolution — broadcast (Bridge / manual) wins as a whole row;
+  // fall back to a song_request marked playing by the DJ.
+  const display = broadcastNowPlaying?.title
+    ? {
+        title: broadcastNowPlaying.title,
+        artist: broadcastNowPlaying.artist ?? "",
+        albumArt: broadcastNowPlaying.album_art || null,
+        source: broadcastNowPlaying.source || "broadcast",
+      }
+    : nowPlaying
+    ? {
+        title: nowPlaying.title,
+        artist: nowPlaying.artist ?? "",
+        albumArt: nowPlaying.album_art || null,
+        source: "queue",
+      }
+    : null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -730,23 +748,39 @@ function FocusView({ event, nowPlaying, queue, boosted, onPlay, onPlayed, onSkip
         <div className="rounded-2xl p-5 sm:p-6 glass-strong ring-1 ring-primary/20 mb-4">
           <div className="text-xs uppercase tracking-wider text-primary font-semibold mb-2 flex items-center gap-2">
             <Music className="h-3.5 w-3.5" /> Now playing
+            {display && (
+              <span className="text-[10px] text-muted-foreground normal-case tracking-normal">
+                · {display.source}
+              </span>
+            )}
           </div>
-          {nowPlaying ? (
+          {display ? (
             <div className="flex items-center gap-4 flex-wrap">
+              {display.albumArt && (
+                <img
+                  src={display.albumArt}
+                  alt=""
+                  className="h-20 w-20 sm:h-24 sm:w-24 rounded-xl object-cover shadow-elevated shrink-0"
+                />
+              )}
               <div className="flex-1 min-w-0">
-                <div className="text-2xl sm:text-4xl font-bold truncate">{nowPlaying.title}</div>
-                <div className="text-base sm:text-xl text-muted-foreground truncate">{nowPlaying.artist}</div>
+                <div className="text-2xl sm:text-4xl font-bold truncate">{display.title}</div>
+                <div className="text-base sm:text-xl text-muted-foreground truncate">{display.artist}</div>
               </div>
               <div className="flex gap-2">
-                <Button size="lg" variant="outline" onClick={() => copy(nowPlaying)}>
+                <Button size="lg" variant="outline" onClick={() => navigator.clipboard.writeText(`${display.title} - ${display.artist}`)}>
                   <Copy className="mr-2 h-5 w-5" /> Copy
                 </Button>
-                <Button size="lg" variant="outline" onClick={() => onPlayed(nowPlaying.id)}>
-                  <Check className="mr-2 h-5 w-5" /> Played
-                </Button>
-                <Button size="lg" variant="outline" onClick={() => onSkip(nowPlaying.id)}>
-                  <SkipForward className="mr-2 h-5 w-5" /> Skip
-                </Button>
+                {nowPlaying && (
+                  <>
+                    <Button size="lg" variant="outline" onClick={() => onPlayed(nowPlaying.id)}>
+                      <Check className="mr-2 h-5 w-5" /> Played
+                    </Button>
+                    <Button size="lg" variant="outline" onClick={() => onSkip(nowPlaying.id)}>
+                      <SkipForward className="mr-2 h-5 w-5" /> Skip
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           ) : (
