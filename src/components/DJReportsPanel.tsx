@@ -198,7 +198,7 @@ export function DJReportsPanel({ eventId, onRemoveRequest }: Props) {
         </div>
       );
     }
-    const nick = nicknames[r.target_id] ?? "Unknown";
+    const nick = nicknames[r.target_id] ?? "Unknown User";
     return (
       <div className="flex items-start gap-2">
         <User className="h-4 w-4 mt-0.5 text-primary shrink-0" />
