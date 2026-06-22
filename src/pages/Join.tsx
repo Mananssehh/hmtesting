@@ -16,7 +16,7 @@ import { containsProfanity, looksSpammy } from "@/lib/profanity";
 const Join = () => {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const [code, setCode] = useState(params.get("code")?.toUpperCase() ?? "");
   const initialNickname = profile?.nickname && profile.nickname !== "Guest" ? profile.nickname : "";
   const [nickname, setNickname] = useState(initialNickname);
