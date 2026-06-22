@@ -209,6 +209,10 @@ export function DJReportsPanel({ eventId, onRemoveRequest }: Props) {
           <div className="py-8 flex justify-center">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
+        ) : errorMsg ? (
+          <div className="px-6 py-6 text-center text-sm text-destructive">
+            Couldn't load reports: {errorMsg}
+          </div>
         ) : visible.length === 0 ? (
           <p className="px-6 py-6 text-center text-sm text-muted-foreground">
             No open reports. Guests can flag requests, nicknames, or users from the event page.
