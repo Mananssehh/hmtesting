@@ -28,6 +28,7 @@ import { logCritical } from "@/lib/errorLogger";
 import { NowPlayingPanel } from "@/components/NowPlayingPanel";
 import { BridgePairing } from "@/components/BridgePairing";
 import { updateNowPlaying } from "@/lib/nowPlaying";
+import { useNowPlaying } from "@/hooks/useNowPlaying";
 
 
 interface EventInfo {
