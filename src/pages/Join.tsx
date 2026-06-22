@@ -77,8 +77,12 @@ const Join = () => {
         throw new Error("This event has ended");
       }
 
+      // Refresh the in-memory profile so EventPage sees the correct nickname
+      // on first render (avoids the "Guest" fallback during AuthContext load).
+      await refreshProfile();
+
       toast.success(`Joining as ${nickParse.data}`);
-      navigate(`/event/${codeParse.data}`);
+      navigate(`/event/${codeParse.data}`, { state: { nickname: nickParse.data } });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not join");
     } finally {
