@@ -53,7 +53,6 @@ type Filter = "queue" | "boosted" | "played" | "all";
 
 const filters: { key: Filter; label: string; icon?: React.ReactNode }[] = [
   { key: "queue", label: "Queue", icon: <ListMusic className="h-3.5 w-3.5 mr-1" /> },
-  { key: "boosted", label: "Boosted", icon: <Sparkles className="h-3.5 w-3.5 mr-1" /> },
   { key: "played", label: "Played" },
   { key: "all", label: "All" },
 ];
