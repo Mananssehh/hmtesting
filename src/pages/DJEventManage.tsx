@@ -325,6 +325,7 @@ const DJEventManage = () => {
       <FocusView
         event={event}
         nowPlaying={nowPlaying}
+        broadcastNowPlaying={broadcastNowPlaying}
         queue={queueSongs}
         boosted={songs.filter((s) => s.boost > 0 && s.status !== "removed" && s.status !== "played" && s.status !== "skipped").sort((a, b) => b.boost - a.boost)}
         onPlay={(id) => updateStatus(id, "playing")}
