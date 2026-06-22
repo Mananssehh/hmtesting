@@ -120,6 +120,8 @@ const DJEventManage = () => {
   }, [event]);
 
   const nowPlaying = useMemo(() => songs.find((s) => s.status === "playing"), [songs]);
+  // Live broadcast row from now_playing (Bridge / manual). Same source as guest EventPage.
+  const { nowPlaying: broadcastNowPlaying } = useNowPlaying(event?.id);
 
   const requireApproval = !!event?.require_approval;
 
