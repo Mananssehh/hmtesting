@@ -50,16 +50,30 @@ const Auth = () => {
         const nickParse = nicknameSchema.safeParse(nickname);
         if (!nickParse.success) throw new Error(nickParse.error.issues[0].message);
 
-        const { error } = await supabase.auth.signUp({
-          email: emailParse.data,
-          password: passParse.data,
-          options: {
-            emailRedirectTo: window.location.origin,
-            data: { nickname: nickParse.data },
-          },
-        });
-        if (error) throw error;
-        toast.success("Account created! Welcome to Decks.");
+        if (isAnonymous) {
+          // Upgrade in place — same auth.uid(), keeps profile/points/history.
+          const { error } = await supabase.auth.updateUser({
+            email: emailParse.data,
+            password: passParse.data,
+          });
+          if (error) throw error;
+          await (supabase as any).rpc("upgrade_anonymous_profile", {
+            p_nickname: nickParse.data,
+          });
+          await refreshProfile();
+          toast.success("Account created — your nickname, points, and history are saved.");
+        } else {
+          const { error } = await supabase.auth.signUp({
+            email: emailParse.data,
+            password: passParse.data,
+            options: {
+              emailRedirectTo: window.location.origin,
+              data: { nickname: nickParse.data },
+            },
+          });
+          if (error) throw error;
+          toast.success("Account created! Welcome to Decks.");
+        }
         navigate(djIntent ? "/dj/onboarding" : (fromPath || "/"), { replace: true });
       } else {
         const { error } = await supabase.auth.signInWithPassword({
