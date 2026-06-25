@@ -10,6 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppHeader } from "@/components/AppHeader";
 import { emailSchema, nicknameSchema, passwordSchema } from "@/lib/validation";
+import { Checkbox } from "@/components/ui/checkbox";
+
+
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -23,6 +26,8 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [nickname, setNickname] = useState(profile?.nickname && profile.nickname !== "Guest" ? profile.nickname : "");
   const [loading, setLoading] = useState(false);
+  const [wantsDj, setWantsDj] = useState(djIntent);
+
 
   useEffect(() => {
     if (isAnonymous && profile?.nickname && profile.nickname !== "Guest" && !nickname) {
@@ -81,7 +86,7 @@ const Auth = () => {
           if (error) throw error;
           toast.success("Account created! Welcome to Decks.");
         }
-        navigate(djIntent ? "/dj/onboarding" : (fromPath || "/"), { replace: true });
+        navigate((djIntent || wantsDj) ? "/dj/onboarding" : (fromPath || "/"), { replace: true });
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email: emailParse.data,
@@ -166,6 +171,23 @@ const Auth = () => {
                   required
                 />
               </div>
+
+              {mode === "signup" && (
+                <label className="flex items-start gap-3 p-3 rounded-lg bg-secondary/40 cursor-pointer">
+                  <Checkbox
+                    id="wants-dj"
+                    checked={wantsDj}
+                    onCheckedChange={(v) => setWantsDj(v === true)}
+                    className="mt-0.5"
+                  />
+                  <div className="text-sm space-y-1">
+                    <div className="font-medium">I want to create and manage DJ events.</div>
+                    <div className="text-[12px] text-muted-foreground">
+                      Leave unchecked if you only want to join events, vote, request songs, and tip DJs.
+                    </div>
+                  </div>
+                </label>
+              )}
 
               <TabsContent value="login" className="m-0">
                 <Button type="submit" disabled={loading} variant="premium" className="w-full h-11">
