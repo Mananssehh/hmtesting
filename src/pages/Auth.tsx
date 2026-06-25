@@ -10,6 +10,9 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppHeader } from "@/components/AppHeader";
 import { emailSchema, nicknameSchema, passwordSchema } from "@/lib/validation";
+import { Checkbox } from "@/components/ui/checkbox";
+
+
 
 const Auth = () => {
   const navigate = useNavigate();
