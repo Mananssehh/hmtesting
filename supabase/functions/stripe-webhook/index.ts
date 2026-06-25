@@ -2,9 +2,8 @@
 //
 // Supports TWO signing secrets so a single endpoint can receive events from
 // both the platform account and Connect (connected accounts):
-//   - STRIPE_WEBHOOK_SECRET_PLATFORM  (preferred for the platform endpoint)
-//   - STRIPE_WEBHOOK_SECRET_CONNECT   (preferred for the Connect endpoint)
-//   - STRIPE_WEBHOOK_SECRET           (legacy single-secret fallback)
+//   - STRIPE_WEBHOOK_SECRET_PLATFORM  (platform endpoint)
+//   - STRIPE_WEBHOOK_SECRET_CONNECT   (Connect endpoint)
 //
 // The handler tries each configured secret until one verifies the signature.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
