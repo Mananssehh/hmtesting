@@ -16,7 +16,6 @@ Deno.serve(async (req) => {
   const secrets = [
     Deno.env.get("STRIPE_WEBHOOK_SECRET_PLATFORM"),
     Deno.env.get("STRIPE_WEBHOOK_SECRET_CONNECT"),
-    Deno.env.get("STRIPE_WEBHOOK_SECRET"),
   ].filter((s): s is string => !!s);
 
   if (secrets.length === 0) {
