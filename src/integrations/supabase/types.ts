@@ -1159,6 +1159,10 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      upgrade_anonymous_profile: {
+        Args: { p_nickname?: string }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "dj" | "guest" | "admin"
