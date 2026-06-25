@@ -26,6 +26,8 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [nickname, setNickname] = useState(profile?.nickname && profile.nickname !== "Guest" ? profile.nickname : "");
   const [loading, setLoading] = useState(false);
+  const [wantsDj, setWantsDj] = useState(djIntent);
+
 
   useEffect(() => {
     if (isAnonymous && profile?.nickname && profile.nickname !== "Guest" && !nickname) {
