@@ -58,13 +58,16 @@ export function PayoutStatusCard() {
         return;
       }
 
-      const msg =
-        payload?.message ||
-        payload?.error ||
-        (error as any)?.message ||
-        "Couldn't start onboarding";
-      console.error("[PayoutStatusCard] onboard error", { error, payload });
-      toast.error(msg);
+      // DEBUG: surface the full raw Stripe error payload to the console
+      // so we can copy/paste it from devtools.
+      console.error("[PayoutStatusCard] onboard RAW payload:", payload);
+      console.error("[PayoutStatusCard] onboard invoke error:", error);
+
+      const se = payload?.stripe_error;
+      const detail = se
+        ? `Stripe ${se.http_status ?? "?"} ${se.stripe_type ?? ""} ${se.stripe_code ?? ""}: ${se.message ?? ""} (req ${se.request_id ?? "n/a"})`
+        : payload?.message || payload?.error || (error as any)?.message || "Couldn't start onboarding";
+      toast.error(detail, { duration: 12000 });
       setBusy(false);
     } catch (e: any) {
       console.error(e);
