@@ -44,6 +44,28 @@ export function AppHeader() {
                   <Link to="/dj">Dashboard</Link>
                 </Button>
               )}
+              {isAnonymous && (
+                <Button
+                  size="sm"
+                  variant="premium"
+                  className="hidden sm:inline-flex h-8 rounded-full"
+                  onClick={() => setUpgradeOpen(true)}
+                >
+                  <Sparkles className="h-3.5 w-3.5 mr-1" />
+                  Save progress
+                </Button>
+              )}
+              {isAnonymous && (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="sm:hidden"
+                  aria-label="Save progress"
+                  onClick={() => setUpgradeOpen(true)}
+                >
+                  <Sparkles className="h-4 w-4 text-primary" />
+                </Button>
+              )}
               <Link
                 to={profileHref}
                 className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/60 hover:bg-secondary text-sm transition-colors"
@@ -70,6 +92,7 @@ export function AppHeader() {
           )}
         </nav>
       </div>
+      <UpgradeAccountDialog open={upgradeOpen} onOpenChange={setUpgradeOpen} />
     </header>
   );
 }
