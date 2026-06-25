@@ -17,7 +17,7 @@ const Auth = () => {
   const [searchParams] = useSearchParams();
   const djIntent = searchParams.get("role") === "dj" || searchParams.get("mode") === "dj";
   const fromPath = (location.state as { from?: string } | null)?.from;
-  const { user, isDJ, loading: authLoading } = useAuth();
+  const { user, isDJ, isAnonymous, loading: authLoading, refreshProfile } = useAuth();
   const [mode, setMode] = useState<"login" | "signup">(djIntent ? "signup" : "login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
