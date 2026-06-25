@@ -26,12 +26,15 @@ const Auth = () => {
 
   useEffect(() => {
     if (authLoading || !user) return;
+    // Anonymous users stay on this page so they can upgrade via the signup form;
+    // only redirect once they've actually become a permanent account.
+    if (isAnonymous) return;
     if (djIntent) {
       navigate(isDJ ? (fromPath || "/dj") : "/dj/onboarding", { replace: true });
     } else {
       navigate(fromPath || "/", { replace: true });
     }
-  }, [user, isDJ, authLoading, navigate, djIntent, fromPath]);
+  }, [user, isDJ, isAnonymous, authLoading, navigate, djIntent, fromPath]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
