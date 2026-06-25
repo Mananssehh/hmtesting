@@ -1,5 +1,9 @@
 // Creates (or reuses) a Stripe Connect Express account for the calling DJ
 // and returns a Stripe-hosted onboarding URL.
+//
+// DEBUG MODE: This function intentionally returns the RAW Stripe error
+// payload (status, request id, type, code, message, endpoint) instead of a
+// friendly wrapper, so we can diagnose Connect configuration issues.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, json } from "../_shared/stripe.ts";
 import Stripe from "https://esm.sh/stripe@17.5.0?target=denonext";
@@ -7,6 +11,21 @@ import Stripe from "https://esm.sh/stripe@17.5.0?target=denonext";
 function fail(code: string, message: string, extra: Record<string, unknown> = {}, status = 200) {
   console.error("[stripe-connect-onboard][FAIL]", code, message, extra);
   return json({ error_code: code, error: message, message, ...extra }, status);
+}
+
+function serializeStripeError(e: any) {
+  const raw = e?.raw ?? {};
+  return {
+    http_status: e?.statusCode ?? raw?.statusCode ?? null,
+    request_id: e?.requestId ?? raw?.request_log_url ?? null,
+    stripe_type: e?.type ?? raw?.type ?? null,
+    stripe_code: e?.code ?? raw?.code ?? null,
+    decline_code: e?.decline_code ?? raw?.decline_code ?? null,
+    param: e?.param ?? raw?.param ?? null,
+    doc_url: e?.doc_url ?? raw?.doc_url ?? null,
+    message: e?.message ?? raw?.message ?? String(e),
+    raw_keys: Object.keys(raw ?? {}),
+  };
 }
 
 Deno.serve(async (req) => {
@@ -59,22 +78,41 @@ Deno.serve(async (req) => {
     const hasKey = stripeKey.length > 0;
     const isTest = stripeKey.startsWith("sk_test_");
     const isLive = stripeKey.startsWith("sk_live_");
-    console.log("[stripe-connect-onboard] stripe key present:", hasKey, "test:", isTest, "live:", isLive);
+    // Last 4 chars only — never log the full key.
+    const keyTail = stripeKey ? stripeKey.slice(-4) : "(none)";
+    console.log("[stripe-connect-onboard] stripe key present:", hasKey, "test:", isTest, "live:", isLive, "tail:", keyTail);
     if (!hasKey) {
       return fail("STRIPE_NOT_CONFIGURED", "Stripe isn't configured on the server yet.");
     }
     if (!isTest) {
-      return fail(
-        "STRIPE_KEY_INVALID",
-        isLive
-          ? "Live Stripe keys are blocked in this build. Use a sk_test_ key."
-          : "Invalid Stripe key format. Expected an sk_test_ key.",
-      );
+      return fail("STRIPE_KEY_INVALID", "Expected sk_test_ key.", { key_tail: keyTail });
     }
     const stripe = new Stripe(stripeKey, {
       apiVersion: "2024-12-18.acacia",
       httpClient: Stripe.createFetchHttpClient(),
     });
+
+    // Identify the Stripe account this key belongs to BEFORE attempting
+    // anything else. This tells us which account is actually in use.
+    step = "stripe_whoami";
+    let stripeAccountInfo: any = null;
+    try {
+      const acct = await stripe.accounts.retrieve();
+      stripeAccountInfo = {
+        id: acct.id,
+        country: acct.country,
+        email: acct.email,
+        type: acct.type,
+        details_submitted: acct.details_submitted,
+        charges_enabled: acct.charges_enabled,
+        capabilities: acct.capabilities,
+      };
+      console.log("[stripe-connect-onboard] whoami:", JSON.stringify(stripeAccountInfo));
+    } catch (e: any) {
+      const se = serializeStripeError(e);
+      console.error("[stripe-connect-onboard] whoami failed", se);
+      stripeAccountInfo = { error: se };
+    }
 
     step = "parse_body";
     const body = await req.json().catch(() => ({}));
@@ -95,8 +133,12 @@ Deno.serve(async (req) => {
     let accountId = existing?.stripe_account_id as string | undefined;
     console.log("[stripe-connect-onboard] existing account:", accountId ?? "(none)");
 
+    let accountCreateResult: "skipped_existing" | "success" | "failed" = "skipped_existing";
+
     if (!accountId) {
       step = "stripe_create_account";
+      // Direct call — no preflight Connect check, no friendly wrapper.
+      // Whatever Stripe returns is reported verbatim.
       try {
         const acct = await stripe.accounts.create({
           type: "express",
@@ -109,6 +151,7 @@ Deno.serve(async (req) => {
           metadata: { user_id: userId, app: "decks" },
         });
         accountId = acct.id;
+        accountCreateResult = "success";
         console.log("[stripe-connect-onboard] created account:", accountId);
 
         step = "db_upsert_account";
@@ -128,18 +171,20 @@ Deno.serve(async (req) => {
           });
         }
       } catch (e: any) {
-        const msg = e?.raw?.message || e?.message || String(e);
-        const code = e?.code || e?.raw?.code;
-        const type = e?.type || e?.raw?.type;
-        console.error("[stripe-connect-onboard] accounts.create failed", { msg, code, type });
-        const connectDisabled = /signed up for Connect|Connect.+not.+enabled|review the.+Connect/i.test(msg);
-        return fail(
-          connectDisabled ? "STRIPE_CONNECT_NOT_ENABLED" : "STRIPE_ACCOUNT_CREATE_FAILED",
-          connectDisabled
-            ? "Stripe Connect isn't enabled on this Stripe account. Enable Connect at dashboard.stripe.com/test/connect, then try again."
-            : `Couldn't create your Stripe Express account: ${msg}`,
-          { stripe_code: code, stripe_type: type },
-        );
+        accountCreateResult = "failed";
+        const se = serializeStripeError(e);
+        console.error("[stripe-connect-onboard][RAW accounts.create error]", JSON.stringify(se));
+        return json({
+          error_code: "STRIPE_ACCOUNT_CREATE_FAILED",
+          stage: "accounts.create",
+          endpoint: "POST /v1/accounts",
+          account_create_result: accountCreateResult,
+          account_link_result: "not_attempted",
+          stripe_error: se,
+          stripe_key_tail: keyTail,
+          stripe_account_in_use: stripeAccountInfo,
+          message: se.message,
+        }, 200);
       }
     }
 
@@ -152,12 +197,28 @@ Deno.serve(async (req) => {
         type: "account_onboarding",
       });
       console.log("[stripe-connect-onboard] account link created");
-      return json({ url: link.url, account_id: accountId });
-    } catch (e: any) {
-      const msg = e?.raw?.message || e?.message || String(e);
-      return fail("STRIPE_LINK_FAILED", `Couldn't create onboarding link: ${msg}`, {
-        stripe_code: e?.code,
+      return json({
+        url: link.url,
+        account_id: accountId,
+        account_create_result: accountCreateResult,
+        account_link_result: "success",
+        stripe_account_in_use: stripeAccountInfo,
       });
+    } catch (e: any) {
+      const se = serializeStripeError(e);
+      console.error("[stripe-connect-onboard][RAW accountLinks.create error]", JSON.stringify(se));
+      return json({
+        error_code: "STRIPE_LINK_FAILED",
+        stage: "accountLinks.create",
+        endpoint: "POST /v1/account_links",
+        account_create_result: accountCreateResult,
+        account_link_result: "failed",
+        account_id: accountId,
+        stripe_error: se,
+        stripe_key_tail: keyTail,
+        stripe_account_in_use: stripeAccountInfo,
+        message: se.message,
+      }, 200);
     }
   } catch (e: any) {
     const msg = e?.message ?? "Onboarding failed";
