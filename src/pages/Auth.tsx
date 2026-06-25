@@ -17,21 +17,31 @@ const Auth = () => {
   const [searchParams] = useSearchParams();
   const djIntent = searchParams.get("role") === "dj" || searchParams.get("mode") === "dj";
   const fromPath = (location.state as { from?: string } | null)?.from;
-  const { user, isDJ, loading: authLoading } = useAuth();
-  const [mode, setMode] = useState<"login" | "signup">(djIntent ? "signup" : "login");
+  const { user, profile, isDJ, isAnonymous, loading: authLoading, refreshProfile } = useAuth();
+  const [mode, setMode] = useState<"login" | "signup">(djIntent || !!profile?.nickname ? "signup" : "login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [nickname, setNickname] = useState("");
+  const [nickname, setNickname] = useState(profile?.nickname && profile.nickname !== "Guest" ? profile.nickname : "");
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    if (isAnonymous && profile?.nickname && profile.nickname !== "Guest" && !nickname) {
+      setNickname(profile.nickname);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAnonymous, profile?.nickname]);
+
+  useEffect(() => {
     if (authLoading || !user) return;
+    // Anonymous users stay on this page so they can upgrade via the signup form;
+    // only redirect once they've actually become a permanent account.
+    if (isAnonymous) return;
     if (djIntent) {
       navigate(isDJ ? (fromPath || "/dj") : "/dj/onboarding", { replace: true });
     } else {
       navigate(fromPath || "/", { replace: true });
     }
-  }, [user, isDJ, authLoading, navigate, djIntent, fromPath]);
+  }, [user, isDJ, isAnonymous, authLoading, navigate, djIntent, fromPath]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,16 +57,30 @@ const Auth = () => {
         const nickParse = nicknameSchema.safeParse(nickname);
         if (!nickParse.success) throw new Error(nickParse.error.issues[0].message);
 
-        const { error } = await supabase.auth.signUp({
-          email: emailParse.data,
-          password: passParse.data,
-          options: {
-            emailRedirectTo: window.location.origin,
-            data: { nickname: nickParse.data },
-          },
-        });
-        if (error) throw error;
-        toast.success("Account created! Welcome to Decks.");
+        if (isAnonymous) {
+          // Upgrade in place — same auth.uid(), keeps profile/points/history.
+          const { error } = await supabase.auth.updateUser({
+            email: emailParse.data,
+            password: passParse.data,
+          });
+          if (error) throw error;
+          await (supabase as any).rpc("upgrade_anonymous_profile", {
+            p_nickname: nickParse.data,
+          });
+          await refreshProfile();
+          toast.success("Account created — your nickname, points, and history are saved.");
+        } else {
+          const { error } = await supabase.auth.signUp({
+            email: emailParse.data,
+            password: passParse.data,
+            options: {
+              emailRedirectTo: window.location.origin,
+              data: { nickname: nickParse.data },
+            },
+          });
+          if (error) throw error;
+          toast.success("Account created! Welcome to Decks.");
+        }
         navigate(djIntent ? "/dj/onboarding" : (fromPath || "/"), { replace: true });
       } else {
         const { error } = await supabase.auth.signInWithPassword({
