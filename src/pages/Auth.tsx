@@ -86,7 +86,7 @@ const Auth = () => {
           if (error) throw error;
           toast.success("Account created! Welcome to Decks.");
         }
-        navigate(djIntent ? "/dj/onboarding" : (fromPath || "/"), { replace: true });
+        navigate((djIntent || wantsDj) ? "/dj/onboarding" : (fromPath || "/"), { replace: true });
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email: emailParse.data,
