@@ -14,6 +14,7 @@ interface AuthContextValue {
   user: User | null;
   profile: Profile | null;
   isDJ: boolean;
+  isAnonymous: boolean;
   loading: boolean;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
