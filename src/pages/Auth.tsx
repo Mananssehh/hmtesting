@@ -181,9 +181,9 @@ const Auth = () => {
                     className="mt-0.5"
                   />
                   <div className="text-sm space-y-1">
-                    <div className="font-medium">I want to create and manage DJ events.</div>
+                    <div className="font-medium">I'm a DJ</div>
                     <div className="text-[12px] text-muted-foreground">
-                      Leave unchecked if you only want to join events, vote, request songs, and tip DJs.
+                      Host events, manage your music queue, and receive tips.
                     </div>
                   </div>
                 </label>
