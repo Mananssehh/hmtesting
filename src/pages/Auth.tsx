@@ -172,6 +172,23 @@ const Auth = () => {
                 />
               </div>
 
+              {mode === "signup" && (
+                <label className="flex items-start gap-3 p-3 rounded-lg bg-secondary/40 cursor-pointer">
+                  <Checkbox
+                    id="wants-dj"
+                    checked={wantsDj}
+                    onCheckedChange={(v) => setWantsDj(v === true)}
+                    className="mt-0.5"
+                  />
+                  <div className="text-sm space-y-1">
+                    <div className="font-medium">I want to create and manage DJ events.</div>
+                    <div className="text-[12px] text-muted-foreground">
+                      Leave unchecked if you only want to join events, vote, request songs, and tip DJs.
+                    </div>
+                  </div>
+                </label>
+              )}
+
               <TabsContent value="login" className="m-0">
                 <Button type="submit" disabled={loading} variant="premium" className="w-full h-11">
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
