@@ -1,5 +1,12 @@
-// Stripe webhook receiver. PUBLIC endpoint (no JWT). Verifies signature with
-// STRIPE_WEBHOOK_SECRET (whsec_...). Handles tip lifecycle + Connect account updates.
+// Stripe webhook receiver. PUBLIC endpoint (no JWT).
+//
+// Supports TWO signing secrets so a single endpoint can receive events from
+// both the platform account and Connect (connected accounts):
+//   - STRIPE_WEBHOOK_SECRET_PLATFORM  (preferred for the platform endpoint)
+//   - STRIPE_WEBHOOK_SECRET_CONNECT   (preferred for the Connect endpoint)
+//   - STRIPE_WEBHOOK_SECRET           (legacy single-secret fallback)
+//
+// The handler tries each configured secret until one verifies the signature.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, getStripe, json } from "../_shared/stripe.ts";
 
@@ -7,9 +14,14 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
 
-  const secret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
-  if (!secret) {
-    console.error("STRIPE_WEBHOOK_SECRET missing");
+  const secrets = [
+    Deno.env.get("STRIPE_WEBHOOK_SECRET_PLATFORM"),
+    Deno.env.get("STRIPE_WEBHOOK_SECRET_CONNECT"),
+    Deno.env.get("STRIPE_WEBHOOK_SECRET"),
+  ].filter((s): s is string => !!s);
+
+  if (secrets.length === 0) {
+    console.error("No STRIPE_WEBHOOK_SECRET* configured");
     return json({ error: "Webhook secret not configured" }, 500);
   }
 
@@ -19,11 +31,18 @@ Deno.serve(async (req) => {
   const stripe = getStripe();
   const raw = await req.text();
 
-  let event;
-  try {
-    event = await stripe.webhooks.constructEventAsync(raw, sig, secret);
-  } catch (e) {
-    console.error("[stripe-webhook] signature verification failed", (e as Error).message);
+  let event: any = null;
+  let lastErr: unknown = null;
+  for (const secret of secrets) {
+    try {
+      event = await stripe.webhooks.constructEventAsync(raw, sig, secret);
+      break;
+    } catch (e) {
+      lastErr = e;
+    }
+  }
+  if (!event) {
+    console.error("[stripe-webhook] signature verification failed", (lastErr as Error)?.message);
     return json({ error: "Invalid signature" }, 400);
   }
 
@@ -72,6 +91,24 @@ Deno.serve(async (req) => {
         if (d.payment_intent) {
           await admin.from("dj_tips").update({ status: "disputed" })
             .eq("stripe_payment_intent_id", d.payment_intent);
+        }
+        break;
+      }
+      case "charge.dispute.closed": {
+        const d: any = event.data.object;
+        if (d.payment_intent) {
+          // Map dispute outcome back onto the tip row.
+          // won  -> tip stands (succeeded)
+          // lost -> funds reversed (refunded)
+          // warning_closed / other -> leave as disputed
+          const next =
+            d.status === "won" ? "succeeded" :
+            d.status === "lost" ? "refunded" :
+            null;
+          if (next) {
+            await admin.from("dj_tips").update({ status: next })
+              .eq("stripe_payment_intent_id", d.payment_intent);
+          }
         }
         break;
       }
