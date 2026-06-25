@@ -1,13 +1,16 @@
+import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Disc3, LogOut, User as UserIcon } from "lucide-react";
+import { Disc3, LogOut, Sparkles, User as UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
+import { UpgradeAccountDialog } from "@/components/UpgradeAccountDialog";
 
 export function AppHeader() {
-  const { user, profile, isDJ, signOut } = useAuth();
+  const { user, profile, isDJ, isAnonymous, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
