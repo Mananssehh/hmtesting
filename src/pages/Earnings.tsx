@@ -160,14 +160,25 @@ export default function Earnings() {
     const month = startOf("month");
 
     // --- Tip $$ stats (from dj_tips) ---
-    const succeededTips = tips.filter((t) => t.status === "succeeded");
-    const tipCount = succeededTips.length;
-    const tipGrossCents = succeededTips.reduce((s, t) => s + (t.gross_amount_cents || 0), 0);
-    const tipNetCents = succeededTips.reduce((s, t) => s + (t.net_amount_cents || 0), 0);
+    // Only succeeded + partially_refunded count toward earnings; refunded amounts
+    // are subtracted (proportionally for net) so a refund reduces totals.
+    const activeTips = tips.filter((t) => ACTIVE_TIP_STATUSES.has(t.status));
+    const effectiveGross = (t: TipRow) =>
+      Math.max(0, (t.gross_amount_cents || 0) - (t.refunded_amount_cents || 0));
+    const effectiveNet = (t: TipRow) => {
+      const gross = t.gross_amount_cents || 0;
+      const refunded = t.refunded_amount_cents || 0;
+      if (gross <= 0) return 0;
+      const frac = Math.max(0, (gross - refunded) / gross);
+      return Math.round((t.net_amount_cents || 0) * frac);
+    };
+    const tipCount = activeTips.length;
+    const tipGrossCents = activeTips.reduce((s, t) => s + effectiveGross(t), 0);
+    const tipNetCents = activeTips.reduce((s, t) => s + effectiveNet(t), 0);
     const sumTipsSince = (ts: number) =>
-      succeededTips
+      activeTips
         .filter((t) => new Date(t.created_at).getTime() >= ts)
-        .reduce((s, t) => s + (t.gross_amount_cents || 0), 0);
+        .reduce((s, t) => s + effectiveGross(t), 0);
     const tipsTodayCents = sumTipsSince(today);
     const tipsWeekCents = sumTipsSince(week);
     const tipsMonthCents = sumTipsSince(month);
@@ -182,12 +193,12 @@ export default function Earnings() {
       d.setDate(d.getDate() - i);
       const start = d.getTime();
       const end = start + 86400000;
-      const value = succeededTips
+      const value = activeTips
         .filter((t) => {
           const ts = new Date(t.created_at).getTime();
           return ts >= start && ts < end;
         })
-        .reduce((s, t) => s + (t.gross_amount_cents || 0), 0);
+        .reduce((s, t) => s + effectiveGross(t), 0);
       days.push({ label: dayNames[d.getDay()], value, isToday: i === 0 });
     }
 
