@@ -36,9 +36,21 @@ interface TipRow {
   user_id: string;
   gross_amount_cents: number;
   net_amount_cents: number;
+  platform_fee_cents: number;
+  refunded_amount_cents: number;
   status: string;
   created_at: string;
 }
+
+const TIP_STATUS_LABEL: Record<string, { label: string; tone: string }> = {
+  succeeded: { label: "Paid", tone: "border-emerald-500/40 text-emerald-300" },
+  partially_refunded: { label: "Partially Refunded", tone: "border-amber-500/40 text-amber-300" },
+  refunded: { label: "Refunded", tone: "border-muted-foreground/40 text-muted-foreground" },
+  disputed: { label: "Disputed", tone: "border-orange-500/40 text-orange-300" },
+  failed: { label: "Failed", tone: "border-destructive/40 text-destructive" },
+  pending: { label: "Pending", tone: "border-muted-foreground/30 text-muted-foreground" },
+};
+const ACTIVE_TIP_STATUSES = new Set(["succeeded", "partially_refunded"]);
 
 const startOf = (period: "day" | "week" | "month") => {
   const d = new Date();
