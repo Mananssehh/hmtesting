@@ -211,8 +211,8 @@ Deno.serve(async (req) => {
           dj_id: ev.dj_id,
           event_id: eventId,
         },
-        success_url: `${origin}/event/${eventId}?tip=success`,
-        cancel_url: `${origin}/event/${eventId}?tip=cancel`,
+        success_url: `${origin}/event/${ev.room_code ?? eventId}?tip=success`,
+        cancel_url: `${origin}/event/${ev.room_code ?? eventId}?tip=cancel`,
       });
     } catch (se: any) {
       const stripe_error = serializeStripeError(se);
