@@ -415,8 +415,52 @@ export default function Earnings() {
           </Card>
         </section>
 
+        {/* Recent tip history */}
+        <section>
+          <h2 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-3">Recent tips</h2>
+          <Card className="bg-card/60">
+            <CardContent className="p-0 divide-y divide-border/40">
+              {loading ? (
+                <div className="p-6 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+              ) : recentTips.length === 0 ? (
+                <div className="p-6 text-sm text-muted-foreground text-center">No tips yet.</div>
+              ) : (
+                recentTips.map((t) => {
+                  const meta = TIP_STATUS_LABEL[t.status] ?? { label: t.status, tone: "border-muted-foreground/30 text-muted-foreground" };
+                  const refunded = t.refunded_amount_cents || 0;
+                  const gross = t.gross_amount_cents || 0;
+                  const net = gross - refunded;
+                  const isReduced = t.status === "refunded" || t.status === "partially_refunded" || t.status === "disputed" || t.status === "failed";
+                  return (
+                    <div key={t.id} className="flex items-center justify-between gap-3 px-4 py-3">
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium">
+                          ${(gross / 100).toFixed(2)}
+                          {refunded > 0 && t.status === "partially_refunded" && (
+                            <span className="text-muted-foreground text-xs ml-1">(− ${(refunded / 100).toFixed(2)} refunded)</span>
+                          )}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground">
+                          {new Date(t.created_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className={`text-sm tabular-nums ${isReduced ? "text-muted-foreground line-through" : "font-semibold text-primary"}`}>
+                          ${(net / 100).toFixed(2)}
+                        </div>
+                        <Badge variant="outline" className={meta.tone}>{meta.label}</Badge>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </CardContent>
+          </Card>
+        </section>
+
         {/* Payout summary (live Stripe Connect) */}
         <PayoutSummaryCard />
+
 
         {eventIds.length === 0 && !loading && (
           <div className="text-center py-10 text-muted-foreground">
