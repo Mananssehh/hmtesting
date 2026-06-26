@@ -84,8 +84,18 @@ const Auth = () => {
             },
           });
           if (error) throw error;
+          // Fire-and-forget welcome email; never block signup on email send.
+          supabase.functions.invoke("send-transactional-email", {
+            body: {
+              templateName: "guest-welcome",
+              recipientEmail: emailParse.data,
+              idempotencyKey: `guest-welcome:${emailParse.data.toLowerCase()}`,
+              templateData: { nickname: nickParse.data },
+            },
+          }).catch(() => undefined);
           toast.success("Account created! Welcome to Decks.");
         }
+
         navigate((djIntent || wantsDj) ? "/dj/onboarding" : (fromPath || "/"), { replace: true });
       } else {
         const { error } = await supabase.auth.signInWithPassword({

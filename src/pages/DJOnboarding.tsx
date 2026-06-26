@@ -32,8 +32,20 @@ const DJOnboarding = () => {
       const { error } = await supabase.rpc("claim_dj_role");
       if (error) throw new Error(error.message);
       await refreshProfile();
+      const email = user?.email;
+      if (email) {
+        supabase.functions.invoke("send-transactional-email", {
+          body: {
+            templateName: "dj-welcome",
+            recipientEmail: email,
+            idempotencyKey: `dj-welcome:${user!.id}`,
+            templateData: { djName: (user!.user_metadata as any)?.nickname ?? "there" },
+          },
+        }).catch(() => undefined);
+      }
       toast.success("You're a DJ now 🎧");
       navigate("/dj", { replace: true });
+
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not activate DJ access");
     } finally {
