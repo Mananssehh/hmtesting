@@ -347,8 +347,10 @@ Deno.serve(async (req) => {
           refundId: r.id,
           refundedAt: r.created ?? null,
         });
+        if (tip) await notifyRefund(tip.id, r.id ?? null);
         break;
       }
+
       case "charge.dispute.created": {
         const d: any = event.data.object;
         if (d.payment_intent) {
