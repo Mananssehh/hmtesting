@@ -17,6 +17,7 @@ const LABELS: Record<Exclude<Status, "loading">, { label: string; tone: string }
 
 export function PayoutStatusCard() {
   const [status, setStatus] = useState<Status>("loading");
+  const [mode, setMode] = useState<"live" | "test" | null>(null);
   const [busy, setBusy] = useState(false);
 
   const refresh = async () => {
@@ -24,6 +25,7 @@ export function PayoutStatusCard() {
       const { data, error } = await supabase.functions.invoke("stripe-connect-refresh");
       if (error) throw error;
       setStatus((data?.status as Status) ?? "not_started");
+      if (data?.mode === "live" || data?.mode === "test") setMode(data.mode);
     } catch (e: any) {
       console.error(e);
       setStatus("not_started");
@@ -98,7 +100,12 @@ export function PayoutStatusCard() {
           Decks keeps a 30% platform fee; you receive 70% of every tip.
         </p>
         <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-          <ShieldCheck className="h-3.5 w-3.5" /> Test mode · No banking forms inside Decks
+          <ShieldCheck className="h-3.5 w-3.5" />
+          {mode === "live"
+            ? "Live mode · Secure Stripe-hosted onboarding"
+            : mode === "test"
+            ? "Test mode · No banking forms inside Decks"
+            : "Secure Stripe-hosted onboarding"}
         </div>
         <div className="flex flex-wrap gap-2 pt-1">
           {!isReady && (

@@ -1,7 +1,7 @@
 // Re-fetches the DJ's Stripe Connect account status and syncs charges_enabled
 // / payouts_enabled / details_submitted into dj_payout_accounts.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { corsHeaders, getStripe, json } from "../_shared/stripe.ts";
+import { corsHeaders, getStripe, getStripeMode, json } from "../_shared/stripe.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -36,6 +36,7 @@ Deno.serve(async (req) => {
         charges_enabled: false,
         payouts_enabled: false,
         details_submitted: false,
+        mode: getStripeMode(),
       });
     }
 
@@ -61,6 +62,7 @@ Deno.serve(async (req) => {
       payouts_enabled: acct.payouts_enabled,
       details_submitted: acct.details_submitted,
       requirements: acct.requirements ?? null,
+      mode: acct.livemode ? "live" : "test",
     });
   } catch (e) {
     console.error("[stripe-connect-refresh]", e);
