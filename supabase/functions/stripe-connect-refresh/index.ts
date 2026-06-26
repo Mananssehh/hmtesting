@@ -62,6 +62,7 @@ Deno.serve(async (req) => {
       payouts_enabled: acct.payouts_enabled,
       details_submitted: acct.details_submitted,
       requirements: acct.requirements ?? null,
+      mode: acct.livemode ? "live" : "test",
     });
   } catch (e) {
     console.error("[stripe-connect-refresh]", e);
