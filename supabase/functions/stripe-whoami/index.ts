@@ -1,4 +1,5 @@
-// Public diagnostic: returns the Stripe account the STRIPE_SECRET_KEY belongs to.
+// Public diagnostic: inspects STRIPE_SECRET_KEY shape and calls Stripe.
+// Never prints the full key.
 import Stripe from "https://esm.sh/stripe@17.5.0?target=denonext";
 
 const cors = {
@@ -6,26 +7,69 @@ const cors = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+function jsonResp(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body, null, 2), {
+    status,
+    headers: { ...cors, "Content-Type": "application/json" },
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
-  const key = Deno.env.get("STRIPE_SECRET_KEY") ?? "";
-  if (!key) {
-    return new Response(JSON.stringify({ error: "no key" }), { status: 500, headers: { ...cors, "Content-Type": "application/json" } });
+
+  const raw = Deno.env.get("STRIPE_SECRET_KEY") ?? "";
+  const trimmed = raw.trim();
+
+  const shape = {
+    present: raw.length > 0,
+    starts_with_sk_live: trimmed.startsWith("sk_live_"),
+    starts_with_sk_test: trimmed.startsWith("sk_test_"),
+    length: trimmed.length,
+    last4: trimmed.slice(-4),
+    raw_length: raw.length,
+    has_leading_space: raw.length > 0 && raw[0] !== trimmed[0],
+    has_trailing_whitespace: raw.length !== trimmed.length && raw.trimEnd().length !== raw.length,
+    has_newline: /\r|\n/.test(raw),
+    has_internal_whitespace: /\s/.test(trimmed),
+    read_at: new Date().toISOString(),
+  };
+
+  if (!shape.present) {
+    return jsonResp({ shape, error: "STRIPE_SECRET_KEY not set" }, 200);
   }
-  const stripe = new Stripe(key, { apiVersion: "2024-12-18.acacia", httpClient: Stripe.createFetchHttpClient() });
+
+  // Use trimmed key for the API call so a stray newline doesn't itself cause the error.
+  const stripe = new Stripe(trimmed, {
+    apiVersion: "2024-12-18.acacia",
+    httpClient: Stripe.createFetchHttpClient(),
+  });
+
   try {
     const acct = await stripe.accounts.retrieve();
-    return new Response(JSON.stringify({
-      key_mode: key.startsWith("sk_test_") ? "test" : key.startsWith("sk_live_") ? "live" : "unknown",
-      key_tail: key.slice(-4),
-      account_id: acct.id,
-      email: acct.email,
-      business_profile: acct.business_profile,
-      country: acct.country,
-      type: acct.type,
-      settings_dashboard: (acct as any).settings?.dashboard ?? null,
-    }, null, 2), { headers: { ...cors, "Content-Type": "application/json" } });
+    return jsonResp({
+      shape,
+      stripe_ok: true,
+      account: {
+        id: acct.id,
+        email: acct.email,
+        country: acct.country,
+        type: acct.type,
+        livemode: (acct as any).livemode ?? null,
+        details_submitted: acct.details_submitted,
+        charges_enabled: acct.charges_enabled,
+      },
+    });
   } catch (e: any) {
-    return new Response(JSON.stringify({ error: e?.message, type: e?.type, code: e?.code }), { status: 400, headers: { ...cors, "Content-Type": "application/json" } });
+    return jsonResp({
+      shape,
+      stripe_ok: false,
+      stripe_error: {
+        http_status: e?.statusCode ?? null,
+        type: e?.type ?? null,
+        code: e?.code ?? null,
+        message: e?.message ?? String(e),
+        request_id: e?.requestId ?? null,
+      },
+    });
   }
 });
