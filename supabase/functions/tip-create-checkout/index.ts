@@ -56,7 +56,17 @@ Deno.serve(async (req) => {
     );
     if (!claims?.claims) return err("UNAUTHORIZED", "Please sign in to tip.", 401);
     const userId = claims.claims.sub as string;
-    const email = (claims.claims.email as string | undefined) ?? undefined;
+    const rawEmail = (claims.claims.email as string | undefined) ?? undefined;
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const trimmed = (rawEmail ?? "").trim().toLowerCase();
+    const isPlaceholder =
+      !trimmed ||
+      trimmed === "guest" ||
+      trimmed === "anonymous" ||
+      trimmed === "undefined" ||
+      trimmed === "null" ||
+      trimmed.endsWith("@example.com");
+    const email = !isPlaceholder && EMAIL_RE.test(trimmed) ? trimmed : undefined;
 
     const body = await req.json().catch(() => ({}));
     const eventId = (body.event_id as string | null) ?? null;
