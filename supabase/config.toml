@@ -9,3 +9,5 @@ project_id = "rwdgnapajxcxktmewlxb"
     verify_jwt = false
   [functions.process-email-queue]
     verify_jwt = true
+  [functions.stripe-whoami]
+    verify_jwt = false
