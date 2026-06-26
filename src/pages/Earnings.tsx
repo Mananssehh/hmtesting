@@ -356,7 +356,7 @@ function Mini({ label, value, suffix, loading }: { label: string; value: number 
   );
 }
 
-function Stat({ icon, label, value, loading }: { icon: React.ReactNode; label: string; value: number; loading: boolean }) {
+function Stat({ icon, label, value, loading }: { icon: React.ReactNode; label: string; value: number | string; loading: boolean }) {
   return (
     <Card className="bg-card/60">
       <CardContent className="py-4">
@@ -364,7 +364,9 @@ function Stat({ icon, label, value, loading }: { icon: React.ReactNode; label: s
           <span className="text-primary">{icon}</span>
           {label}
         </div>
-        <div className="text-2xl font-bold tabular-nums mt-1">{loading ? "—" : value.toLocaleString()}</div>
+        <div className="text-2xl font-bold tabular-nums mt-1">
+          {loading ? "—" : typeof value === "number" ? value.toLocaleString() : value}
+        </div>
       </CardContent>
     </Card>
   );
