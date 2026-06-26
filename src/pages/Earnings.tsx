@@ -223,12 +223,12 @@ export default function Earnings() {
           <CardContent className="p-5 sm:p-7">
             <div className="grid sm:grid-cols-2 gap-6 items-center">
               <div>
-                <div className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Tip Activity</div>
+                <div className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Tips received</div>
                 <div className="mt-2 flex items-baseline gap-2">
                   <span className="text-5xl sm:text-6xl font-bold tabular-nums text-primary drop-shadow-[0_0_20px_hsl(var(--primary)/0.4)]">
-                    {loading ? "—" : stats.totalBoosts.toLocaleString()}
+                    {loading ? "—" : `$${(stats.tipGrossCents / 100).toFixed(2)}`}
                   </span>
-                  <span className="text-muted-foreground text-sm">tip points</span>
+                  <span className="text-muted-foreground text-sm">{stats.tipCount} tip{stats.tipCount === 1 ? "" : "s"}</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-3 leading-relaxed">
                   Cash payouts unlock when Stripe Connect is enabled. Tips do not affect song placement —
