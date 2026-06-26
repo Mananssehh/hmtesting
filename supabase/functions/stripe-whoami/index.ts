@@ -46,6 +46,26 @@ Deno.serve(async (req) => {
 
   try {
     const acct = await stripe.accounts.retrieve();
+    const url = new URL(req.url);
+    const probeId = url.searchParams.get("account");
+    let probe: any = null;
+    if (probeId) {
+      try {
+        const a = await stripe.accounts.retrieve(probeId);
+        probe = {
+          id: a.id,
+          livemode: (a as any).livemode ?? null,
+          type: a.type,
+          charges_enabled: a.charges_enabled,
+          payouts_enabled: a.payouts_enabled,
+          details_submitted: a.details_submitted,
+          country: a.country,
+          email: a.email,
+        };
+      } catch (e: any) {
+        probe = { error: e?.message, code: e?.code, type: e?.type };
+      }
+    }
     return jsonResp({
       shape,
       stripe_ok: true,
@@ -58,6 +78,7 @@ Deno.serve(async (req) => {
         details_submitted: acct.details_submitted,
         charges_enabled: acct.charges_enabled,
       },
+      probe,
     });
   } catch (e: any) {
     return jsonResp({
