@@ -92,6 +92,161 @@ Deno.serve(async (req) => {
     await admin.from("dj_tips").update(patch).eq("id", args.tip.id);
   }
 
+  // Send an app email through send-transactional-email. Failures never break
+  // the webhook — Stripe must still get a 200 so it doesn't retry the payment
+  // event. Idempotency keys make this safe to call multiple times.
+  async function sendEmail(opts: {
+    templateName: string;
+    recipientEmail: string | null | undefined;
+    idempotencyKey: string;
+    templateData: Record<string, unknown>;
+  }) {
+    try {
+      if (!opts.recipientEmail) return;
+      const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const e = opts.recipientEmail.trim().toLowerCase();
+      if (!EMAIL_RE.test(e) || e.endsWith("@example.com")) return;
+      const { error } = await admin.functions.invoke("send-transactional-email", {
+        body: {
+          templateName: opts.templateName,
+          recipientEmail: e,
+          idempotencyKey: opts.idempotencyKey,
+          templateData: opts.templateData,
+        },
+      });
+      if (error) console.warn("[stripe-webhook] sendEmail error", opts.templateName, error.message);
+    } catch (e) {
+      console.warn("[stripe-webhook] sendEmail threw", opts.templateName, (e as Error).message);
+    }
+  }
+
+  // Resolve auth user email by id.
+  async function getUserEmail(userId: string | null | undefined): Promise<string | null> {
+    if (!userId) return null;
+    try {
+      const { data } = await admin.auth.admin.getUserById(userId);
+      return data?.user?.email ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  async function getNickname(userId: string | null | undefined): Promise<string | null> {
+    if (!userId) return null;
+    const { data } = await admin.from("profiles").select("nickname").eq("id", userId).maybeSingle();
+    return data?.nickname ?? null;
+  }
+
+  async function getEvent(eventId: string | null | undefined) {
+    if (!eventId) return null;
+    const { data } = await admin.from("events").select("id, name, dj_name, dj_id, room_code").eq("id", eventId).maybeSingle();
+    return data;
+  }
+
+  // Pull a receipt URL from the latest charge of a PI (best-effort).
+  async function getReceiptUrl(paymentIntentId: string | null | undefined, account?: string | null): Promise<string | null> {
+    if (!paymentIntentId) return null;
+    try {
+      const opts = account ? { stripeAccount: account } : undefined;
+      const pi: any = await stripe.paymentIntents.retrieve(
+        paymentIntentId,
+        { expand: ["latest_charge"] },
+        opts as any,
+      );
+      const ch = pi.latest_charge;
+      if (ch && typeof ch === "object") return ch.receipt_url ?? null;
+    } catch {
+      // ignore
+    }
+    return null;
+  }
+
+  // After a tip succeeds, fan out DJ + guest emails (idempotent per tip id).
+  async function notifyTipSucceeded(tipId: string | null | undefined) {
+    if (!tipId) return;
+    const { data: tip } = await admin.from("dj_tips").select("*").eq("id", tipId).maybeSingle();
+    if (!tip) return;
+    const ev = await getEvent(tip.event_id);
+    const djEmail = await getUserEmail(tip.dj_id);
+    const guestEmail = await getUserEmail(tip.user_id);
+    const guestNickname = (await getNickname(tip.user_id)) ?? "Anonymous";
+    const djName = ev?.dj_name ?? (await getNickname(tip.dj_id)) ?? "DJ";
+    const eventName = ev?.name ?? "Decks event";
+    const receiptUrl = await getReceiptUrl(tip.stripe_payment_intent_id);
+
+    await Promise.all([
+      sendEmail({
+        templateName: "dj-tip-notification",
+        recipientEmail: djEmail,
+        idempotencyKey: `dj-tip-notification:${tip.id}`,
+        templateData: {
+          djName,
+          guestName: guestNickname,
+          eventName,
+          grossAmountCents: tip.gross_amount_cents,
+          netAmountCents: tip.net_amount_cents,
+        },
+      }),
+      sendEmail({
+        templateName: "guest-tip-thank-you",
+        recipientEmail: guestEmail,
+        idempotencyKey: `guest-tip-thank-you:${tip.id}`,
+        templateData: {
+          djName,
+          eventName,
+          amountCents: tip.gross_amount_cents,
+          receiptUrl,
+          roomCode: ev?.room_code ?? null,
+        },
+      }),
+    ]);
+  }
+
+  // After a refund is applied, notify both sides (idempotent per refund id).
+  async function notifyRefund(tipId: string, refundId: string | null | undefined) {
+    const { data: tip } = await admin.from("dj_tips").select("*").eq("id", tipId).maybeSingle();
+    if (!tip) return;
+    const ev = await getEvent(tip.event_id);
+    const djEmail = await getUserEmail(tip.dj_id);
+    const guestEmail = await getUserEmail(tip.user_id);
+    const guestNickname = (await getNickname(tip.user_id)) ?? "Anonymous";
+    const djName = ev?.dj_name ?? (await getNickname(tip.dj_id)) ?? "DJ";
+    const eventName = ev?.name ?? "Decks event";
+    const fullyRefunded = tip.status === "refunded";
+    const receiptUrl = await getReceiptUrl(tip.stripe_payment_intent_id);
+    const idemSuffix = refundId ?? tip.refund_id ?? `${tip.refunded_amount_cents}`;
+
+    await Promise.all([
+      sendEmail({
+        templateName: "refund-dj",
+        recipientEmail: djEmail,
+        idempotencyKey: `refund-dj:${tip.id}:${idemSuffix}`,
+        templateData: {
+          djName,
+          guestName: guestNickname,
+          eventName,
+          grossAmountCents: tip.gross_amount_cents,
+          refundedAmountCents: tip.refunded_amount_cents ?? tip.gross_amount_cents,
+          fullyRefunded,
+        },
+      }),
+      sendEmail({
+        templateName: "refund-guest",
+        recipientEmail: guestEmail,
+        idempotencyKey: `refund-guest:${tip.id}:${idemSuffix}`,
+        templateData: {
+          djName,
+          eventName,
+          grossAmountCents: tip.gross_amount_cents,
+          refundedAmountCents: tip.refunded_amount_cents ?? tip.gross_amount_cents,
+          fullyRefunded,
+          receiptUrl,
+        },
+      }),
+    ]);
+  }
+
+
   try {
     switch (event.type) {
       case "checkout.session.completed": {
@@ -115,8 +270,12 @@ Deno.serve(async (req) => {
           livemode: !!event.livemode,
           ...(chargeId ? { stripe_charge_id: chargeId } : {}),
         }).eq("stripe_payment_intent_id", pi.id);
+        const { data: tipRow } = await admin
+          .from("dj_tips").select("id").eq("stripe_payment_intent_id", pi.id).maybeSingle();
+        if (tipRow?.id) await notifyTipSucceeded(tipRow.id);
         break;
       }
+
       case "payment_intent.payment_failed": {
         const pi: any = event.data.object;
         await admin.from("dj_tips").update({
@@ -149,8 +308,10 @@ Deno.serve(async (req) => {
           refundId: refund?.id ?? null,
           refundedAt: refund?.created ?? null,
         });
+        if (tip) await notifyRefund(tip.id, refund?.id ?? null);
         break;
       }
+
       case "refund.created":
       case "refund.updated": {
         const r: any = event.data.object;
@@ -186,8 +347,10 @@ Deno.serve(async (req) => {
           refundId: r.id,
           refundedAt: r.created ?? null,
         });
+        if (tip) await notifyRefund(tip.id, r.id ?? null);
         break;
       }
+
       case "charge.dispute.created": {
         const d: any = event.data.object;
         if (d.payment_intent) {
