@@ -238,7 +238,7 @@ export default function Earnings() {
       mostPlayed,
       topGuests,
     };
-  }, [songs, participants, tips]);
+  }, [songs, participants, tips, profileNicknames]);
 
   if (authLoading) return null;
   if (!user) return <Navigate to="/auth?role=dj" replace />;
