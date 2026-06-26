@@ -131,6 +131,12 @@ export function TipDialog({ open, onOpenChange, eventId, djName, songTitle }: Pr
       }
 
       if (payload?.error_code) {
+        // Surface raw Stripe error detail when present so we don't hide the root cause.
+        console.error("[TipDialog] tip-create-checkout payload:", payload);
+        const se = payload.stripe_error;
+        const stripeDetail = se
+          ? `Stripe ${se.http_status ?? "?"} ${se.stripe_type ?? ""} ${se.stripe_code ?? ""}: ${se.message ?? ""} (req ${se.request_id ?? "n/a"})`
+          : null;
         const friendly: Record<string, string> = {
           DJ_PAYOUTS_NOT_READY: payload.message ?? "This DJ hasn't set up payouts yet — tips aren't available for this event.",
           STRIPE_CONFIG_ERROR: "Tips are temporarily unavailable (payment provider not configured).",
@@ -138,12 +144,12 @@ export function TipDialog({ open, onOpenChange, eventId, djName, songTitle }: Pr
           CONSENT_REQUIRED: "Please acknowledge the tip notice to continue.",
           SELF_TIP: "You cannot tip yourself.",
           EVENT_NOT_FOUND: "Event not found.",
-          STRIPE_CHECKOUT_FAILED: "Payment setup failed. Please try again.",
+          STRIPE_CHECKOUT_FAILED: stripeDetail ?? payload.message ?? "Stripe rejected the checkout request.",
           UNAUTHORIZED: "Please sign in to tip.",
           INVALID_REQUEST: payload.message ?? "Invalid request.",
           SERVICE_FAILED: "Something went wrong. Please try again.",
         };
-        toast.error(friendly[payload.error_code] ?? payload.message ?? "Couldn't process tip");
+        toast.error(friendly[payload.error_code] ?? payload.message ?? "Couldn't process tip", { duration: 12000 });
         if (payload.error_code === "DJ_PAYOUTS_NOT_READY") {
           setPayoutReady(false);
           setPayoutMessage(friendly.DJ_PAYOUTS_NOT_READY);

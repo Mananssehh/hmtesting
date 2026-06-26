@@ -19,8 +19,22 @@ type ErrorCode =
   | "STRIPE_CHECKOUT_FAILED"
   | "SERVICE_FAILED";
 
-function err(code: ErrorCode, message: string, status = 200) {
-  return json({ error_code: code, error: message, message }, status);
+function err(code: ErrorCode, message: string, status = 200, extra: Record<string, unknown> = {}) {
+  return json({ error_code: code, error: message, message, ...extra }, status);
+}
+
+function serializeStripeError(e: any) {
+  const raw = e?.raw ?? {};
+  return {
+    http_status: e?.statusCode ?? raw?.statusCode ?? null,
+    request_id: e?.requestId ?? raw?.request_log_url ?? null,
+    stripe_type: e?.type ?? raw?.type ?? null,
+    stripe_code: e?.code ?? raw?.code ?? null,
+    decline_code: e?.decline_code ?? raw?.decline_code ?? null,
+    param: e?.param ?? raw?.param ?? null,
+    doc_url: e?.doc_url ?? raw?.doc_url ?? null,
+    message: e?.message ?? raw?.message ?? String(e),
+  };
 }
 
 Deno.serve(async (req) => {
@@ -84,7 +98,7 @@ Deno.serve(async (req) => {
     // DJ Connect status
     const { data: payout } = await admin
       .from("dj_payout_accounts")
-      .select("stripe_account_id, charges_enabled, payouts_enabled, details_submitted")
+      .select("stripe_account_id, charges_enabled, payouts_enabled, details_submitted, livemode")
       .eq("user_id", ev.dj_id)
       .maybeSingle();
 
@@ -93,19 +107,31 @@ Deno.serve(async (req) => {
       payout.charges_enabled &&
       payout.payouts_enabled
     );
+    const modeMismatch = !!(payout?.stripe_account_id && payout.livemode !== stripeLiveMode);
 
     console.log("[tip-create-checkout] context", {
       user_id: userId,
       event_id: eventId,
       dj_id: ev.dj_id,
       amount_cents: amountCents,
-      has_stripe_key: hasStripeKey,
+      key_live_mode: stripeLiveMode,
       stripe_account_id_present: !!payout?.stripe_account_id,
+      account_livemode: payout?.livemode ?? null,
+      mode_mismatch: modeMismatch,
       charges_enabled: !!payout?.charges_enabled,
       payouts_enabled: !!payout?.payouts_enabled,
       details_submitted: !!payout?.details_submitted,
       check_only: checkOnly,
     });
+
+    if (modeMismatch) {
+      return err(
+        "DJ_PAYOUTS_NOT_READY",
+        `This DJ's payout account is in ${payout?.livemode ? "live" : "test"} mode but Decks is in ${stripeLiveMode ? "live" : "test"} mode. The DJ needs to reconnect payouts.`,
+        200,
+        { mode_mismatch: true, account_livemode: payout?.livemode, key_live_mode: stripeLiveMode },
+      );
+    }
 
     if (!payoutReady) {
       return err(
@@ -178,11 +204,15 @@ Deno.serve(async (req) => {
         success_url: `${origin}/event/${eventId}?tip=success`,
         cancel_url: `${origin}/event/${eventId}?tip=cancel`,
       });
-    } catch (se) {
-      console.error("[tip-create-checkout] stripe checkout failed", {
-        message: (se as Error).message,
-      });
-      return err("STRIPE_CHECKOUT_FAILED", "Payment setup failed. Please try again.");
+    } catch (se: any) {
+      const stripe_error = serializeStripeError(se);
+      console.error("[tip-create-checkout][RAW checkout.sessions.create error]", JSON.stringify(stripe_error));
+      return err(
+        "STRIPE_CHECKOUT_FAILED",
+        `Stripe ${stripe_error.http_status ?? "?"} ${stripe_error.stripe_type ?? ""} ${stripe_error.stripe_code ?? ""}: ${stripe_error.message} (req ${stripe_error.request_id ?? "n/a"})`,
+        200,
+        { stripe_error, endpoint: "POST /v1/checkout/sessions", destination_account: payout?.stripe_account_id, destination_livemode: payout?.livemode, key_live_mode: stripeLiveMode },
+      );
     }
 
     await admin.from("dj_tips").insert({
