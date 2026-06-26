@@ -125,7 +125,7 @@ export default function Earnings() {
     const avgTipCentsPerGuest = uniqueGuests > 0 ? tipGrossCents / uniqueGuests : 0;
 
     // Daily bars (last 7 days) — based on tip $$
-    const days: { label: string; value: number }[] = [];
+    const days: { label: string; value: number; isToday: boolean }[] = [];
     const dayNames = ["S", "M", "T", "W", "T", "F", "S"];
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
@@ -139,7 +139,7 @@ export default function Earnings() {
           return ts >= start && ts < end;
         })
         .reduce((s, t) => s + (t.gross_amount_cents || 0), 0);
-      days.push({ label: dayNames[d.getDay()], value });
+      days.push({ label: dayNames[d.getDay()], value, isToday: i === 0 });
     }
 
     // Top songs (request engagement, unchanged)
