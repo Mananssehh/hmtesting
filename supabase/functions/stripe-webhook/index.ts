@@ -270,8 +270,12 @@ Deno.serve(async (req) => {
           livemode: !!event.livemode,
           ...(chargeId ? { stripe_charge_id: chargeId } : {}),
         }).eq("stripe_payment_intent_id", pi.id);
+        const { data: tipRow } = await admin
+          .from("dj_tips").select("id").eq("stripe_payment_intent_id", pi.id).maybeSingle();
+        if (tipRow?.id) await notifyTipSucceeded(tipRow.id);
         break;
       }
+
       case "payment_intent.payment_failed": {
         const pi: any = event.data.object;
         await admin.from("dj_tips").update({
