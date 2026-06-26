@@ -63,14 +63,17 @@ export default function Earnings() {
       const ids = (events ?? []).map((e) => e.id);
       if (cancelled) return;
       setEventIds(ids);
-      // Tips can exist even without event scoping mismatch — query by dj_id
+      // 7-day window for the chart + weekly totals
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+      sevenDaysAgo.setHours(0, 0, 0, 0);
       const tipsQ = supabase
         .from("dj_tips")
         .select("id,event_id,user_id,gross_amount_cents,net_amount_cents,status,created_at")
         .eq("dj_id", user.id)
         .eq("status", "succeeded")
-        .order("created_at", { ascending: false })
-        .limit(2000);
+        .gte("created_at", sevenDaysAgo.toISOString())
+        .order("created_at", { ascending: true });
 
       if (ids.length === 0) {
         const { data: t } = await tipsQ;
@@ -122,7 +125,7 @@ export default function Earnings() {
     const avgTipCentsPerGuest = uniqueGuests > 0 ? tipGrossCents / uniqueGuests : 0;
 
     // Daily bars (last 7 days) — based on tip $$
-    const days: { label: string; value: number }[] = [];
+    const days: { label: string; value: number; isToday: boolean }[] = [];
     const dayNames = ["S", "M", "T", "W", "T", "F", "S"];
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
@@ -136,7 +139,7 @@ export default function Earnings() {
           return ts >= start && ts < end;
         })
         .reduce((s, t) => s + (t.gross_amount_cents || 0), 0);
-      days.push({ label: dayNames[d.getDay()], value });
+      days.push({ label: dayNames[d.getDay()], value, isToday: i === 0 });
     }
 
     // Top songs (request engagement, unchanged)
@@ -245,10 +248,16 @@ export default function Earnings() {
                       return (
                         <div key={i} className="flex flex-col items-center gap-1 flex-1 max-w-[36px]">
                           <div
-                            className="w-full rounded-t-md bg-gradient-to-t from-primary to-primary/60 shadow-glow-sm transition-all"
+                            className={`w-full rounded-t-md shadow-glow-sm transition-all ${
+                              d.isToday
+                                ? "bg-gradient-to-t from-primary to-primary/80 ring-1 ring-primary/40"
+                                : "bg-gradient-to-t from-primary to-primary/60"
+                            }`}
                             style={{ height: `${Math.max(h, 4)}%`, minHeight: 4 }}
                           />
-                          <span className="text-[10px] text-muted-foreground">{d.label}</span>
+                          <span className={`text-[10px] ${d.isToday ? "text-primary font-semibold" : "text-muted-foreground"}`}>
+                            {d.label}
+                          </span>
                         </div>
                       );
                     })}
