@@ -6,6 +6,10 @@ import { template as guestTipThankYou } from './guest-tip-thank-you.tsx'
 import { template as refundDj } from './refund-dj.tsx'
 import { template as refundGuest } from './refund-guest.tsx'
 import { template as weeklySummary } from './weekly-summary.tsx'
+import { template as guestWelcome } from './guest-welcome.tsx'
+import { template as djWelcome } from './dj-welcome.tsx'
+import { template as djStripeConnected } from './dj-stripe-connected.tsx'
+import { template as securityPasswordChanged } from './security-password-changed.tsx'
 
 export interface TemplateEntry {
   // deno-lint-ignore no-explicit-any
@@ -23,4 +27,8 @@ export const TEMPLATES: Record<string, TemplateEntry> = {
   'refund-dj': refundDj,
   'refund-guest': refundGuest,
   'weekly-summary': weeklySummary,
+  'guest-welcome': guestWelcome,
+  'dj-welcome': djWelcome,
+  'dj-stripe-connected': djStripeConnected,
+  'security-password-changed': securityPasswordChanged,
 }
