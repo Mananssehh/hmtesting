@@ -1,18 +1,19 @@
 import { useEffect, useState } from "react";
-import { CircleDollarSign, ExternalLink, Loader2, RefreshCw, ShieldCheck } from "lucide-react";
+import { AlertTriangle, CircleDollarSign, ExternalLink, Loader2, RefreshCw, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 
-type Status = "not_started" | "pending" | "action_required" | "ready" | "loading";
+type Status = "not_started" | "pending" | "action_required" | "ready" | "mode_mismatch" | "loading";
 
 const LABELS: Record<Exclude<Status, "loading">, { label: string; tone: string }> = {
   not_started: { label: "Not Started", tone: "bg-muted text-muted-foreground" },
   pending: { label: "Pending Verification", tone: "bg-amber-500/20 text-amber-200" },
   action_required: { label: "Action Required", tone: "bg-orange-500/20 text-orange-200" },
   ready: { label: "Ready for Tips", tone: "bg-emerald-500/20 text-emerald-200" },
+  mode_mismatch: { label: "Reconnect Required", tone: "bg-orange-500/20 text-orange-200" },
 };
 
 export function PayoutStatusCard() {
