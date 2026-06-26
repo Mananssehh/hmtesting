@@ -104,19 +104,33 @@ export function PayoutStatusCard() {
           Connect your secure Stripe payout account to receive tips directly through Stripe.
           Decks keeps a 30% platform fee; you receive 70% of every tip.
         </p>
+        {/* Mode label reflects the connected account's actual livemode, not the server key alone. */}
         <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
           <ShieldCheck className="h-3.5 w-3.5" />
-          {mode === "live"
+          {modeMismatch
+            ? `Live mode · Your payout account was created in ${mode === "test" ? "test" : "a different"} mode — reconnect to enable live payouts`
+            : mode === "live"
             ? "Live mode · Secure Stripe-hosted onboarding"
             : mode === "test"
             ? "Test mode · No banking forms inside Decks"
+            : keyMode === "live"
+            ? "Live mode · Secure Stripe-hosted onboarding"
             : "Secure Stripe-hosted onboarding"}
         </div>
+        {modeMismatch && (
+          <div className="flex items-start gap-2 rounded-md border border-orange-500/30 bg-orange-500/10 p-3 text-xs text-orange-100">
+            <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+            <div>
+              Your existing Stripe Connect account is in <strong>{mode}</strong> mode but Decks is now in <strong>{keyMode}</strong> mode.
+              Click <strong>Reconnect Payouts</strong> to create a fresh live Express account. Your old test account is left untouched in Stripe.
+            </div>
+          </div>
+        )}
         <div className="flex flex-wrap gap-2 pt-1">
-          {!isReady && (
+          {(!isReady || modeMismatch) && (
             <Button onClick={onSetUp} disabled={busy} variant="premium">
               {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ExternalLink className="mr-2 h-4 w-4" />}
-              {status === "not_started" ? "Set Up Payouts" : "Continue Setup"}
+              {modeMismatch ? "Reconnect Payouts" : status === "not_started" ? "Set Up Payouts" : "Continue Setup"}
             </Button>
           )}
           <Button onClick={refresh} variant="outline" size="sm" disabled={status === "loading"}>
