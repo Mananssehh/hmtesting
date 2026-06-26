@@ -56,13 +56,20 @@ Deno.serve(async (req) => {
     else if (acct.requirements?.disabled_reason || (acct.requirements?.currently_due ?? []).length > 0)
       status = acct.details_submitted ? "action_required" : "pending";
 
+    const keyMode = getStripeMode(); // "live" | "test" | "unknown"
+    const acctMode = acct.livemode ? "live" : "test";
+    const mode_mismatch = keyMode !== "unknown" && keyMode !== acctMode;
+    if (mode_mismatch) status = "mode_mismatch";
+
     return json({
       status,
       charges_enabled: acct.charges_enabled,
       payouts_enabled: acct.payouts_enabled,
       details_submitted: acct.details_submitted,
       requirements: acct.requirements ?? null,
-      mode: acct.livemode ? "live" : "test",
+      mode: acctMode,
+      key_mode: keyMode,
+      mode_mismatch,
     });
   } catch (e) {
     console.error("[stripe-connect-refresh]", e);

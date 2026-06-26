@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
     step = "lookup_existing_account";
     const { data: existing, error: existingErr } = await admin
       .from("dj_payout_accounts")
-      .select("stripe_account_id")
+      .select("stripe_account_id, livemode")
       .eq("user_id", userId)
       .maybeSingle();
     if (existingErr) {
@@ -131,7 +131,29 @@ Deno.serve(async (req) => {
     }
 
     let accountId = existing?.stripe_account_id as string | undefined;
-    console.log("[stripe-connect-onboard] existing account:", accountId ?? "(none)");
+    console.log("[stripe-connect-onboard] existing account:", accountId ?? "(none)", "livemode:", existing?.livemode);
+
+    // If the stored connected account was created under a key with a different
+    // mode than the current STRIPE_SECRET_KEY (e.g. it was a test-mode account
+    // and we've since rotated to a live key), discard it and create a fresh
+    // one. A test-mode acct_ cannot accept live charges and vice versa.
+    if (accountId) {
+      try {
+        const existingAcct = await stripe.accounts.retrieve(accountId);
+        if (existingAcct.livemode !== isLive) {
+          console.warn("[stripe-connect-onboard] mode mismatch — discarding stale account", {
+            account: accountId, account_livemode: existingAcct.livemode, key_is_live: isLive,
+          });
+          await admin.from("dj_payout_accounts").delete().eq("user_id", userId);
+          accountId = undefined;
+        }
+      } catch (e: any) {
+        // Account not retrievable on this key (different Stripe account) — discard.
+        console.warn("[stripe-connect-onboard] existing account unreachable — discarding", serializeStripeError(e));
+        await admin.from("dj_payout_accounts").delete().eq("user_id", userId);
+        accountId = undefined;
+      }
+    }
 
     let accountCreateResult: "skipped_existing" | "success" | "failed" = "skipped_existing";
 
