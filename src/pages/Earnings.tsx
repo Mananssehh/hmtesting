@@ -181,24 +181,46 @@ export default function Earnings() {
     const mostRequested = [...aggregated].sort((a, b) => b.count - a.count).slice(0, 5);
     const mostPlayed = [...aggregated].sort((a, b) => b.played - a.played).slice(0, 5).filter((s) => s.played > 0);
 
-    // Top guests — rank by tip $$, fall back to requests
+    // Top guests — keyed by auth user_id only so nickname changes don't split rows.
+    // Display-name resolution: event_participants.nickname → profiles.nickname → song_requests.requester_name → "Guest".
+    // Anonymous guests upgrading keeps the same auth.uid(), so their tips + requests stay merged.
+    const participantNickByUser = new Map<string, string>();
+    for (const p of participants) {
+      if (p.user_id && p.nickname && !participantNickByUser.has(p.user_id)) {
+        participantNickByUser.set(p.user_id, p.nickname);
+      }
+    }
+    const requesterNameByUser = new Map<string, string>();
+    for (const r of songs) {
+      if (r.requested_by && r.requester_name && !requesterNameByUser.has(r.requested_by)) {
+        requesterNameByUser.set(r.requested_by, r.requester_name);
+      }
+    }
+    const resolveName = (uid: string): string =>
+      participantNickByUser.get(uid) ||
+      profileNicknames[uid] ||
+      requesterNameByUser.get(uid) ||
+      "Guest";
+
     const guestMap = new Map<string, { name: string; tipCents: number; requests: number }>();
     for (const r of songs) {
-      const key = r.requested_by ?? r.requester_name;
-      if (!key) continue;
-      const cur = guestMap.get(key) ?? { name: r.requester_name || "Guest", tipCents: 0, requests: 0 };
+      if (!r.requested_by) continue; // skip anonymous/legacy rows with no user id
+      const cur = guestMap.get(r.requested_by) ?? { name: resolveName(r.requested_by), tipCents: 0, requests: 0 };
       cur.requests += 1;
-      guestMap.set(key, cur);
+      cur.name = resolveName(r.requested_by);
+      guestMap.set(r.requested_by, cur);
     }
     for (const t of succeededTips) {
       if (!t.user_id) continue;
-      const cur = guestMap.get(t.user_id) ?? { name: "Guest", tipCents: 0, requests: 0 };
+      const cur = guestMap.get(t.user_id) ?? { name: resolveName(t.user_id), tipCents: 0, requests: 0 };
       cur.tipCents += t.gross_amount_cents || 0;
+      cur.name = resolveName(t.user_id);
       guestMap.set(t.user_id, cur);
     }
     const topGuests = [...guestMap.values()]
       .sort((a, b) => b.tipCents - a.tipCents || b.requests - a.requests)
       .slice(0, 5);
+
 
     return {
       totalRequests,
