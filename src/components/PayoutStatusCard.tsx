@@ -17,6 +17,7 @@ const LABELS: Record<Exclude<Status, "loading">, { label: string; tone: string }
 
 export function PayoutStatusCard() {
   const [status, setStatus] = useState<Status>("loading");
+  const [mode, setMode] = useState<"live" | "test" | null>(null);
   const [busy, setBusy] = useState(false);
 
   const refresh = async () => {
@@ -24,6 +25,7 @@ export function PayoutStatusCard() {
       const { data, error } = await supabase.functions.invoke("stripe-connect-refresh");
       if (error) throw error;
       setStatus((data?.status as Status) ?? "not_started");
+      if (data?.mode === "live" || data?.mode === "test") setMode(data.mode);
     } catch (e: any) {
       console.error(e);
       setStatus("not_started");
