@@ -248,10 +248,16 @@ export default function Earnings() {
                       return (
                         <div key={i} className="flex flex-col items-center gap-1 flex-1 max-w-[36px]">
                           <div
-                            className="w-full rounded-t-md bg-gradient-to-t from-primary to-primary/60 shadow-glow-sm transition-all"
+                            className={`w-full rounded-t-md shadow-glow-sm transition-all ${
+                              d.isToday
+                                ? "bg-gradient-to-t from-primary to-primary/80 ring-1 ring-primary/40"
+                                : "bg-gradient-to-t from-primary to-primary/60"
+                            }`}
                             style={{ height: `${Math.max(h, 4)}%`, minHeight: 4 }}
                           />
-                          <span className="text-[10px] text-muted-foreground">{d.label}</span>
+                          <span className={`text-[10px] ${d.isToday ? "text-primary font-semibold" : "text-muted-foreground"}`}>
+                            {d.label}
+                          </span>
                         </div>
                       );
                     })}
