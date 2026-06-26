@@ -204,11 +204,15 @@ Deno.serve(async (req) => {
         success_url: `${origin}/event/${eventId}?tip=success`,
         cancel_url: `${origin}/event/${eventId}?tip=cancel`,
       });
-    } catch (se) {
-      console.error("[tip-create-checkout] stripe checkout failed", {
-        message: (se as Error).message,
-      });
-      return err("STRIPE_CHECKOUT_FAILED", "Payment setup failed. Please try again.");
+    } catch (se: any) {
+      const stripe_error = serializeStripeError(se);
+      console.error("[tip-create-checkout][RAW checkout.sessions.create error]", JSON.stringify(stripe_error));
+      return err(
+        "STRIPE_CHECKOUT_FAILED",
+        `Stripe ${stripe_error.http_status ?? "?"} ${stripe_error.stripe_type ?? ""} ${stripe_error.stripe_code ?? ""}: ${stripe_error.message} (req ${stripe_error.request_id ?? "n/a"})`,
+        200,
+        { stripe_error, endpoint: "POST /v1/checkout/sessions", destination_account: payout?.stripe_account_id, destination_livemode: payout?.livemode, key_live_mode: stripeLiveMode },
+      );
     }
 
     await admin.from("dj_tips").insert({
