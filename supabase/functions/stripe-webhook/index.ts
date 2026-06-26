@@ -308,8 +308,10 @@ Deno.serve(async (req) => {
           refundId: refund?.id ?? null,
           refundedAt: refund?.created ?? null,
         });
+        if (tip) await notifyRefund(tip.id, refund?.id ?? null);
         break;
       }
+
       case "refund.created":
       case "refund.updated": {
         const r: any = event.data.object;
