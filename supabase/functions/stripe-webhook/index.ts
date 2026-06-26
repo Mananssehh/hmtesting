@@ -49,6 +49,49 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
   );
 
+  // Locate the dj_tips row for a Stripe charge/refund. Tries every linking
+  // identity we know about: PI, charge id, checkout session id, metadata.tip_id.
+  // Returns the row or null.
+  async function findTip(opts: {
+    payment_intent?: string | null;
+    charge_id?: string | null;
+    checkout_session_id?: string | null;
+    tip_id?: string | null;
+  }) {
+    const tryOne = async (col: string, val: string | null | undefined) => {
+      if (!val) return null;
+      const { data } = await admin.from("dj_tips").select("*").eq(col, val).maybeSingle();
+      return data;
+    };
+    return (
+      (await tryOne("id", opts.tip_id ?? null)) ||
+      (await tryOne("stripe_payment_intent_id", opts.payment_intent ?? null)) ||
+      (await tryOne("stripe_charge_id", opts.charge_id ?? null)) ||
+      (await tryOne("stripe_checkout_session_id", opts.checkout_session_id ?? null))
+    );
+  }
+
+  // Apply a refund event to a tip row.
+  async function applyRefund(args: {
+    tip: any;
+    chargeAmount: number;        // charge.amount (gross cents)
+    amountRefunded: number;      // charge.amount_refunded (cumulative)
+    refundId?: string | null;
+    refundedAt?: number | null;  // unix seconds
+  }) {
+    if (!args.tip) return;
+    const full = args.amountRefunded >= (args.chargeAmount || args.tip.gross_amount_cents);
+    const patch: Record<string, unknown> = {
+      refunded_amount_cents: args.amountRefunded,
+      refund_id: args.refundId ?? args.tip.refund_id ?? null,
+      refunded_at: args.refundedAt
+        ? new Date(args.refundedAt * 1000).toISOString()
+        : new Date().toISOString(),
+      status: full ? "refunded" : "partially_refunded",
+    };
+    await admin.from("dj_tips").update(patch).eq("id", args.tip.id);
+  }
+
   try {
     switch (event.type) {
       case "checkout.session.completed": {
@@ -62,9 +105,15 @@ Deno.serve(async (req) => {
       }
       case "payment_intent.succeeded": {
         const pi: any = event.data.object;
+        // Capture the latest charge id so refund webhooks can locate the tip.
+        let chargeId: string | null = null;
+        if (typeof pi.latest_charge === "string") chargeId = pi.latest_charge;
+        else if (pi.latest_charge?.id) chargeId = pi.latest_charge.id;
+        else if (pi.charges?.data?.[0]?.id) chargeId = pi.charges.data[0].id;
         await admin.from("dj_tips").update({
           status: "succeeded",
           livemode: !!event.livemode,
+          ...(chargeId ? { stripe_charge_id: chargeId } : {}),
         }).eq("stripe_payment_intent_id", pi.id);
         break;
       }
@@ -76,12 +125,67 @@ Deno.serve(async (req) => {
         }).eq("stripe_payment_intent_id", pi.id);
         break;
       }
-      case "charge.refunded": {
+      case "charge.succeeded": {
+        // Backfill charge id when we only have the PI.
         const ch: any = event.data.object;
         if (ch.payment_intent) {
-          await admin.from("dj_tips").update({ status: "refunded" })
+          await admin.from("dj_tips").update({ stripe_charge_id: ch.id })
             .eq("stripe_payment_intent_id", ch.payment_intent);
         }
+        break;
+      }
+      case "charge.refunded": {
+        const ch: any = event.data.object;
+        const tip = await findTip({
+          payment_intent: typeof ch.payment_intent === "string" ? ch.payment_intent : null,
+          charge_id: ch.id,
+          tip_id: ch.metadata?.tip_id,
+        });
+        const refund = ch.refunds?.data?.[0];
+        await applyRefund({
+          tip,
+          chargeAmount: ch.amount ?? 0,
+          amountRefunded: ch.amount_refunded ?? 0,
+          refundId: refund?.id ?? null,
+          refundedAt: refund?.created ?? null,
+        });
+        break;
+      }
+      case "refund.created":
+      case "refund.updated": {
+        const r: any = event.data.object;
+        // Resolve the charge to learn cumulative amount_refunded.
+        let chargeId: string | null = typeof r.charge === "string" ? r.charge : r.charge?.id ?? null;
+        let chargeAmount = 0;
+        let amountRefunded = r.amount ?? 0;
+        let paymentIntent: string | null = null;
+        let tipMetaId: string | null = r.metadata?.tip_id ?? null;
+        try {
+          if (chargeId) {
+            const opts = event.account ? { stripeAccount: event.account } : undefined;
+            const ch: any = await stripe.charges.retrieve(chargeId, opts as any);
+            chargeAmount = ch.amount ?? 0;
+            amountRefunded = ch.amount_refunded ?? amountRefunded;
+            paymentIntent = typeof ch.payment_intent === "string" ? ch.payment_intent : null;
+            tipMetaId = tipMetaId ?? ch.metadata?.tip_id ?? null;
+          }
+        } catch (e) {
+          console.warn("[stripe-webhook] charges.retrieve failed", (e as Error).message);
+        }
+        // Treat non-succeeded refunds as a no-op (e.g. pending/failed/canceled).
+        if (r.status && r.status !== "succeeded") break;
+        const tip = await findTip({
+          payment_intent: paymentIntent,
+          charge_id: chargeId,
+          tip_id: tipMetaId,
+        });
+        await applyRefund({
+          tip,
+          chargeAmount,
+          amountRefunded,
+          refundId: r.id,
+          refundedAt: r.created ?? null,
+        });
         break;
       }
       case "charge.dispute.created": {
@@ -89,24 +193,28 @@ Deno.serve(async (req) => {
         if (d.payment_intent) {
           await admin.from("dj_tips").update({ status: "disputed" })
             .eq("stripe_payment_intent_id", d.payment_intent);
+        } else if (d.charge) {
+          await admin.from("dj_tips").update({ status: "disputed" })
+            .eq("stripe_charge_id", d.charge);
         }
         break;
       }
       case "charge.dispute.closed": {
         const d: any = event.data.object;
+        const next =
+          d.status === "won" ? "succeeded" :
+          d.status === "lost" ? "refunded" :
+          null;
+        if (!next) break;
+        const patch: Record<string, unknown> = { status: next };
+        if (next === "refunded") {
+          patch.refunded_at = new Date().toISOString();
+          patch.refunded_amount_cents = d.amount ?? null;
+        }
         if (d.payment_intent) {
-          // Map dispute outcome back onto the tip row.
-          // won  -> tip stands (succeeded)
-          // lost -> funds reversed (refunded)
-          // warning_closed / other -> leave as disputed
-          const next =
-            d.status === "won" ? "succeeded" :
-            d.status === "lost" ? "refunded" :
-            null;
-          if (next) {
-            await admin.from("dj_tips").update({ status: next })
-              .eq("stripe_payment_intent_id", d.payment_intent);
-          }
+          await admin.from("dj_tips").update(patch).eq("stripe_payment_intent_id", d.payment_intent);
+        } else if (d.charge) {
+          await admin.from("dj_tips").update(patch).eq("stripe_charge_id", d.charge);
         }
         break;
       }
