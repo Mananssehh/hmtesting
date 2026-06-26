@@ -1,0 +1,1 @@
+UPDATE public.dj_payout_accounts SET livemode = true WHERE stripe_account_id = 'acct_1TmalSBmZmcgR4E3';
