@@ -196,7 +196,7 @@ Deno.serve(async (req) => {
       status: "pending",
       stripe_checkout_session_id: session.id,
       stripe_destination_account: payout!.stripe_account_id!,
-      livemode: false,
+      livemode: stripeLiveMode,
     });
 
     return json({ url: session.url, session_id: session.id });
