@@ -180,7 +180,7 @@ Deno.serve(async (req) => {
           charges_enabled: acct.charges_enabled,
           payouts_enabled: acct.payouts_enabled,
           details_submitted: acct.details_submitted,
-          livemode: acct.livemode,
+          livemode: isLive, // Stripe Account API omits livemode; infer from key
           last_synced_at: new Date().toISOString(),
         });
         if (upsertErr) {
