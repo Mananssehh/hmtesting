@@ -36,6 +36,7 @@ Deno.serve(async (req) => {
         charges_enabled: false,
         payouts_enabled: false,
         details_submitted: false,
+        mode: getStripeMode(),
       });
     }
 
