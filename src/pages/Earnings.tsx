@@ -259,9 +259,9 @@ export default function Earnings() {
 
         {/* Time windows */}
         <div className="grid grid-cols-3 gap-3">
-          <Mini label="Today" value={stats.boostsToday} suffix="tips" loading={loading} />
-          <Mini label="Last 7 days" value={stats.boostsWeek} suffix="tips" loading={loading} />
-          <Mini label="Last 30 days" value={stats.boostsMonth} suffix="tips" loading={loading} />
+          <Mini label="Today" value={`$${(stats.tipsTodayCents / 100).toFixed(2)}`} suffix="in tips" loading={loading} />
+          <Mini label="Last 7 days" value={`$${(stats.tipsWeekCents / 100).toFixed(2)}`} suffix="in tips" loading={loading} />
+          <Mini label="Last 30 days" value={`$${(stats.tipsMonthCents / 100).toFixed(2)}`} suffix="in tips" loading={loading} />
         </div>
 
         {/* Engagement */}
@@ -269,12 +269,12 @@ export default function Earnings() {
           <h2 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-3">Engagement</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Stat icon={<Music className="h-4 w-4" />} label="Requests" value={stats.totalRequests} loading={loading} />
-            <Stat icon={<CircleDollarSign className="h-4 w-4" />} label="Tips" value={stats.totalBoosts} loading={loading} />
+            <Stat icon={<CircleDollarSign className="h-4 w-4" />} label="Tips" value={stats.tipCount} loading={loading} />
             <Stat icon={<Users className="h-4 w-4" />} label="Guests" value={stats.uniqueGuests} loading={loading} />
             <Stat
               icon={<TrendingUp className="h-4 w-4" />}
-              label="Avg / guest"
-              value={Number(stats.avgPerGuest.toFixed(1))}
+              label="Your share (70%)"
+              value={`$${(stats.tipNetCents / 100).toFixed(2)}`}
               loading={loading}
             />
           </div>
