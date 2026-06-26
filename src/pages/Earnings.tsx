@@ -63,14 +63,17 @@ export default function Earnings() {
       const ids = (events ?? []).map((e) => e.id);
       if (cancelled) return;
       setEventIds(ids);
-      // Tips can exist even without event scoping mismatch — query by dj_id
+      // 7-day window for the chart + weekly totals
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+      sevenDaysAgo.setHours(0, 0, 0, 0);
       const tipsQ = supabase
         .from("dj_tips")
         .select("id,event_id,user_id,gross_amount_cents,net_amount_cents,status,created_at")
         .eq("dj_id", user.id)
         .eq("status", "succeeded")
-        .order("created_at", { ascending: false })
-        .limit(2000);
+        .gte("created_at", sevenDaysAgo.toISOString())
+        .order("created_at", { ascending: true });
 
       if (ids.length === 0) {
         const { data: t } = await tipsQ;
