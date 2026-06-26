@@ -309,8 +309,8 @@ export default function Earnings() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="font-bold tabular-nums text-primary">{g.boost}</div>
-                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">tips</div>
+                      <div className="font-bold tabular-nums text-primary">${(g.tipCents / 100).toFixed(2)}</div>
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">tipped</div>
                     </div>
                   </div>
                 ))
