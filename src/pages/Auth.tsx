@@ -73,6 +73,15 @@ const Auth = () => {
             p_nickname: nickParse.data,
           });
           await refreshProfile();
+          // Fire-and-forget welcome email after anonymous upgrade.
+          supabase.functions.invoke("send-transactional-email", {
+            body: {
+              templateName: "guest-welcome",
+              recipientEmail: emailParse.data,
+              idempotencyKey: `guest-welcome:${emailParse.data.toLowerCase()}`,
+              templateData: { nickname: nickParse.data },
+            },
+          }).catch(() => undefined);
           toast.success("Account created — your nickname, points, and history are saved.");
         } else {
           const { error } = await supabase.auth.signUp({
