@@ -59,14 +59,15 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Stripe key check
+    // Stripe key check (accept test or live)
     const stripeKey = Deno.env.get("STRIPE_SECRET_KEY") ?? "";
     const hasStripeKey = !!stripeKey;
-    const stripeTestMode = stripeKey.startsWith("sk_test_");
-    if (!hasStripeKey || !stripeTestMode) {
+    const stripeKeyValid = stripeKey.startsWith("sk_test_") || stripeKey.startsWith("sk_live_");
+    const stripeLiveMode = stripeKey.startsWith("sk_live_");
+    if (!hasStripeKey || !stripeKeyValid) {
       console.error("[tip-create-checkout] STRIPE_CONFIG", {
         has_stripe_key: hasStripeKey,
-        test_mode: stripeTestMode,
+        valid: stripeKeyValid,
       });
       return err("STRIPE_CONFIG_ERROR", "Tips are temporarily unavailable.");
     }
@@ -195,7 +196,7 @@ Deno.serve(async (req) => {
       status: "pending",
       stripe_checkout_session_id: session.id,
       stripe_destination_account: payout!.stripe_account_id!,
-      livemode: false,
+      livemode: stripeLiveMode,
     });
 
     return json({ url: session.url, session_id: session.id });
