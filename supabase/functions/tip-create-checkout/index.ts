@@ -114,13 +114,24 @@ Deno.serve(async (req) => {
       event_id: eventId,
       dj_id: ev.dj_id,
       amount_cents: amountCents,
-      has_stripe_key: hasStripeKey,
+      key_live_mode: stripeLiveMode,
       stripe_account_id_present: !!payout?.stripe_account_id,
+      account_livemode: payout?.livemode ?? null,
+      mode_mismatch: modeMismatch,
       charges_enabled: !!payout?.charges_enabled,
       payouts_enabled: !!payout?.payouts_enabled,
       details_submitted: !!payout?.details_submitted,
       check_only: checkOnly,
     });
+
+    if (modeMismatch) {
+      return err(
+        "DJ_PAYOUTS_NOT_READY",
+        `This DJ's payout account is in ${payout?.livemode ? "live" : "test"} mode but Decks is in ${stripeLiveMode ? "live" : "test"} mode. The DJ needs to reconnect payouts.`,
+        200,
+        { mode_mismatch: true, account_livemode: payout?.livemode, key_live_mode: stripeLiveMode },
+      );
+    }
 
     if (!payoutReady) {
       return err(
