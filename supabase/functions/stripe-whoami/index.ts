@@ -54,7 +54,10 @@ Deno.serve(async (req) => {
         const a = await stripe.accounts.retrieve(probeId);
         probe = {
           id: a.id,
-          livemode: (a as any).livemode ?? null,
+          livemode: (a as any).livemode,
+          livemode_typeof: typeof (a as any).livemode,
+          has_livemode_key: Object.prototype.hasOwnProperty.call(a, "livemode"),
+          all_keys: Object.keys(a),
           type: a.type,
           charges_enabled: a.charges_enabled,
           payouts_enabled: a.payouts_enabled,
