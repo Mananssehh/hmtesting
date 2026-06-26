@@ -43,11 +43,16 @@ Deno.serve(async (req) => {
     const stripe = getStripe();
     const acct = await stripe.accounts.retrieve(row.stripe_account_id);
 
+    const keyMode = getStripeMode(); // "live" | "test" | "unknown"
+    // Stripe's Account object does NOT include a `livemode` field on
+    // accounts.retrieve(). The account's mode is always identical to the
+    // mode of the API key used to create it, so we infer from the key.
+    const acctLive = keyMode === "live";
     await admin.from("dj_payout_accounts").update({
       charges_enabled: acct.charges_enabled,
       payouts_enabled: acct.payouts_enabled,
       details_submitted: acct.details_submitted,
-      livemode: acct.livemode,
+      livemode: acctLive,
       last_synced_at: new Date().toISOString(),
     }).eq("user_id", userId);
 
@@ -56,9 +61,8 @@ Deno.serve(async (req) => {
     else if (acct.requirements?.disabled_reason || (acct.requirements?.currently_due ?? []).length > 0)
       status = acct.details_submitted ? "action_required" : "pending";
 
-    const keyMode = getStripeMode(); // "live" | "test" | "unknown"
-    const acctMode = acct.livemode ? "live" : "test";
-    const mode_mismatch = keyMode !== "unknown" && keyMode !== acctMode;
+    const acctMode = acctLive ? "live" : "test";
+    const mode_mismatch = false; // by definition, account mode == key mode
     if (mode_mismatch) status = "mode_mismatch";
 
     return json({
