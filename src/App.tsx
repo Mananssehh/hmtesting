@@ -32,6 +32,8 @@ import Contact from "./pages/legal/Contact";
 import TrustSafety from "./pages/legal/TrustSafety";
 import RefundPolicy from "./pages/legal/RefundPolicy";
 import NotFound from "./pages/NotFound.tsx";
+import Unsubscribe from "./pages/Unsubscribe";
+
 import { ErrorBoundary } from "./components/ErrorBoundary";
 
 const queryClient = new QueryClient();
@@ -73,6 +75,8 @@ const App = () => (
               <Route path="/contact" element={<Contact />} />
               <Route path="/trust-safety" element={<TrustSafety />} />
               <Route path="/refund-policy" element={<RefundPolicy />} />
+              <Route path="/unsubscribe" element={<Unsubscribe />} />
+
               
               
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
