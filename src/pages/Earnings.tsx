@@ -101,20 +101,27 @@ export default function Earnings() {
   }, [user, isDJ]);
 
   const stats = useMemo(() => {
-    const totalBoosts = songs.reduce((sum, r) => sum + (r.boost || 0), 0);
     const totalRequests = songs.length;
     const uniqueGuests = new Set(participants.map((p) => p.user_id)).size;
     const today = startOf("day");
     const week = startOf("week");
     const month = startOf("month");
-    const sumSince = (ts: number) =>
-      songs.filter((r) => new Date(r.created_at).getTime() >= ts).reduce((sum, r) => sum + (r.boost || 0), 0);
-    const boostsToday = sumSince(today);
-    const boostsWeek = sumSince(week);
-    const boostsMonth = sumSince(month);
-    const avgPerGuest = uniqueGuests > 0 ? totalBoosts / uniqueGuests : 0;
 
-    // Daily bars (last 7 days)
+    // --- Tip $$ stats (from dj_tips) ---
+    const succeededTips = tips.filter((t) => t.status === "succeeded");
+    const tipCount = succeededTips.length;
+    const tipGrossCents = succeededTips.reduce((s, t) => s + (t.gross_amount_cents || 0), 0);
+    const tipNetCents = succeededTips.reduce((s, t) => s + (t.net_amount_cents || 0), 0);
+    const sumTipsSince = (ts: number) =>
+      succeededTips
+        .filter((t) => new Date(t.created_at).getTime() >= ts)
+        .reduce((s, t) => s + (t.gross_amount_cents || 0), 0);
+    const tipsTodayCents = sumTipsSince(today);
+    const tipsWeekCents = sumTipsSince(week);
+    const tipsMonthCents = sumTipsSince(month);
+    const avgTipCentsPerGuest = uniqueGuests > 0 ? tipGrossCents / uniqueGuests : 0;
+
+    // Daily bars (last 7 days) — based on tip $$
     const days: { label: string; value: number }[] = [];
     const dayNames = ["S", "M", "T", "W", "T", "F", "S"];
     for (let i = 6; i >= 0; i--) {
@@ -123,16 +130,16 @@ export default function Earnings() {
       d.setDate(d.getDate() - i);
       const start = d.getTime();
       const end = start + 86400000;
-      const value = songs
-        .filter((r) => {
-          const t = new Date(r.created_at).getTime();
-          return t >= start && t < end;
+      const value = succeededTips
+        .filter((t) => {
+          const ts = new Date(t.created_at).getTime();
+          return ts >= start && ts < end;
         })
-        .reduce((sum, r) => sum + (r.boost || 0), 0);
+        .reduce((s, t) => s + (t.gross_amount_cents || 0), 0);
       days.push({ label: dayNames[d.getDay()], value });
     }
 
-    // Top songs
+    // Top songs (request engagement, unchanged)
     const byKey = (rs: SongRow[]) => {
       const map = new Map<string, { title: string; artist: string; art: string | null; count: number; boost: number; played: number }>();
       for (const r of rs) {
@@ -151,33 +158,42 @@ export default function Earnings() {
     const mostRequested = [...aggregated].sort((a, b) => b.count - a.count).slice(0, 5);
     const mostPlayed = [...aggregated].sort((a, b) => b.played - a.played).slice(0, 5).filter((s) => s.played > 0);
 
-    // Top guests
-    const guestMap = new Map<string, { name: string; boost: number; requests: number }>();
+    // Top guests — rank by tip $$, fall back to requests
+    const guestMap = new Map<string, { name: string; tipCents: number; requests: number }>();
     for (const r of songs) {
       const key = r.requested_by ?? r.requester_name;
       if (!key) continue;
-      const cur = guestMap.get(key) ?? { name: r.requester_name || "Guest", boost: 0, requests: 0 };
-      cur.boost += r.boost || 0;
+      const cur = guestMap.get(key) ?? { name: r.requester_name || "Guest", tipCents: 0, requests: 0 };
       cur.requests += 1;
       guestMap.set(key, cur);
     }
-    const topGuests = [...guestMap.values()].sort((a, b) => b.boost - a.boost || b.requests - a.requests).slice(0, 5);
+    for (const t of succeededTips) {
+      if (!t.user_id) continue;
+      const cur = guestMap.get(t.user_id) ?? { name: "Guest", tipCents: 0, requests: 0 };
+      cur.tipCents += t.gross_amount_cents || 0;
+      guestMap.set(t.user_id, cur);
+    }
+    const topGuests = [...guestMap.values()]
+      .sort((a, b) => b.tipCents - a.tipCents || b.requests - a.requests)
+      .slice(0, 5);
 
     return {
-      totalBoosts,
       totalRequests,
       uniqueGuests,
-      avgPerGuest,
-      boostsToday,
-      boostsWeek,
-      boostsMonth,
+      tipCount,
+      tipGrossCents,
+      tipNetCents,
+      tipsTodayCents,
+      tipsWeekCents,
+      tipsMonthCents,
+      avgTipCentsPerGuest,
       days,
       mostBoosted,
       mostRequested,
       mostPlayed,
       topGuests,
     };
-  }, [songs, participants]);
+  }, [songs, participants, tips]);
 
   if (authLoading) return null;
   if (!user) return <Navigate to="/auth?role=dj" replace />;
