@@ -24,15 +24,17 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Lifetime totals from our tips ledger (succeeded only).
+    // Lifetime totals from our tips ledger. Include succeeded AND
+    // partially_refunded rows; subtract refunded_amount_cents (proportionally
+    // for fees) so a refund correctly reduces earnings. Fully refunded /
+    // failed / disputed / pending rows are excluded.
     // Note: stripe_fee_cents is not stored on dj_tips — Stripe deducts its
-    // processing fee from the destination account directly. We surface 0
-    // here and leave Stripe processing as "deducted by Stripe" in the UI.
+    // processing fee from the destination account directly.
     const { data: tips, error: tipsErr } = await admin
       .from("dj_tips")
-      .select("gross_amount_cents,net_amount_cents,platform_fee_cents,currency,status")
+      .select("gross_amount_cents,net_amount_cents,platform_fee_cents,refunded_amount_cents,currency,status")
       .eq("dj_id", userId)
-      .eq("status", "succeeded");
+      .in("status", ["succeeded", "partially_refunded"]);
     if (tipsErr) console.error("[stripe-payout-summary] tips query error", tipsErr);
 
     let lifetime_gross_cents = 0;
@@ -40,11 +42,18 @@ Deno.serve(async (req) => {
     let lifetime_platform_fee_cents = 0;
     const lifetime_stripe_fee_cents = 0;
     let currency: string | null = null;
-    for (const t of tips ?? []) {
-      lifetime_gross_cents += (t as any).gross_amount_cents || 0;
-      lifetime_net_cents += (t as any).net_amount_cents || 0;
-      lifetime_platform_fee_cents += (t as any).platform_fee_cents || 0;
-      if (!currency && (t as any).currency) currency = (t as any).currency;
+    let active_tip_count = 0;
+    for (const tRow of tips ?? []) {
+      const t = tRow as any;
+      const gross = t.gross_amount_cents || 0;
+      const refunded = t.refunded_amount_cents || 0;
+      if (refunded >= gross) continue; // safety
+      const remainingFrac = gross > 0 ? (gross - refunded) / gross : 0;
+      lifetime_gross_cents += gross - refunded;
+      lifetime_net_cents += Math.round((t.net_amount_cents || 0) * remainingFrac);
+      lifetime_platform_fee_cents += Math.round((t.platform_fee_cents || 0) * remainingFrac);
+      if (!currency && t.currency) currency = t.currency;
+      active_tip_count += 1;
     }
     console.log("[stripe-payout-summary] user", userId, "tips", tips?.length ?? 0, "gross", lifetime_gross_cents);
 
@@ -67,7 +76,7 @@ Deno.serve(async (req) => {
         net_cents: lifetime_net_cents,
         platform_fee_cents: lifetime_platform_fee_cents,
         stripe_fee_cents: lifetime_stripe_fee_cents,
-        tip_count: (tips ?? []).length,
+        tip_count: active_tip_count,
       },
     };
 

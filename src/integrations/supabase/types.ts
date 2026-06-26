@@ -179,7 +179,11 @@ export type Database = {
           livemode: boolean
           net_amount_cents: number
           platform_fee_cents: number
+          refund_id: string | null
+          refunded_amount_cents: number
+          refunded_at: string | null
           status: string
+          stripe_charge_id: string | null
           stripe_checkout_session_id: string | null
           stripe_destination_account: string | null
           stripe_payment_intent_id: string | null
@@ -197,7 +201,11 @@ export type Database = {
           livemode?: boolean
           net_amount_cents: number
           platform_fee_cents: number
+          refund_id?: string | null
+          refunded_amount_cents?: number
+          refunded_at?: string | null
           status?: string
+          stripe_charge_id?: string | null
           stripe_checkout_session_id?: string | null
           stripe_destination_account?: string | null
           stripe_payment_intent_id?: string | null
@@ -215,7 +223,11 @@ export type Database = {
           livemode?: boolean
           net_amount_cents?: number
           platform_fee_cents?: number
+          refund_id?: string | null
+          refunded_amount_cents?: number
+          refunded_at?: string | null
           status?: string
+          stripe_charge_id?: string | null
           stripe_checkout_session_id?: string | null
           stripe_destination_account?: string | null
           stripe_payment_intent_id?: string | null

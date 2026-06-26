@@ -36,9 +36,21 @@ interface TipRow {
   user_id: string;
   gross_amount_cents: number;
   net_amount_cents: number;
+  platform_fee_cents: number;
+  refunded_amount_cents: number;
   status: string;
   created_at: string;
 }
+
+const TIP_STATUS_LABEL: Record<string, { label: string; tone: string }> = {
+  succeeded: { label: "Paid", tone: "border-emerald-500/40 text-emerald-300" },
+  partially_refunded: { label: "Partially Refunded", tone: "border-amber-500/40 text-amber-300" },
+  refunded: { label: "Refunded", tone: "border-muted-foreground/40 text-muted-foreground" },
+  disputed: { label: "Disputed", tone: "border-orange-500/40 text-orange-300" },
+  failed: { label: "Failed", tone: "border-destructive/40 text-destructive" },
+  pending: { label: "Pending", tone: "border-muted-foreground/30 text-muted-foreground" },
+};
+const ACTIVE_TIP_STATUSES = new Set(["succeeded", "partially_refunded"]);
 
 const startOf = (period: "day" | "week" | "month") => {
   const d = new Date();
@@ -55,6 +67,7 @@ export default function Earnings() {
   const [songs, setSongs] = useState<SongRow[]>([]);
   const [participants, setParticipants] = useState<ParticipantRow[]>([]);
   const [tips, setTips] = useState<TipRow[]>([]);
+  const [recentTips, setRecentTips] = useState<TipRow[]>([]);
   const [profileNicknames, setProfileNicknames] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -68,22 +81,34 @@ export default function Earnings() {
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
       sevenDaysAgo.setHours(0, 0, 0, 0);
+      // Active tips drive totals/chart. Include partially_refunded so we can
+      // subtract refunded_amount_cents below; refunded/disputed/failed are
+      // intentionally excluded from earnings.
       const tipsQ = supabase
         .from("dj_tips")
-        .select("id,event_id,user_id,gross_amount_cents,net_amount_cents,status,created_at")
+        .select("id,event_id,user_id,gross_amount_cents,net_amount_cents,platform_fee_cents,refunded_amount_cents,status,created_at")
         .eq("dj_id", user.id)
-        .eq("status", "succeeded")
+        .in("status", ["succeeded", "partially_refunded"])
         .gte("created_at", sevenDaysAgo.toISOString())
         .order("created_at", { ascending: true });
 
+      // Recent tip history: all statuses so refunds/disputes are visible to the DJ.
+      const recentQ = supabase
+        .from("dj_tips")
+        .select("id,event_id,user_id,gross_amount_cents,net_amount_cents,platform_fee_cents,refunded_amount_cents,status,created_at")
+        .eq("dj_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(20);
+
       if (ids.length === 0) {
-        const { data: t } = await tipsQ;
+        const [{ data: t }, { data: rt }] = await Promise.all([tipsQ, recentQ]);
         if (cancelled) return;
         setTips((t ?? []) as TipRow[]);
+        setRecentTips((rt ?? []) as TipRow[]);
         setLoading(false);
         return;
       }
-      const [{ data: s }, { data: p }, { data: t }] = await Promise.all([
+      const [{ data: s }, { data: p }, { data: t }, { data: rt }] = await Promise.all([
         supabase
           .from("song_requests")
           .select("id,event_id,title,artist,album_art,album_art_url,boost,status,played_at,created_at,requester_name,requested_by")
@@ -92,14 +117,17 @@ export default function Earnings() {
           .limit(1000),
         supabase.from("event_participants").select("event_id,user_id,nickname").in("event_id", ids).limit(1000),
         tipsQ,
+        recentQ,
       ]);
       if (cancelled) return;
       const songRows = (s ?? []) as SongRow[];
       const partRows = (p ?? []) as ParticipantRow[];
       const tipRows = (t ?? []) as TipRow[];
+      const recentRows = (rt ?? []) as TipRow[];
       setSongs(songRows);
       setParticipants(partRows);
       setTips(tipRows);
+      setRecentTips(recentRows);
 
       // Resolve canonical display names from profiles for all referenced user_ids
       const uids = new Set<string>();
@@ -132,14 +160,25 @@ export default function Earnings() {
     const month = startOf("month");
 
     // --- Tip $$ stats (from dj_tips) ---
-    const succeededTips = tips.filter((t) => t.status === "succeeded");
-    const tipCount = succeededTips.length;
-    const tipGrossCents = succeededTips.reduce((s, t) => s + (t.gross_amount_cents || 0), 0);
-    const tipNetCents = succeededTips.reduce((s, t) => s + (t.net_amount_cents || 0), 0);
+    // Only succeeded + partially_refunded count toward earnings; refunded amounts
+    // are subtracted (proportionally for net) so a refund reduces totals.
+    const activeTips = tips.filter((t) => ACTIVE_TIP_STATUSES.has(t.status));
+    const effectiveGross = (t: TipRow) =>
+      Math.max(0, (t.gross_amount_cents || 0) - (t.refunded_amount_cents || 0));
+    const effectiveNet = (t: TipRow) => {
+      const gross = t.gross_amount_cents || 0;
+      const refunded = t.refunded_amount_cents || 0;
+      if (gross <= 0) return 0;
+      const frac = Math.max(0, (gross - refunded) / gross);
+      return Math.round((t.net_amount_cents || 0) * frac);
+    };
+    const tipCount = activeTips.length;
+    const tipGrossCents = activeTips.reduce((s, t) => s + effectiveGross(t), 0);
+    const tipNetCents = activeTips.reduce((s, t) => s + effectiveNet(t), 0);
     const sumTipsSince = (ts: number) =>
-      succeededTips
+      activeTips
         .filter((t) => new Date(t.created_at).getTime() >= ts)
-        .reduce((s, t) => s + (t.gross_amount_cents || 0), 0);
+        .reduce((s, t) => s + effectiveGross(t), 0);
     const tipsTodayCents = sumTipsSince(today);
     const tipsWeekCents = sumTipsSince(week);
     const tipsMonthCents = sumTipsSince(month);
@@ -154,12 +193,12 @@ export default function Earnings() {
       d.setDate(d.getDate() - i);
       const start = d.getTime();
       const end = start + 86400000;
-      const value = succeededTips
+      const value = activeTips
         .filter((t) => {
           const ts = new Date(t.created_at).getTime();
           return ts >= start && ts < end;
         })
-        .reduce((s, t) => s + (t.gross_amount_cents || 0), 0);
+        .reduce((s, t) => s + effectiveGross(t), 0);
       days.push({ label: dayNames[d.getDay()], value, isToday: i === 0 });
     }
 
@@ -211,10 +250,10 @@ export default function Earnings() {
       cur.name = resolveName(r.requested_by);
       guestMap.set(r.requested_by, cur);
     }
-    for (const t of succeededTips) {
+    for (const t of activeTips) {
       if (!t.user_id) continue;
       const cur = guestMap.get(t.user_id) ?? { name: resolveName(t.user_id), tipCents: 0, requests: 0 };
-      cur.tipCents += t.gross_amount_cents || 0;
+      cur.tipCents += effectiveGross(t);
       cur.name = resolveName(t.user_id);
       guestMap.set(t.user_id, cur);
     }
@@ -376,8 +415,52 @@ export default function Earnings() {
           </Card>
         </section>
 
+        {/* Recent tip history */}
+        <section>
+          <h2 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-3">Recent tips</h2>
+          <Card className="bg-card/60">
+            <CardContent className="p-0 divide-y divide-border/40">
+              {loading ? (
+                <div className="p-6 flex justify-center"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+              ) : recentTips.length === 0 ? (
+                <div className="p-6 text-sm text-muted-foreground text-center">No tips yet.</div>
+              ) : (
+                recentTips.map((t) => {
+                  const meta = TIP_STATUS_LABEL[t.status] ?? { label: t.status, tone: "border-muted-foreground/30 text-muted-foreground" };
+                  const refunded = t.refunded_amount_cents || 0;
+                  const gross = t.gross_amount_cents || 0;
+                  const net = gross - refunded;
+                  const isReduced = t.status === "refunded" || t.status === "partially_refunded" || t.status === "disputed" || t.status === "failed";
+                  return (
+                    <div key={t.id} className="flex items-center justify-between gap-3 px-4 py-3">
+                      <div className="min-w-0">
+                        <div className="text-sm font-medium">
+                          ${(gross / 100).toFixed(2)}
+                          {refunded > 0 && t.status === "partially_refunded" && (
+                            <span className="text-muted-foreground text-xs ml-1">(− ${(refunded / 100).toFixed(2)} refunded)</span>
+                          )}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground">
+                          {new Date(t.created_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className={`text-sm tabular-nums ${isReduced ? "text-muted-foreground line-through" : "font-semibold text-primary"}`}>
+                          ${(net / 100).toFixed(2)}
+                        </div>
+                        <Badge variant="outline" className={meta.tone}>{meta.label}</Badge>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </CardContent>
+          </Card>
+        </section>
+
         {/* Payout summary (live Stripe Connect) */}
         <PayoutSummaryCard />
+
 
         {eventIds.length === 0 && !loading && (
           <div className="text-center py-10 text-muted-foreground">
