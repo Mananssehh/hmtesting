@@ -24,25 +24,29 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
-    // Lifetime totals from our tips ledger (succeeded only)
-    const { data: tips } = await admin
+    // Lifetime totals from our tips ledger (succeeded only).
+    // Note: stripe_fee_cents is not stored on dj_tips — Stripe deducts its
+    // processing fee from the destination account directly. We surface 0
+    // here and leave Stripe processing as "deducted by Stripe" in the UI.
+    const { data: tips, error: tipsErr } = await admin
       .from("dj_tips")
-      .select("gross_amount_cents,net_amount_cents,platform_fee_cents,stripe_fee_cents,currency,status")
+      .select("gross_amount_cents,net_amount_cents,platform_fee_cents,currency,status")
       .eq("dj_id", userId)
       .eq("status", "succeeded");
+    if (tipsErr) console.error("[stripe-payout-summary] tips query error", tipsErr);
 
     let lifetime_gross_cents = 0;
     let lifetime_net_cents = 0;
     let lifetime_platform_fee_cents = 0;
-    let lifetime_stripe_fee_cents = 0;
+    const lifetime_stripe_fee_cents = 0;
     let currency: string | null = null;
     for (const t of tips ?? []) {
       lifetime_gross_cents += (t as any).gross_amount_cents || 0;
       lifetime_net_cents += (t as any).net_amount_cents || 0;
       lifetime_platform_fee_cents += (t as any).platform_fee_cents || 0;
-      lifetime_stripe_fee_cents += (t as any).stripe_fee_cents || 0;
       if (!currency && (t as any).currency) currency = (t as any).currency;
     }
+    console.log("[stripe-payout-summary] user", userId, "tips", tips?.length ?? 0, "gross", lifetime_gross_cents);
 
     const { data: row } = await admin
       .from("dj_payout_accounts")
