@@ -98,7 +98,7 @@ Deno.serve(async (req) => {
     // DJ Connect status
     const { data: payout } = await admin
       .from("dj_payout_accounts")
-      .select("stripe_account_id, charges_enabled, payouts_enabled, details_submitted")
+      .select("stripe_account_id, charges_enabled, payouts_enabled, details_submitted, livemode")
       .eq("user_id", ev.dj_id)
       .maybeSingle();
 
@@ -107,6 +107,7 @@ Deno.serve(async (req) => {
       payout.charges_enabled &&
       payout.payouts_enabled
     );
+    const modeMismatch = !!(payout?.stripe_account_id && payout.livemode !== stripeLiveMode);
 
     console.log("[tip-create-checkout] context", {
       user_id: userId,
