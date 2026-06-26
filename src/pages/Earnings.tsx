@@ -250,10 +250,10 @@ export default function Earnings() {
       cur.name = resolveName(r.requested_by);
       guestMap.set(r.requested_by, cur);
     }
-    for (const t of succeededTips) {
+    for (const t of activeTips) {
       if (!t.user_id) continue;
       const cur = guestMap.get(t.user_id) ?? { name: resolveName(t.user_id), tipCents: 0, requests: 0 };
-      cur.tipCents += t.gross_amount_cents || 0;
+      cur.tipCents += effectiveGross(t);
       cur.name = resolveName(t.user_id);
       guestMap.set(t.user_id, cur);
     }
