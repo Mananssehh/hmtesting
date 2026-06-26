@@ -340,13 +340,15 @@ export default function Earnings() {
   );
 }
 
-function Mini({ label, value, suffix, loading }: { label: string; value: number; suffix: string; loading: boolean }) {
+function Mini({ label, value, suffix, loading }: { label: string; value: number | string; suffix: string; loading: boolean }) {
   return (
     <Card className="bg-card/60">
       <CardContent className="py-4">
         <div className="text-[10px] sm:text-xs uppercase tracking-wider text-muted-foreground font-semibold">{label}</div>
         <div className="mt-1 flex items-baseline gap-1.5">
-          <span className="text-xl sm:text-2xl font-bold tabular-nums">{loading ? "—" : value.toLocaleString()}</span>
+          <span className="text-xl sm:text-2xl font-bold tabular-nums">
+            {loading ? "—" : typeof value === "number" ? value.toLocaleString() : value}
+          </span>
           <span className="text-[10px] sm:text-xs text-muted-foreground">{suffix}</span>
         </div>
       </CardContent>
