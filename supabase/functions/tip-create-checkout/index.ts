@@ -19,8 +19,22 @@ type ErrorCode =
   | "STRIPE_CHECKOUT_FAILED"
   | "SERVICE_FAILED";
 
-function err(code: ErrorCode, message: string, status = 200) {
-  return json({ error_code: code, error: message, message }, status);
+function err(code: ErrorCode, message: string, status = 200, extra: Record<string, unknown> = {}) {
+  return json({ error_code: code, error: message, message, ...extra }, status);
+}
+
+function serializeStripeError(e: any) {
+  const raw = e?.raw ?? {};
+  return {
+    http_status: e?.statusCode ?? raw?.statusCode ?? null,
+    request_id: e?.requestId ?? raw?.request_log_url ?? null,
+    stripe_type: e?.type ?? raw?.type ?? null,
+    stripe_code: e?.code ?? raw?.code ?? null,
+    decline_code: e?.decline_code ?? raw?.decline_code ?? null,
+    param: e?.param ?? raw?.param ?? null,
+    doc_url: e?.doc_url ?? raw?.doc_url ?? null,
+    message: e?.message ?? raw?.message ?? String(e),
+  };
 }
 
 Deno.serve(async (req) => {
