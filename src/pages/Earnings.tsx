@@ -29,6 +29,16 @@ interface ParticipantRow {
   nickname: string;
 }
 
+interface TipRow {
+  id: string;
+  event_id: string;
+  user_id: string;
+  gross_amount_cents: number;
+  net_amount_cents: number;
+  status: string;
+  created_at: string;
+}
+
 const startOf = (period: "day" | "week" | "month") => {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
@@ -43,6 +53,7 @@ export default function Earnings() {
   const [eventIds, setEventIds] = useState<string[]>([]);
   const [songs, setSongs] = useState<SongRow[]>([]);
   const [participants, setParticipants] = useState<ParticipantRow[]>([]);
+  const [tips, setTips] = useState<TipRow[]>([]);
 
   useEffect(() => {
     if (!user || !isDJ) return;
@@ -52,11 +63,23 @@ export default function Earnings() {
       const ids = (events ?? []).map((e) => e.id);
       if (cancelled) return;
       setEventIds(ids);
+      // Tips can exist even without event scoping mismatch — query by dj_id
+      const tipsQ = supabase
+        .from("dj_tips")
+        .select("id,event_id,user_id,gross_amount_cents,net_amount_cents,status,created_at")
+        .eq("dj_id", user.id)
+        .eq("status", "succeeded")
+        .order("created_at", { ascending: false })
+        .limit(2000);
+
       if (ids.length === 0) {
+        const { data: t } = await tipsQ;
+        if (cancelled) return;
+        setTips((t ?? []) as TipRow[]);
         setLoading(false);
         return;
       }
-      const [{ data: s }, { data: p }] = await Promise.all([
+      const [{ data: s }, { data: p }, { data: t }] = await Promise.all([
         supabase
           .from("song_requests")
           .select("id,event_id,title,artist,album_art,album_art_url,boost,status,played_at,created_at,requester_name,requested_by")
@@ -64,10 +87,12 @@ export default function Earnings() {
           .order("created_at", { ascending: false })
           .limit(1000),
         supabase.from("event_participants").select("event_id,user_id,nickname").in("event_id", ids).limit(1000),
+        tipsQ,
       ]);
       if (cancelled) return;
       setSongs((s ?? []) as SongRow[]);
       setParticipants((p ?? []) as ParticipantRow[]);
+      setTips((t ?? []) as TipRow[]);
       setLoading(false);
     })();
     return () => {
@@ -76,20 +101,27 @@ export default function Earnings() {
   }, [user, isDJ]);
 
   const stats = useMemo(() => {
-    const totalBoosts = songs.reduce((sum, r) => sum + (r.boost || 0), 0);
     const totalRequests = songs.length;
     const uniqueGuests = new Set(participants.map((p) => p.user_id)).size;
     const today = startOf("day");
     const week = startOf("week");
     const month = startOf("month");
-    const sumSince = (ts: number) =>
-      songs.filter((r) => new Date(r.created_at).getTime() >= ts).reduce((sum, r) => sum + (r.boost || 0), 0);
-    const boostsToday = sumSince(today);
-    const boostsWeek = sumSince(week);
-    const boostsMonth = sumSince(month);
-    const avgPerGuest = uniqueGuests > 0 ? totalBoosts / uniqueGuests : 0;
 
-    // Daily bars (last 7 days)
+    // --- Tip $$ stats (from dj_tips) ---
+    const succeededTips = tips.filter((t) => t.status === "succeeded");
+    const tipCount = succeededTips.length;
+    const tipGrossCents = succeededTips.reduce((s, t) => s + (t.gross_amount_cents || 0), 0);
+    const tipNetCents = succeededTips.reduce((s, t) => s + (t.net_amount_cents || 0), 0);
+    const sumTipsSince = (ts: number) =>
+      succeededTips
+        .filter((t) => new Date(t.created_at).getTime() >= ts)
+        .reduce((s, t) => s + (t.gross_amount_cents || 0), 0);
+    const tipsTodayCents = sumTipsSince(today);
+    const tipsWeekCents = sumTipsSince(week);
+    const tipsMonthCents = sumTipsSince(month);
+    const avgTipCentsPerGuest = uniqueGuests > 0 ? tipGrossCents / uniqueGuests : 0;
+
+    // Daily bars (last 7 days) — based on tip $$
     const days: { label: string; value: number }[] = [];
     const dayNames = ["S", "M", "T", "W", "T", "F", "S"];
     for (let i = 6; i >= 0; i--) {
@@ -98,16 +130,16 @@ export default function Earnings() {
       d.setDate(d.getDate() - i);
       const start = d.getTime();
       const end = start + 86400000;
-      const value = songs
-        .filter((r) => {
-          const t = new Date(r.created_at).getTime();
-          return t >= start && t < end;
+      const value = succeededTips
+        .filter((t) => {
+          const ts = new Date(t.created_at).getTime();
+          return ts >= start && ts < end;
         })
-        .reduce((sum, r) => sum + (r.boost || 0), 0);
+        .reduce((s, t) => s + (t.gross_amount_cents || 0), 0);
       days.push({ label: dayNames[d.getDay()], value });
     }
 
-    // Top songs
+    // Top songs (request engagement, unchanged)
     const byKey = (rs: SongRow[]) => {
       const map = new Map<string, { title: string; artist: string; art: string | null; count: number; boost: number; played: number }>();
       for (const r of rs) {
@@ -126,33 +158,42 @@ export default function Earnings() {
     const mostRequested = [...aggregated].sort((a, b) => b.count - a.count).slice(0, 5);
     const mostPlayed = [...aggregated].sort((a, b) => b.played - a.played).slice(0, 5).filter((s) => s.played > 0);
 
-    // Top guests
-    const guestMap = new Map<string, { name: string; boost: number; requests: number }>();
+    // Top guests — rank by tip $$, fall back to requests
+    const guestMap = new Map<string, { name: string; tipCents: number; requests: number }>();
     for (const r of songs) {
       const key = r.requested_by ?? r.requester_name;
       if (!key) continue;
-      const cur = guestMap.get(key) ?? { name: r.requester_name || "Guest", boost: 0, requests: 0 };
-      cur.boost += r.boost || 0;
+      const cur = guestMap.get(key) ?? { name: r.requester_name || "Guest", tipCents: 0, requests: 0 };
       cur.requests += 1;
       guestMap.set(key, cur);
     }
-    const topGuests = [...guestMap.values()].sort((a, b) => b.boost - a.boost || b.requests - a.requests).slice(0, 5);
+    for (const t of succeededTips) {
+      if (!t.user_id) continue;
+      const cur = guestMap.get(t.user_id) ?? { name: "Guest", tipCents: 0, requests: 0 };
+      cur.tipCents += t.gross_amount_cents || 0;
+      guestMap.set(t.user_id, cur);
+    }
+    const topGuests = [...guestMap.values()]
+      .sort((a, b) => b.tipCents - a.tipCents || b.requests - a.requests)
+      .slice(0, 5);
 
     return {
-      totalBoosts,
       totalRequests,
       uniqueGuests,
-      avgPerGuest,
-      boostsToday,
-      boostsWeek,
-      boostsMonth,
+      tipCount,
+      tipGrossCents,
+      tipNetCents,
+      tipsTodayCents,
+      tipsWeekCents,
+      tipsMonthCents,
+      avgTipCentsPerGuest,
       days,
       mostBoosted,
       mostRequested,
       mostPlayed,
       topGuests,
     };
-  }, [songs, participants]);
+  }, [songs, participants, tips]);
 
   if (authLoading) return null;
   if (!user) return <Navigate to="/auth?role=dj" replace />;
@@ -182,12 +223,12 @@ export default function Earnings() {
           <CardContent className="p-5 sm:p-7">
             <div className="grid sm:grid-cols-2 gap-6 items-center">
               <div>
-                <div className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Tip Activity</div>
+                <div className="text-xs uppercase tracking-wider text-muted-foreground font-semibold">Tips received</div>
                 <div className="mt-2 flex items-baseline gap-2">
                   <span className="text-5xl sm:text-6xl font-bold tabular-nums text-primary drop-shadow-[0_0_20px_hsl(var(--primary)/0.4)]">
-                    {loading ? "—" : stats.totalBoosts.toLocaleString()}
+                    {loading ? "—" : `$${(stats.tipGrossCents / 100).toFixed(2)}`}
                   </span>
-                  <span className="text-muted-foreground text-sm">tip points</span>
+                  <span className="text-muted-foreground text-sm">{stats.tipCount} tip{stats.tipCount === 1 ? "" : "s"}</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-3 leading-relaxed">
                   Cash payouts unlock when Stripe Connect is enabled. Tips do not affect song placement —
@@ -218,9 +259,9 @@ export default function Earnings() {
 
         {/* Time windows */}
         <div className="grid grid-cols-3 gap-3">
-          <Mini label="Today" value={stats.boostsToday} suffix="tips" loading={loading} />
-          <Mini label="Last 7 days" value={stats.boostsWeek} suffix="tips" loading={loading} />
-          <Mini label="Last 30 days" value={stats.boostsMonth} suffix="tips" loading={loading} />
+          <Mini label="Today" value={`$${(stats.tipsTodayCents / 100).toFixed(2)}`} suffix="in tips" loading={loading} />
+          <Mini label="Last 7 days" value={`$${(stats.tipsWeekCents / 100).toFixed(2)}`} suffix="in tips" loading={loading} />
+          <Mini label="Last 30 days" value={`$${(stats.tipsMonthCents / 100).toFixed(2)}`} suffix="in tips" loading={loading} />
         </div>
 
         {/* Engagement */}
@@ -228,12 +269,12 @@ export default function Earnings() {
           <h2 className="text-xs uppercase tracking-wider text-muted-foreground font-semibold mb-3">Engagement</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             <Stat icon={<Music className="h-4 w-4" />} label="Requests" value={stats.totalRequests} loading={loading} />
-            <Stat icon={<CircleDollarSign className="h-4 w-4" />} label="Tips" value={stats.totalBoosts} loading={loading} />
+            <Stat icon={<CircleDollarSign className="h-4 w-4" />} label="Tips" value={stats.tipCount} loading={loading} />
             <Stat icon={<Users className="h-4 w-4" />} label="Guests" value={stats.uniqueGuests} loading={loading} />
             <Stat
               icon={<TrendingUp className="h-4 w-4" />}
-              label="Avg / guest"
-              value={Number(stats.avgPerGuest.toFixed(1))}
+              label="Your share (70%)"
+              value={`$${(stats.tipNetCents / 100).toFixed(2)}`}
               loading={loading}
             />
           </div>
@@ -268,8 +309,8 @@ export default function Earnings() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="font-bold tabular-nums text-primary">{g.boost}</div>
-                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">tips</div>
+                      <div className="font-bold tabular-nums text-primary">${(g.tipCents / 100).toFixed(2)}</div>
+                      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">tipped</div>
                     </div>
                   </div>
                 ))
@@ -299,13 +340,15 @@ export default function Earnings() {
   );
 }
 
-function Mini({ label, value, suffix, loading }: { label: string; value: number; suffix: string; loading: boolean }) {
+function Mini({ label, value, suffix, loading }: { label: string; value: number | string; suffix: string; loading: boolean }) {
   return (
     <Card className="bg-card/60">
       <CardContent className="py-4">
         <div className="text-[10px] sm:text-xs uppercase tracking-wider text-muted-foreground font-semibold">{label}</div>
         <div className="mt-1 flex items-baseline gap-1.5">
-          <span className="text-xl sm:text-2xl font-bold tabular-nums">{loading ? "—" : value.toLocaleString()}</span>
+          <span className="text-xl sm:text-2xl font-bold tabular-nums">
+            {loading ? "—" : typeof value === "number" ? value.toLocaleString() : value}
+          </span>
           <span className="text-[10px] sm:text-xs text-muted-foreground">{suffix}</span>
         </div>
       </CardContent>
@@ -313,7 +356,7 @@ function Mini({ label, value, suffix, loading }: { label: string; value: number;
   );
 }
 
-function Stat({ icon, label, value, loading }: { icon: React.ReactNode; label: string; value: number; loading: boolean }) {
+function Stat({ icon, label, value, loading }: { icon: React.ReactNode; label: string; value: number | string; loading: boolean }) {
   return (
     <Card className="bg-card/60">
       <CardContent className="py-4">
@@ -321,7 +364,9 @@ function Stat({ icon, label, value, loading }: { icon: React.ReactNode; label: s
           <span className="text-primary">{icon}</span>
           {label}
         </div>
-        <div className="text-2xl font-bold tabular-nums mt-1">{loading ? "—" : value.toLocaleString()}</div>
+        <div className="text-2xl font-bold tabular-nums mt-1">
+          {loading ? "—" : typeof value === "number" ? value.toLocaleString() : value}
+        </div>
       </CardContent>
     </Card>
   );

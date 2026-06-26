@@ -99,7 +99,7 @@ Deno.serve(async (req) => {
     // Resolve DJ for the event
     const { data: ev, error: evErr } = await admin
       .from("events")
-      .select("id, dj_id, name, dj_name")
+      .select("id, dj_id, name, dj_name, room_code")
       .eq("id", eventId)
       .maybeSingle();
     if (evErr || !ev?.dj_id) return err("EVENT_NOT_FOUND", "Event not found.");
@@ -211,8 +211,8 @@ Deno.serve(async (req) => {
           dj_id: ev.dj_id,
           event_id: eventId,
         },
-        success_url: `${origin}/event/${eventId}?tip=success`,
-        cancel_url: `${origin}/event/${eventId}?tip=cancel`,
+        success_url: `${origin}/event/${ev.room_code ?? eventId}?tip=success`,
+        cancel_url: `${origin}/event/${ev.room_code ?? eventId}?tip=cancel`,
       });
     } catch (se: any) {
       const stripe_error = serializeStripeError(se);
