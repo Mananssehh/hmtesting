@@ -67,6 +67,7 @@ export default function Earnings() {
   const [songs, setSongs] = useState<SongRow[]>([]);
   const [participants, setParticipants] = useState<ParticipantRow[]>([]);
   const [tips, setTips] = useState<TipRow[]>([]);
+  const [recentTips, setRecentTips] = useState<TipRow[]>([]);
   const [profileNicknames, setProfileNicknames] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -80,22 +81,34 @@ export default function Earnings() {
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
       sevenDaysAgo.setHours(0, 0, 0, 0);
+      // Active tips drive totals/chart. Include partially_refunded so we can
+      // subtract refunded_amount_cents below; refunded/disputed/failed are
+      // intentionally excluded from earnings.
       const tipsQ = supabase
         .from("dj_tips")
-        .select("id,event_id,user_id,gross_amount_cents,net_amount_cents,status,created_at")
+        .select("id,event_id,user_id,gross_amount_cents,net_amount_cents,platform_fee_cents,refunded_amount_cents,status,created_at")
         .eq("dj_id", user.id)
-        .eq("status", "succeeded")
+        .in("status", ["succeeded", "partially_refunded"])
         .gte("created_at", sevenDaysAgo.toISOString())
         .order("created_at", { ascending: true });
 
+      // Recent tip history: all statuses so refunds/disputes are visible to the DJ.
+      const recentQ = supabase
+        .from("dj_tips")
+        .select("id,event_id,user_id,gross_amount_cents,net_amount_cents,platform_fee_cents,refunded_amount_cents,status,created_at")
+        .eq("dj_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(20);
+
       if (ids.length === 0) {
-        const { data: t } = await tipsQ;
+        const [{ data: t }, { data: rt }] = await Promise.all([tipsQ, recentQ]);
         if (cancelled) return;
         setTips((t ?? []) as TipRow[]);
+        setRecentTips((rt ?? []) as TipRow[]);
         setLoading(false);
         return;
       }
-      const [{ data: s }, { data: p }, { data: t }] = await Promise.all([
+      const [{ data: s }, { data: p }, { data: t }, { data: rt }] = await Promise.all([
         supabase
           .from("song_requests")
           .select("id,event_id,title,artist,album_art,album_art_url,boost,status,played_at,created_at,requester_name,requested_by")
@@ -104,14 +117,17 @@ export default function Earnings() {
           .limit(1000),
         supabase.from("event_participants").select("event_id,user_id,nickname").in("event_id", ids).limit(1000),
         tipsQ,
+        recentQ,
       ]);
       if (cancelled) return;
       const songRows = (s ?? []) as SongRow[];
       const partRows = (p ?? []) as ParticipantRow[];
       const tipRows = (t ?? []) as TipRow[];
+      const recentRows = (rt ?? []) as TipRow[];
       setSongs(songRows);
       setParticipants(partRows);
       setTips(tipRows);
+      setRecentTips(recentRows);
 
       // Resolve canonical display names from profiles for all referenced user_ids
       const uids = new Set<string>();
