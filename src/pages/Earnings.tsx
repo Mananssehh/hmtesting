@@ -54,6 +54,7 @@ export default function Earnings() {
   const [songs, setSongs] = useState<SongRow[]>([]);
   const [participants, setParticipants] = useState<ParticipantRow[]>([]);
   const [tips, setTips] = useState<TipRow[]>([]);
+  const [profileNicknames, setProfileNicknames] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!user || !isDJ) return;
@@ -63,7 +64,6 @@ export default function Earnings() {
       const ids = (events ?? []).map((e) => e.id);
       if (cancelled) return;
       setEventIds(ids);
-      // 7-day window for the chart + weekly totals
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
       sevenDaysAgo.setHours(0, 0, 0, 0);
@@ -93,9 +93,29 @@ export default function Earnings() {
         tipsQ,
       ]);
       if (cancelled) return;
-      setSongs((s ?? []) as SongRow[]);
-      setParticipants((p ?? []) as ParticipantRow[]);
-      setTips((t ?? []) as TipRow[]);
+      const songRows = (s ?? []) as SongRow[];
+      const partRows = (p ?? []) as ParticipantRow[];
+      const tipRows = (t ?? []) as TipRow[];
+      setSongs(songRows);
+      setParticipants(partRows);
+      setTips(tipRows);
+
+      // Resolve canonical display names from profiles for all referenced user_ids
+      const uids = new Set<string>();
+      for (const r of songRows) if (r.requested_by) uids.add(r.requested_by);
+      for (const tp of tipRows) if (tp.user_id) uids.add(tp.user_id);
+      for (const pr of partRows) if (pr.user_id) uids.add(pr.user_id);
+      if (uids.size > 0) {
+        const { data: profs } = await supabase
+          .from("profiles")
+          .select("id,nickname")
+          .in("id", [...uids]);
+        if (!cancelled) {
+          const map: Record<string, string> = {};
+          for (const pr of profs ?? []) if (pr.nickname) map[(pr as any).id] = (pr as any).nickname;
+          setProfileNicknames(map);
+        }
+      }
       setLoading(false);
     })();
     return () => {
