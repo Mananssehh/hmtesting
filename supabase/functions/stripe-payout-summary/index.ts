@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
         net_cents: lifetime_net_cents,
         platform_fee_cents: lifetime_platform_fee_cents,
         stripe_fee_cents: lifetime_stripe_fee_cents,
-        tip_count: (tips ?? []).length,
+        tip_count: active_tip_count,
       },
     };
 
