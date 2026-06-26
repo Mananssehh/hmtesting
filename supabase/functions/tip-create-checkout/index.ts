@@ -99,7 +99,7 @@ Deno.serve(async (req) => {
     // Resolve DJ for the event
     const { data: ev, error: evErr } = await admin
       .from("events")
-      .select("id, dj_id, name, dj_name")
+      .select("id, dj_id, name, dj_name, room_code")
       .eq("id", eventId)
       .maybeSingle();
     if (evErr || !ev?.dj_id) return err("EVENT_NOT_FOUND", "Event not found.");
