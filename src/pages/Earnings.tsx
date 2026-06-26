@@ -242,25 +242,31 @@ export default function Earnings() {
               <div className="flex items-end justify-end gap-2 h-32">
                 {loading
                   ? null
-                  : stats.days.map((d, i) => {
+                  : (() => {
+                      const CHART_PX = 104; // 128px container - ~24px reserved for label/gap
                       const max = Math.max(1, ...stats.days.map((x) => x.value));
-                      const h = (d.value / max) * 100;
-                      return (
-                        <div key={i} className="flex flex-col items-center gap-1 flex-1 max-w-[36px]">
-                          <div
-                            className={`w-full rounded-t-md shadow-glow-sm transition-all ${
-                              d.isToday
-                                ? "bg-gradient-to-t from-primary to-primary/80 ring-1 ring-primary/40"
-                                : "bg-gradient-to-t from-primary to-primary/60"
-                            }`}
-                            style={{ height: `${Math.max(h, 4)}%`, minHeight: 4 }}
-                          />
-                          <span className={`text-[10px] ${d.isToday ? "text-primary font-semibold" : "text-muted-foreground"}`}>
-                            {d.label}
-                          </span>
-                        </div>
-                      );
-                    })}
+                      return stats.days.map((d, i) => {
+                        const px = d.value > 0 ? Math.max(6, Math.round((d.value / max) * CHART_PX)) : 4;
+                        return (
+                          <div key={i} className="flex flex-col items-center gap-1 flex-1 max-w-[36px] h-full justify-end">
+                            <div
+                              className={`w-full rounded-t-md shadow-glow-sm transition-all ${
+                                d.isToday
+                                  ? "bg-gradient-to-t from-primary to-primary/80 ring-1 ring-primary/40"
+                                  : d.value > 0
+                                    ? "bg-gradient-to-t from-primary to-primary/60"
+                                    : "bg-muted/40"
+                              }`}
+                              style={{ height: `${px}px` }}
+                              title={`$${(d.value / 100).toFixed(2)}`}
+                            />
+                            <span className={`text-[10px] ${d.isToday ? "text-primary font-semibold" : "text-muted-foreground"}`}>
+                              {d.label}
+                            </span>
+                          </div>
+                        );
+                      });
+                    })()}
               </div>
             </div>
           </CardContent>
