@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Navigate, Link } from "react-router-dom";
-import { Loader2, CircleDollarSign, Users, Music, TrendingUp, Sparkles, ArrowLeft } from "lucide-react";
+import { Loader2, CircleDollarSign, Users, Music, TrendingUp, ArrowLeft } from "lucide-react";
+import { PayoutSummaryCard } from "@/components/PayoutSummaryCard";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppHeader } from "@/components/AppHeader";
@@ -258,8 +259,8 @@ export default function Earnings() {
               Tip activity across your events{profile?.nickname ? `, ${profile.nickname}` : ""}.
             </p>
           </div>
-          <Badge variant="outline" className="border-primary/40 text-primary">
-            <Sparkles className="h-3 w-3 mr-1" /> Pre-payouts
+          <Badge variant="outline" className="border-emerald-500/40 text-emerald-300">
+            Live payouts
           </Badge>
         </div>
 
@@ -276,8 +277,7 @@ export default function Earnings() {
                   <span className="text-muted-foreground text-sm">{stats.tipCount} tip{stats.tipCount === 1 ? "" : "s"}</span>
                 </div>
                 <p className="text-xs text-muted-foreground mt-3 leading-relaxed">
-                  Cash payouts unlock when Stripe Connect is enabled. Tips do not affect song placement —
-                  they're a way for guests to thank you for the set.
+                  Tips do not affect song placement — they're a way for guests to thank you for the set.
                 </p>
               </div>
               {/* Mini bar chart */}
@@ -376,16 +376,8 @@ export default function Earnings() {
           </Card>
         </section>
 
-        {/* Phase 2 disclosure */}
-        <Card className="bg-card/40 border-dashed">
-          <CardContent className="p-5 text-sm text-muted-foreground space-y-1">
-            <div className="font-semibold text-foreground">Cash payouts — coming soon</div>
-            <p>
-              Once Stripe Connect is enabled, this page will show gross revenue, platform fees, your share,
-              and payout schedule. Until then, everything here is engagement-based.
-            </p>
-          </CardContent>
-        </Card>
+        {/* Payout summary (live Stripe Connect) */}
+        <PayoutSummaryCard />
 
         {eventIds.length === 0 && !loading && (
           <div className="text-center py-10 text-muted-foreground">
