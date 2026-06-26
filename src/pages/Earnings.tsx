@@ -29,6 +29,16 @@ interface ParticipantRow {
   nickname: string;
 }
 
+interface TipRow {
+  id: string;
+  event_id: string;
+  user_id: string;
+  gross_amount_cents: number;
+  net_amount_cents: number;
+  status: string;
+  created_at: string;
+}
+
 const startOf = (period: "day" | "week" | "month") => {
   const d = new Date();
   d.setHours(0, 0, 0, 0);
@@ -43,6 +53,7 @@ export default function Earnings() {
   const [eventIds, setEventIds] = useState<string[]>([]);
   const [songs, setSongs] = useState<SongRow[]>([]);
   const [participants, setParticipants] = useState<ParticipantRow[]>([]);
+  const [tips, setTips] = useState<TipRow[]>([]);
 
   useEffect(() => {
     if (!user || !isDJ) return;
@@ -52,11 +63,23 @@ export default function Earnings() {
       const ids = (events ?? []).map((e) => e.id);
       if (cancelled) return;
       setEventIds(ids);
+      // Tips can exist even without event scoping mismatch — query by dj_id
+      const tipsQ = supabase
+        .from("dj_tips")
+        .select("id,event_id,user_id,gross_amount_cents,net_amount_cents,status,created_at")
+        .eq("dj_id", user.id)
+        .eq("status", "succeeded")
+        .order("created_at", { ascending: false })
+        .limit(2000);
+
       if (ids.length === 0) {
+        const { data: t } = await tipsQ;
+        if (cancelled) return;
+        setTips((t ?? []) as TipRow[]);
         setLoading(false);
         return;
       }
-      const [{ data: s }, { data: p }] = await Promise.all([
+      const [{ data: s }, { data: p }, { data: t }] = await Promise.all([
         supabase
           .from("song_requests")
           .select("id,event_id,title,artist,album_art,album_art_url,boost,status,played_at,created_at,requester_name,requested_by")
@@ -64,10 +87,12 @@ export default function Earnings() {
           .order("created_at", { ascending: false })
           .limit(1000),
         supabase.from("event_participants").select("event_id,user_id,nickname").in("event_id", ids).limit(1000),
+        tipsQ,
       ]);
       if (cancelled) return;
       setSongs((s ?? []) as SongRow[]);
       setParticipants((p ?? []) as ParticipantRow[]);
+      setTips((t ?? []) as TipRow[]);
       setLoading(false);
     })();
     return () => {
