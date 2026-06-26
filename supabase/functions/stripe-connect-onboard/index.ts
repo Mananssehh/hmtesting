@@ -84,8 +84,8 @@ Deno.serve(async (req) => {
     if (!hasKey) {
       return fail("STRIPE_NOT_CONFIGURED", "Stripe isn't configured on the server yet.");
     }
-    if (!isTest) {
-      return fail("STRIPE_KEY_INVALID", "Expected sk_test_ key.", { key_tail: keyTail });
+    if (!isTest && !isLive) {
+      return fail("STRIPE_KEY_INVALID", "Expected sk_test_ or sk_live_ key.", { key_tail: keyTail });
     }
     const stripe = new Stripe(stripeKey, {
       apiVersion: "2024-12-18.acacia",
