@@ -200,7 +200,7 @@ const Auth = () => {
                     className="mt-0.5"
                   />
                   <div className="text-sm space-y-1">
-                    <div className="font-medium">I'm a DJ</div>
+                    <div className="font-medium">Sign up as a DJ</div>
                     <div className="text-[12px] text-muted-foreground">
                       Host events, manage your music queue, and receive tips.
                     </div>
