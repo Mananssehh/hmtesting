@@ -7,7 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { AppHeader } from "@/components/AppHeader";
 import { emailSchema, nicknameSchema, passwordSchema } from "@/lib/validation";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -148,96 +148,114 @@ const Auth = () => {
       <div className="container max-w-md py-10 sm:py-16">
         <div className="text-center mb-8">
           <Disc3 className="h-12 w-12 text-primary mx-auto mb-4 animate-float" strokeWidth={1.5} />
-          <h1 className="text-[28px] sm:text-3xl font-semibold tracking-tight">Welcome to Decks</h1>
+          <h1 className="text-[28px] sm:text-3xl font-semibold tracking-tight">
+            {mode === "signup" ? "Create your account" : "Login"}
+          </h1>
           <p className="text-muted-foreground mt-2 text-[15px]">
-            {djIntent ? "Create your account to start DJing." : "Sign in to vote, request, and tip the DJ."}
+            {mode === "signup"
+              ? "Join Decks to vote, request, and tip the DJ."
+              : "Welcome back to Decks."}
           </p>
         </div>
 
         <div className="p-6 sm:p-7 rounded-3xl glass-strong">
-          <Tabs value={mode} onValueChange={(v) => setMode(v as "login" | "signup")}>
-            <TabsList className="grid grid-cols-2 w-full rounded-full bg-secondary/60 p-1 h-10">
-              <TabsTrigger value="login" className="rounded-full">Sign in</TabsTrigger>
-              <TabsTrigger value="signup" className="rounded-full">Sign up</TabsTrigger>
-            </TabsList>
-
-            <form onSubmit={handleSubmit} className="space-y-4 mt-6">
-              {mode === "signup" && (
-                <div className="space-y-2">
-                  <Label htmlFor="nickname">Nickname</Label>
-                  <Input
-                    id="nickname"
-                    value={nickname}
-                    onChange={(e) => setNickname(e.target.value)}
-                    placeholder="DJ Sparkles"
-                    maxLength={24}
-                    required
-                  />
-                </div>
-              )}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {mode === "signup" && (
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="nickname">Name</Label>
                 <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@club.com"
-                  autoComplete="email"
+                  id="nickname"
+                  value={nickname}
+                  onChange={(e) => setNickname(e.target.value)}
+                  placeholder="DJ Sparkles"
+                  maxLength={24}
                   required
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="At least 8 characters"
-                  autoComplete={mode === "signup" ? "new-password" : "current-password"}
-                  required
-                />
-              </div>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@club.com"
+                autoComplete="email"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="At least 8 characters"
+                autoComplete={mode === "signup" ? "new-password" : "current-password"}
+                required
+              />
+            </div>
 
-              {mode === "signup" && (
-                <label className="flex items-start gap-3 p-3 rounded-lg bg-secondary/40 cursor-pointer">
-                  <Checkbox
-                    id="wants-dj"
-                    checked={wantsDj}
-                    onCheckedChange={(v) => setWantsDj(v === true)}
-                    className="mt-0.5"
-                  />
-                  <div className="text-sm space-y-1">
-                    <div className="font-medium">Sign up as a DJ</div>
-                    <div className="text-[12px] text-muted-foreground">
-                      Host events, manage your music queue, and receive tips.
-                    </div>
+            {mode === "signup" && (
+              <label className="flex items-start gap-3 p-3 rounded-lg bg-secondary/40 cursor-pointer">
+                <Checkbox
+                  id="wants-dj"
+                  checked={wantsDj}
+                  onCheckedChange={(v) => setWantsDj(v === true)}
+                  className="mt-0.5"
+                />
+                <div className="text-sm space-y-1">
+                  <div className="font-medium">Sign up as a DJ</div>
+                  <div className="text-[12px] text-muted-foreground">
+                    Host events, manage your music queue, and receive tips.
                   </div>
-                </label>
-              )}
-
-              <TabsContent value="login" className="m-0 space-y-3">
-                <Button type="submit" disabled={loading} variant="premium" className="w-full h-11">
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Sign in
-                </Button>
-                <div className="text-center">
-                  <Link to="/forgot-password" className="text-xs text-muted-foreground hover:text-primary hover:underline">
-                    Forgot your password?
-                  </Link>
                 </div>
-              </TabsContent>
-              <TabsContent value="signup" className="m-0">
-                <Button type="submit" disabled={loading} variant="premium" className="w-full h-11">
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Create account
-                </Button>
-              </TabsContent>
-            </form>
-          </Tabs>
+              </label>
+            )}
 
-          <p className="text-xs text-center text-muted-foreground mt-6">
+            <Button type="submit" disabled={loading} variant="premium" className="w-full h-11">
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {mode === "signup" ? "Create account" : "Login"}
+            </Button>
+
+            {mode === "login" && (
+              <div className="text-center">
+                <Link to="/forgot-password" className="text-xs text-muted-foreground hover:text-primary hover:underline">
+                  Forgot your password?
+                </Link>
+              </div>
+            )}
+          </form>
+
+          <p className="text-sm text-center text-muted-foreground mt-6">
+            {mode === "login" ? (
+              <>
+                Don't have an account?{" "}
+                <button
+                  type="button"
+                  onClick={() => setMode("signup")}
+                  className="text-primary hover:underline font-medium"
+                >
+                  Create one
+                </button>
+              </>
+            ) : (
+              <>
+                Already have an account?{" "}
+                <button
+                  type="button"
+                  onClick={() => setMode("login")}
+                  className="text-primary hover:underline font-medium"
+                >
+                  Login
+                </button>
+              </>
+            )}
+          </p>
+
+          <p className="text-xs text-center text-muted-foreground mt-4">
             Just want to vote? <Link to="/join" className="text-primary hover:underline">Join an event with a code →</Link>
           </p>
           <p className="text-[11px] text-center text-muted-foreground mt-3">
