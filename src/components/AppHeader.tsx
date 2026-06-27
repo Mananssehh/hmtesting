@@ -87,7 +87,7 @@ export function AppHeader() {
             </>
           ) : (
             <Button asChild variant="ghost" size="sm">
-              <Link to="/auth">Sign in / Sign up</Link>
+              <Link to="/auth">Login</Link>
             </Button>
           )}
         </nav>
