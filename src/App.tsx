@@ -7,6 +7,8 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import AuthCallback from "./pages/AuthCallback";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import Join from "./pages/Join";
 import Connect from "./pages/Connect";
 import EventPage from "./pages/EventPage";
@@ -51,6 +53,8 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/auth/v1/callback" element={<AuthCallback />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/join" element={<Join />} />
               <Route path="/connect" element={<Connect />} />
               <Route path="/event/:code" element={<EventPage />} />

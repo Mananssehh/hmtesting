@@ -20,6 +20,7 @@ const Auth = () => {
   const [searchParams] = useSearchParams();
   const djIntent = searchParams.get("role") === "dj" || searchParams.get("mode") === "dj";
   const fromPath = (location.state as { from?: string } | null)?.from;
+  const notice = (location.state as { notice?: string } | null)?.notice;
   const { user, profile, isDJ, isAnonymous, loading: authLoading, refreshProfile } = useAuth();
   const [mode, setMode] = useState<"login" | "signup">(djIntent || !!profile?.nickname ? "signup" : "login");
   const [email, setEmail] = useState("");
@@ -27,6 +28,14 @@ const Auth = () => {
   const [nickname, setNickname] = useState(profile?.nickname && profile.nickname !== "Guest" ? profile.nickname : "");
   const [loading, setLoading] = useState(false);
   const [wantsDj, setWantsDj] = useState(djIntent);
+
+  useEffect(() => {
+    if (notice) {
+      toast.success(notice);
+      // Clear location state so the toast doesn't re-fire on re-render.
+      window.history.replaceState({}, "");
+    }
+  }, [notice]);
 
 
   useEffect(() => {
@@ -208,11 +217,16 @@ const Auth = () => {
                 </label>
               )}
 
-              <TabsContent value="login" className="m-0">
+              <TabsContent value="login" className="m-0 space-y-3">
                 <Button type="submit" disabled={loading} variant="premium" className="w-full h-11">
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Sign in
                 </Button>
+                <div className="text-center">
+                  <Link to="/forgot-password" className="text-xs text-muted-foreground hover:text-primary hover:underline">
+                    Forgot your password?
+                  </Link>
+                </div>
               </TabsContent>
               <TabsContent value="signup" className="m-0">
                 <Button type="submit" disabled={loading} variant="premium" className="w-full h-11">
