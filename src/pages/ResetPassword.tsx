@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Disc3, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { DecksLogo } from "@/components/DecksLogo";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -84,7 +85,7 @@ const ResetPassword = () => {
       <AppHeader />
       <div className="container max-w-md py-10 sm:py-16">
         <div className="text-center mb-8">
-          <Disc3 className="h-12 w-12 text-primary mx-auto mb-4" strokeWidth={1.5} />
+          <DecksLogo className="h-14 w-14 mx-auto mb-4" />
           <h1 className="text-[28px] sm:text-3xl font-semibold tracking-tight">
             Set a new password
           </h1>
