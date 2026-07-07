@@ -10,6 +10,7 @@ import {
   Heading,
   Hr,
   Html,
+  Img,
   Link,
   Preview,
   Section,
@@ -45,6 +46,9 @@ export const RecoveryEmail = ({
       <Preview>Reset your {siteName} password</Preview>
       <Body style={main}>
         <Container style={outer}>
+        <Section style={{ textAlign: 'center', margin: '0 0 20px' }}>
+          <Img src="https://linku99.com/brand/decks-logo.png?v=3" alt="Decks" width="72" height="72" style={{ display: 'block', margin: '0 auto', maxWidth: '100%', height: 'auto' }} />
+        </Section>
           <Section style={card}>
             <Heading style={brand}>🎧 Decks</Heading>
             <Heading style={h1}>Reset your password</Heading>

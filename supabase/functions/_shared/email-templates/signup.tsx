@@ -10,6 +10,7 @@ import {
   Heading,
   Hr,
   Html,
+  Img,
   Link,
   Preview,
   Section,
@@ -34,6 +35,9 @@ export const SignupEmail = ({
     <Preview>Welcome to Decks — you've got 15 starter points</Preview>
     <Body style={main}>
       <Container style={container}>
+        <Section style={{ textAlign: 'center', margin: '0 0 20px' }}>
+          <Img src="https://linku99.com/brand/decks-logo.png?v=3" alt="Decks" width="72" height="72" style={{ display: 'block', margin: '0 auto', maxWidth: '100%', height: 'auto' }} />
+        </Section>
         <Heading style={h1}>Welcome to Decks.</Heading>
         <Text style={lead}>You're officially in.</Text>
 

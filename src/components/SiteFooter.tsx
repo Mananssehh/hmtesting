@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Disc3 } from "lucide-react";
+import { DecksLogo } from "@/components/DecksLogo";
 
 const SUPPORT_EMAIL = "support@linku99.com";
 
@@ -9,7 +9,7 @@ export function SiteFooter() {
       <div className="container py-10 grid gap-8 md:grid-cols-4 text-sm">
         <div>
           <div className="flex items-center gap-2 mb-2">
-            <Disc3 className="h-5 w-5 text-primary" />
+            <DecksLogo className="h-6 w-6" />
             <span className="font-semibold">Decks</span>
           </div>
           <p className="text-muted-foreground text-xs leading-relaxed">

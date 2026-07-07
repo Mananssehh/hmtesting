@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, Link, useSearchParams, useLocation } from "react-router-dom";
-import { Disc3, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { DecksLogo } from "@/components/DecksLogo";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -147,7 +148,7 @@ const Auth = () => {
       <AppHeader />
       <div className="container max-w-md py-10 sm:py-16">
         <div className="text-center mb-8">
-          <Disc3 className="h-12 w-12 text-primary mx-auto mb-4 animate-float" strokeWidth={1.5} />
+          <DecksLogo className="h-14 w-14 mx-auto mb-4 animate-float" />
           <h1 className="text-[28px] sm:text-3xl font-semibold tracking-tight">
             {mode === "signup" ? "Create your account" : "Login"}
           </h1>

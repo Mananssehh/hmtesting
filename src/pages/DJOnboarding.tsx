@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Disc3, Loader2, ShieldCheck } from "lucide-react";
+import { Loader2, ShieldCheck } from "lucide-react";
+import { DecksLogo } from "@/components/DecksLogo";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -69,7 +70,7 @@ const DJOnboarding = () => {
       <AppHeader />
       <div className="container max-w-lg py-10 sm:py-16">
         <div className="text-center mb-8">
-          <Disc3 className="h-12 w-12 text-primary mx-auto mb-4 animate-float" strokeWidth={1.5} />
+          <DecksLogo className="h-14 w-14 mx-auto mb-4 animate-float" />
           <h1 className="text-[28px] sm:text-3xl font-semibold tracking-tight">Become a DJ on Decks</h1>
           <p className="text-muted-foreground mt-2 text-[15px]">
             Self-serve onboarding — accept the certification and you're ready to host events.
