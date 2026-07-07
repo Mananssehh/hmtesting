@@ -1,7 +1,18 @@
 /// <reference types="npm:@types/react@18.3.1" />
 import * as React from 'npm:react@18.3.1'
 import {
-  Body, Button, Container, Head, Heading, Hr, Html, Link, Preview, Section, Text,
+  Body,
+  Button,
+  Container,
+  Head,
+  Heading,
+  Hr,
+  Html,
+  Img,
+  Link,
+  Preview,
+  Section,
+  Text,
 } from 'npm:@react-email/components@0.0.22'
 import type { TemplateEntry } from './registry.ts'
 import {
@@ -19,6 +30,9 @@ const Email = ({ djName = 'there' }: Props) => (
     <Preview>Welcome to Decks — let's get your first event live</Preview>
     <Body style={main}>
       <Container style={container}>
+        <Section style={{ textAlign: 'center', margin: '0 0 20px' }}>
+          <Img src="https://linku99.com/brand/decks-logo.png?v=3" alt="Decks" width="72" height="72" style={{ display: 'block', margin: '0 auto', maxWidth: '100%', height: 'auto' }} />
+        </Section>
         <Heading style={h1}>Welcome to Decks, DJ {djName} 🎛️</Heading>
         <Text style={lead}>Your DJ access is active. Here's how to get going.</Text>
 
