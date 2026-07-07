@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Disc3, LogOut, Sparkles, User as UserIcon } from "lucide-react";
+import { LogOut, Sparkles, User as UserIcon } from "lucide-react";
+import { DecksLogo } from "@/components/DecksLogo";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
@@ -28,7 +29,7 @@ export function AppHeader() {
       <div className="container flex h-14 sm:h-16 items-center justify-between">
         <Link to="/" className="flex items-center gap-2 group">
           <div className="relative">
-            <Disc3 className="h-6 w-6 sm:h-7 sm:w-7 text-primary group-hover:rotate-180 transition-transform duration-700" />
+            <DecksLogo className="h-7 w-7 sm:h-8 sm:w-8 group-hover:scale-105 transition-transform duration-300" />
             <span className="absolute inset-0 rounded-full bg-primary/15 blur-md -z-10" />
           </div>
           <span className="font-semibold text-[17px] tracking-tight">
