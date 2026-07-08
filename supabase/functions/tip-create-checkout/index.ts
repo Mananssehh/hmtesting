@@ -72,6 +72,9 @@ Deno.serve(async (req) => {
     const eventId = (body.event_id as string | null) ?? null;
     const checkOnly = !!body.check_only;
     const amountCents = checkOnly ? 100 : Math.floor(Number(body.amount_cents));
+    const songRequestId = (body.song_request_id as string | null) ?? null;
+    let songTitleMeta = (body.song_title as string | null) ?? null;
+    let artistMeta = (body.artist as string | null) ?? null;
 
     if (!eventId) return err("INVALID_REQUEST", "Missing event.");
     if (!checkOnly && (!Number.isFinite(amountCents) || amountCents < 100)) {
