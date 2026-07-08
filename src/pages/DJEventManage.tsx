@@ -119,6 +119,41 @@ const DJEventManage = () => {
     return () => { supabase.removeChannel(channel); };
   }, [event]);
 
+  // Per-song tip totals (succeeded/partially-refunded only) to render badges on request cards.
+  const [tipTotals, setTipTotals] = useState<Record<string, { cents: number; count: number }>>({});
+  useEffect(() => {
+    if (!event) return;
+    let cancelled = false;
+    const load = async () => {
+      const { data } = await supabase
+        .from("dj_tips")
+        .select("song_request_id, gross_amount_cents, refunded_amount_cents, status")
+        .eq("event_id", event.id)
+        .in("status", ["succeeded", "partially_refunded"]);
+      if (cancelled) return;
+      const map: Record<string, { cents: number; count: number }> = {};
+      for (const t of (data ?? []) as any[]) {
+        if (!t.song_request_id) continue;
+        const eff = Math.max(0, (t.gross_amount_cents ?? 0) - (t.refunded_amount_cents ?? 0));
+        if (eff <= 0) continue;
+        const cur = map[t.song_request_id] ?? { cents: 0, count: 0 };
+        map[t.song_request_id] = { cents: cur.cents + eff, count: cur.count + 1 };
+      }
+      setTipTotals(map);
+    };
+    load();
+    const ch = supabase
+      .channel(`dj-tip-totals-${event.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "dj_tips", filter: `event_id=eq.${event.id}` },
+        () => { load(); },
+      )
+      .subscribe();
+    return () => { cancelled = true; supabase.removeChannel(ch); };
+  }, [event]);
+
+
   const nowPlaying = useMemo(() => songs.find((s) => s.status === "playing"), [songs]);
   // Live broadcast row from now_playing (Bridge / manual). Same source as guest EventPage.
   const { nowPlaying: broadcastNowPlaying } = useNowPlaying(event?.id);
