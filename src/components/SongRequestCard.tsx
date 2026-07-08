@@ -60,10 +60,13 @@ interface Props {
   moderation?: boolean;
   trending?: boolean;
   movement?: "up" | "down" | "same" | "new";
+  /** Total tipped amount in cents (succeeded tips only). Renders a "$X tipped" badge. */
+  tipTotalCents?: number;
+  tipCount?: number;
 }
 
 
-export function SongRequestCard({ rank, song, eventId, myVote = 0, onVote, onTip, onRemove, onReport, disabled, battle, mostWanted, pinned, moderation, trending, movement }: Props) {
+export function SongRequestCard({ rank, song, eventId, myVote = 0, onVote, onTip, onRemove, onReport, disabled, battle, mostWanted, pinned, moderation, trending, movement, tipTotalCents, tipCount }: Props) {
   const location = useLocation();
   // Score is votes only — tips never affect placement.
   // When boosts are re-enabled, boost is added back as a visibility-only weight.
