@@ -620,6 +620,17 @@ const DJEventManage = () => {
           </div>
         </div>
 
+        {/* Tips & Boosts — live view of songs guests are paying to hear */}
+        {status !== "ended" && (
+          <TipsBoostsPanel
+            eventId={event.id}
+            songs={songs}
+            onMarkPlaying={(sid) => updateStatus(sid, "playing")}
+            onMarkPlayed={(sid) => updateStatus(sid, "played")}
+            onApprove={(sid) => updateStatus(sid, "approved")}
+          />
+        )}
+
         {/* Reports */}
         <div className="mb-4">
           <DJReportsPanel
