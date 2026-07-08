@@ -121,7 +121,13 @@ export function TipDialog({ open, onOpenChange, eventId, djName, songTitle, song
       }
 
       const { data, error } = await supabase.functions.invoke("tip-create-checkout", {
-        body: { event_id: eventId, amount_cents: amountCents },
+        body: {
+          event_id: eventId,
+          amount_cents: amountCents,
+          song_request_id: songRequestId ?? null,
+          song_title: songTitleMeta ?? null,
+          artist: artistMeta ?? null,
+        },
       });
 
       // supabase-js can wrap a structured-error body in `error` (FunctionsHttpError)
