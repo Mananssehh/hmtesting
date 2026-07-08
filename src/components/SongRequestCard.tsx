@@ -181,6 +181,12 @@ export function SongRequestCard({ rank, song, eventId, myVote = 0, onVote, onTip
               +{song.boost}
             </Badge>
           )}
+          {tipTotalCents && tipTotalCents > 0 ? (
+            <Badge className="text-[10px] px-1.5 py-0 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-md gap-1 font-semibold">
+              💸 ${(tipTotalCents / 100).toFixed(tipTotalCents % 100 === 0 ? 0 : 2)} tipped
+              {tipCount && tipCount > 1 ? <span className="opacity-70">· {tipCount}</span> : null}
+            </Badge>
+          ) : null}
           {battle && (
             <Badge className="text-[10px] px-1.5 py-0 bg-orange-500/20 text-orange-300 border-orange-500/40 rounded-md gap-1">
               <Swords className="h-2.5 w-2.5" /> Battle
