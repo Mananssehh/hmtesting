@@ -22,11 +22,6 @@ interface Props {
   eventId: string | null;
   djName?: string | null;
   songTitle?: string;
-  /** Link this tip to a specific song request so the DJ sees which song was tipped. */
-  songRequestId?: string | null;
-  /** Optional metadata sent to Stripe so the tip is traceable server-side. */
-  songTitleMeta?: string | null;
-  artistMeta?: string | null;
 }
 
 const PRESETS = [1, 3, 5, 10, 20] as const;
@@ -36,7 +31,7 @@ const MAX_TIP_DOLLARS = PURCHASE_CAPS.maxSingleCents / 100; // $50
 export const TIP_DISCLAIMER =
   "Tips support the DJ. Tips do not affect song placement and do not guarantee playback, prioritization, or any specific action by the DJ.";
 
-export function TipDialog({ open, onOpenChange, eventId, djName, songTitle, songRequestId, songTitleMeta, artistMeta }: Props) {
+export function TipDialog({ open, onOpenChange, eventId, djName, songTitle }: Props) {
   const [selected, setSelected] = useState<number>(5);
   const [custom, setCustom] = useState<string>("");
   const [acknowledged, setAcknowledged] = useState(false);
@@ -121,13 +116,7 @@ export function TipDialog({ open, onOpenChange, eventId, djName, songTitle, song
       }
 
       const { data, error } = await supabase.functions.invoke("tip-create-checkout", {
-        body: {
-          event_id: eventId,
-          amount_cents: amountCents,
-          song_request_id: songRequestId ?? null,
-          song_title: songTitleMeta ?? null,
-          artist: artistMeta ?? null,
-        },
+        body: { event_id: eventId, amount_cents: amountCents },
       });
 
       // supabase-js can wrap a structured-error body in `error` (FunctionsHttpError)
