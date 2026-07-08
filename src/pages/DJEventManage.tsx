@@ -12,6 +12,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { SongRequestCard, SongRequestRow } from "@/components/SongRequestCard";
 import { DJReportsPanel } from "@/components/DJReportsPanel";
 import { DJSongActions } from "@/components/DJSongActions";
+import { TipsBoostsPanel } from "@/components/TipsBoostsPanel";
 
 import { ArchivedEventSummary } from "@/components/ArchivedEventSummary";
 import { ModerationDialog } from "@/components/ModerationDialog";
