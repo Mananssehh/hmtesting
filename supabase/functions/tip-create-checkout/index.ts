@@ -178,7 +178,37 @@ Deno.serve(async (req) => {
     const stripe = getStripe();
     const { platform_fee_cents, net_amount_cents } = computeFee(amountCents);
 
+    // Resolve song request (validated to belong to this event) so DJs
+    // can see exactly which song was tipped, and Stripe metadata carries the link.
+    let resolvedRequestId: string | null = null;
+    if (songRequestId) {
+      const { data: reqRow } = await admin
+        .from("song_requests")
+        .select("id, title, artist, event_id")
+        .eq("id", songRequestId)
+        .maybeSingle();
+      if (reqRow && reqRow.event_id === eventId) {
+        resolvedRequestId = reqRow.id;
+        songTitleMeta = songTitleMeta ?? reqRow.title ?? null;
+        artistMeta = artistMeta ?? reqRow.artist ?? null;
+      }
+    }
+
+    const { data: guestProfile } = await admin
+      .from("profiles").select("nickname").eq("id", userId).maybeSingle();
+    const guestNickname = guestProfile?.nickname ?? null;
+
     const origin = req.headers.get("origin") ?? "";
+
+    const tipMetadata: Record<string, string> = {
+      tipper_user_id: userId,
+      dj_id: ev.dj_id,
+      event_id: eventId,
+    };
+    if (resolvedRequestId) tipMetadata.song_request_id = resolvedRequestId;
+    if (songTitleMeta) tipMetadata.song_title = songTitleMeta.slice(0, 500);
+    if (artistMeta) tipMetadata.artist = artistMeta.slice(0, 500);
+    if (guestNickname) tipMetadata.guest_nickname = guestNickname.slice(0, 200);
 
     let session;
     try {
@@ -193,7 +223,9 @@ Deno.serve(async (req) => {
             unit_amount: amountCents,
             product_data: {
               name: `Tip for DJ ${ev.dj_name}`,
-              description: `Tip for "${ev.name}" — does not affect queue order.`,
+              description: songTitleMeta
+                ? `Tip for "${songTitleMeta}"${artistMeta ? ` — ${artistMeta}` : ""} at "${ev.name}". Does not affect queue order.`
+                : `Tip for "${ev.name}" — does not affect queue order.`,
             },
           },
         }],
@@ -201,19 +233,13 @@ Deno.serve(async (req) => {
           application_fee_amount: platform_fee_cents,
           transfer_data: { destination: payout!.stripe_account_id! },
           metadata: {
-            tipper_user_id: userId,
-            dj_id: ev.dj_id,
-            event_id: eventId,
+            ...tipMetadata,
             gross_amount_cents: String(amountCents),
             platform_fee_cents: String(platform_fee_cents),
             net_amount_cents: String(net_amount_cents),
           },
         },
-        metadata: {
-          tipper_user_id: userId,
-          dj_id: ev.dj_id,
-          event_id: eventId,
-        },
+        metadata: tipMetadata,
         success_url: `${origin}/event/${ev.room_code ?? eventId}?tip=success`,
         cancel_url: `${origin}/event/${ev.room_code ?? eventId}?tip=cancel`,
       });
@@ -232,6 +258,10 @@ Deno.serve(async (req) => {
       user_id: userId,
       dj_id: ev.dj_id,
       event_id: eventId,
+      song_request_id: resolvedRequestId,
+      song_title: songTitleMeta,
+      artist: artistMeta,
+      guest_nickname: guestNickname,
       gross_amount_cents: amountCents,
       platform_fee_cents,
       net_amount_cents,
