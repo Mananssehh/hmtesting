@@ -169,12 +169,14 @@ export type Database = {
       }
       dj_tips: {
         Row: {
+          artist: string | null
           created_at: string
           currency: string
           dj_id: string
           event_id: string | null
           failure_reason: string | null
           gross_amount_cents: number
+          guest_nickname: string | null
           id: string
           livemode: boolean
           net_amount_cents: number
@@ -182,6 +184,8 @@ export type Database = {
           refund_id: string | null
           refunded_amount_cents: number
           refunded_at: string | null
+          song_request_id: string | null
+          song_title: string | null
           status: string
           stripe_charge_id: string | null
           stripe_checkout_session_id: string | null
@@ -191,12 +195,14 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          artist?: string | null
           created_at?: string
           currency?: string
           dj_id: string
           event_id?: string | null
           failure_reason?: string | null
           gross_amount_cents: number
+          guest_nickname?: string | null
           id?: string
           livemode?: boolean
           net_amount_cents: number
@@ -204,6 +210,8 @@ export type Database = {
           refund_id?: string | null
           refunded_amount_cents?: number
           refunded_at?: string | null
+          song_request_id?: string | null
+          song_title?: string | null
           status?: string
           stripe_charge_id?: string | null
           stripe_checkout_session_id?: string | null
@@ -213,12 +221,14 @@ export type Database = {
           user_id: string
         }
         Update: {
+          artist?: string | null
           created_at?: string
           currency?: string
           dj_id?: string
           event_id?: string | null
           failure_reason?: string | null
           gross_amount_cents?: number
+          guest_nickname?: string | null
           id?: string
           livemode?: boolean
           net_amount_cents?: number
@@ -226,6 +236,8 @@ export type Database = {
           refund_id?: string | null
           refunded_amount_cents?: number
           refunded_at?: string | null
+          song_request_id?: string | null
+          song_title?: string | null
           status?: string
           stripe_charge_id?: string | null
           stripe_checkout_session_id?: string | null
@@ -240,6 +252,13 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dj_tips_song_request_id_fkey"
+            columns: ["song_request_id"]
+            isOneToOne: false
+            referencedRelation: "song_requests"
             referencedColumns: ["id"]
           },
         ]

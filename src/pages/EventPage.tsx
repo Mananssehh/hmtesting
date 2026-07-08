@@ -781,6 +781,9 @@ const EventPage = () => {
           eventId={eventInfo?.id ?? null}
           djName={eventInfo?.dj_name ?? null}
           songTitle={`${boostTarget.title} — ${boostTarget.artist}`}
+          songRequestId={boostTarget.id}
+          songTitleMeta={boostTarget.title}
+          artistMeta={boostTarget.artist}
         />
       )}
 
