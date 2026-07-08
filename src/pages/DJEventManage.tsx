@@ -677,7 +677,10 @@ const DJEventManage = () => {
                         mostWanted={song.id === topBoostedId}
                         pinned={isPinned}
                         moderation={showModerationBadge}
+                        tipTotalCents={tipTotals[song.id]?.cents}
+                        tipCount={tipTotals[song.id]?.count}
                       />
+
                       <DJSongActions
                         song={song}
                         isPlaying={song.status === "playing"}
