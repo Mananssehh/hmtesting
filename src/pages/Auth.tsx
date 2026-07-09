@@ -94,16 +94,27 @@ const Auth = () => {
           }).catch(() => undefined);
           toast.success("Account created — your nickname, points, and history are saved.");
         } else {
-          const { error } = await supabase.auth.signUp({
+          const { data, error } = await supabase.auth.signUp({
             email: emailParse.data,
             password: passParse.data,
             options: {
-              emailRedirectTo: window.location.origin,
+              emailRedirectTo: `${window.location.origin}/auth/callback`,
               data: { nickname: nickParse.data },
             },
           });
           if (error) throw error;
-          // Fire-and-forget welcome email; never block signup on email send.
+
+          // If no session was returned, Supabase requires email confirmation
+          // before the user can sign in. Do NOT navigate away — show the
+          // "check your inbox" state so the user knows what to do next.
+          if (!data.session) {
+            toast.success("Check your inbox to confirm your email.");
+            setMode("login");
+            setPassword("");
+            return;
+          }
+
+          // Auto-confirm was on (or user was already confirmed): welcome + go.
           supabase.functions.invoke("send-transactional-email", {
             body: {
               templateName: "guest-welcome",
