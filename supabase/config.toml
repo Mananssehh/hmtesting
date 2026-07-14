@@ -5,6 +5,8 @@ project_id = "rwdgnapajxcxktmewlxb"
     verify_jwt = false
   [functions.bridge-pair]
     verify_jwt = false
+  [functions.bridge-event-snapshot]
+    verify_jwt = false
   [functions.now-playing-ingest]
     verify_jwt = false
   [functions.process-email-queue]
