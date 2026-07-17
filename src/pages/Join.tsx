@@ -179,6 +179,11 @@ const Join = () => {
       </div>
       <div className="flex-1" />
       <SiteFooter />
+      <GuestLimitReachedDialog
+        open={blockOpen}
+        onOpenChange={setBlockOpen}
+        roomCode={code.trim().toUpperCase()}
+      />
     </div>
   );
 };
