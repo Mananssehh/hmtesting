@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { AppHeader } from "@/components/AppHeader";
 import { emailSchema, nicknameSchema, passwordSchema } from "@/lib/validation";
 import { Checkbox } from "@/components/ui/checkbox";
+import { logGuestFunnel } from "@/lib/guestFunnel";
 
 
 
@@ -22,6 +23,8 @@ const Auth = () => {
   const djIntent = searchParams.get("role") === "dj" || searchParams.get("mode") === "dj";
   const nextRaw = searchParams.get("next");
   const nextPath = nextRaw && nextRaw.startsWith("/") && !nextRaw.startsWith("//") ? nextRaw : null;
+  const authReason = searchParams.get("reason");
+  const joiningEventCode = nextPath && nextPath.startsWith("/event/") ? nextPath.slice("/event/".length).split(/[/?#]/)[0] : null;
   const fromPath = (location.state as { from?: string } | null)?.from;
   const notice = (location.state as { notice?: string } | null)?.notice;
   const { user, profile, isDJ, isAnonymous, loading: authLoading, refreshProfile } = useAuth();
@@ -97,6 +100,7 @@ const Auth = () => {
             },
           }).catch(() => undefined);
           toast.success("Account created — your nickname, points, and history are saved.");
+          void logGuestFunnel("guest_signup_completed", { metadata: { reason: authReason, path: "anonymous_upgrade" } });
         } else {
           const { data, error } = await supabase.auth.signUp({
             email: emailParse.data,
@@ -128,6 +132,7 @@ const Auth = () => {
             },
           }).catch(() => undefined);
           toast.success("Account created! Welcome to Decks.");
+          void logGuestFunnel("guest_signup_completed", { metadata: { reason: authReason, path: "signup" } });
         }
 
         navigate(nextPath || ((djIntent || wantsDj) ? "/dj/onboarding" : (fromPath || "/")), { replace: true });
@@ -164,6 +169,11 @@ const Auth = () => {
       <div className="container max-w-md py-10 sm:py-16">
         <div className="text-center mb-8">
           <DecksLogo className="h-14 w-14 mx-auto mb-4 animate-float" />
+          {joiningEventCode && (
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-primary/10 text-primary px-3 py-1.5 text-xs font-medium">
+              Joining event <span className="font-mono tracking-wider">{joiningEventCode}</span>
+            </div>
+          )}
           <h1 className="text-[28px] sm:text-3xl font-semibold tracking-tight">
             {mode === "signup" ? "Create your account" : "Login"}
           </h1>

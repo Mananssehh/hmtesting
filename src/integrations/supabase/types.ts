@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_config: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
       boost_purchases: {
         Row: {
           amount_cents: number
@@ -589,6 +607,41 @@ export type Database = {
         }
         Relationships: []
       }
+      guest_funnel_events: {
+        Row: {
+          created_at: string
+          event_id: string | null
+          event_type: string
+          id: string
+          metadata: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id?: string | null
+          event_type: string
+          id?: string
+          metadata?: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string | null
+          event_type?: string
+          id?: string
+          metadata?: Json
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "guest_funnel_events_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       now_playing: {
         Row: {
           album_art: string | null
@@ -1148,6 +1201,8 @@ export type Database = {
           expires_at: string
         }[]
       }
+      get_guest_event_count: { Args: never; Returns: number }
+      get_guest_join_limits: { Args: never; Returns: Json }
       get_ingest_token: { Args: { _event_id: string }; Returns: string }
       get_my_profile: { Args: never; Returns: Json }
       get_nickname: { Args: { _user_id: string }; Returns: string }
