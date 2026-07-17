@@ -23,6 +23,8 @@ const Auth = () => {
   const djIntent = searchParams.get("role") === "dj" || searchParams.get("mode") === "dj";
   const nextRaw = searchParams.get("next");
   const nextPath = nextRaw && nextRaw.startsWith("/") && !nextRaw.startsWith("//") ? nextRaw : null;
+  const authReason = searchParams.get("reason");
+  const joiningEventCode = nextPath && nextPath.startsWith("/event/") ? nextPath.slice("/event/".length).split(/[/?#]/)[0] : null;
   const fromPath = (location.state as { from?: string } | null)?.from;
   const notice = (location.state as { notice?: string } | null)?.notice;
   const { user, profile, isDJ, isAnonymous, loading: authLoading, refreshProfile } = useAuth();
