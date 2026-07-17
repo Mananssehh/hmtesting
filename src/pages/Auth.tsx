@@ -20,6 +20,8 @@ const Auth = () => {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const djIntent = searchParams.get("role") === "dj" || searchParams.get("mode") === "dj";
+  const nextRaw = searchParams.get("next");
+  const nextPath = nextRaw && nextRaw.startsWith("/") && !nextRaw.startsWith("//") ? nextRaw : null;
   const fromPath = (location.state as { from?: string } | null)?.from;
   const notice = (location.state as { notice?: string } | null)?.notice;
   const { user, profile, isDJ, isAnonymous, loading: authLoading, refreshProfile } = useAuth();
@@ -51,12 +53,14 @@ const Auth = () => {
     // Anonymous users stay on this page so they can upgrade via the signup form;
     // only redirect once they've actually become a permanent account.
     if (isAnonymous) return;
-    if (djIntent) {
+    if (nextPath) {
+      navigate(nextPath, { replace: true });
+    } else if (djIntent) {
       navigate(isDJ ? (fromPath || "/dj") : "/dj/onboarding", { replace: true });
     } else {
       navigate(fromPath || "/", { replace: true });
     }
-  }, [user, isDJ, isAnonymous, authLoading, navigate, djIntent, fromPath]);
+  }, [user, isDJ, isAnonymous, authLoading, navigate, djIntent, fromPath, nextPath]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,7 +130,7 @@ const Auth = () => {
           toast.success("Account created! Welcome to Decks.");
         }
 
-        navigate((djIntent || wantsDj) ? "/dj/onboarding" : (fromPath || "/"), { replace: true });
+        navigate(nextPath || ((djIntent || wantsDj) ? "/dj/onboarding" : (fromPath || "/")), { replace: true });
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email: emailParse.data,
