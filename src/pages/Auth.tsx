@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { AppHeader } from "@/components/AppHeader";
 import { emailSchema, nicknameSchema, passwordSchema } from "@/lib/validation";
 import { Checkbox } from "@/components/ui/checkbox";
+import { logGuestFunnel } from "@/lib/guestFunnel";
 
 
 
