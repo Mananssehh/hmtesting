@@ -82,6 +82,8 @@ const App = () => (
               <Route path="/trust-safety" element={<TrustSafety />} />
               <Route path="/refund-policy" element={<RefundPolicy />} />
               <Route path="/unsubscribe" element={<Unsubscribe />} />
+              <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
+
 
               
               
