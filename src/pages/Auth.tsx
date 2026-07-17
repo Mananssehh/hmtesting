@@ -100,6 +100,7 @@ const Auth = () => {
             },
           }).catch(() => undefined);
           toast.success("Account created — your nickname, points, and history are saved.");
+          void logGuestFunnel("guest_signup_completed", { metadata: { reason: authReason, path: "anonymous_upgrade" } });
         } else {
           const { data, error } = await supabase.auth.signUp({
             email: emailParse.data,
@@ -131,6 +132,7 @@ const Auth = () => {
             },
           }).catch(() => undefined);
           toast.success("Account created! Welcome to Decks.");
+          void logGuestFunnel("guest_signup_completed", { metadata: { reason: authReason, path: "signup" } });
         }
 
         navigate(nextPath || ((djIntent || wantsDj) ? "/dj/onboarding" : (fromPath || "/")), { replace: true });
@@ -167,6 +169,11 @@ const Auth = () => {
       <div className="container max-w-md py-10 sm:py-16">
         <div className="text-center mb-8">
           <DecksLogo className="h-14 w-14 mx-auto mb-4 animate-float" />
+          {joiningEventCode && (
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-primary/10 text-primary px-3 py-1.5 text-xs font-medium">
+              Joining event <span className="font-mono tracking-wider">{joiningEventCode}</span>
+            </div>
+          )}
           <h1 className="text-[28px] sm:text-3xl font-semibold tracking-tight">
             {mode === "signup" ? "Create your account" : "Login"}
           </h1>
