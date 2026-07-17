@@ -18,7 +18,8 @@ import { fetchGuestEventCount, fetchGuestJoinLimits } from "@/hooks/useGuestJoin
 const Join = () => {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const { user, profile, refreshProfile } = useAuth();
+  const { user, profile, isAnonymous, refreshProfile } = useAuth();
+  const [blockOpen, setBlockOpen] = useState(false);
   const [code, setCode] = useState(params.get("code")?.toUpperCase() ?? "");
   const initialNickname = profile?.nickname && profile.nickname !== "Guest" ? profile.nickname : "";
   const [nickname, setNickname] = useState(initialNickname);
@@ -77,6 +78,41 @@ const Join = () => {
       if (!event) throw new Error("No event with that code. Double-check with the DJ.");
       if (event.requests_status === "ended" || !event.is_active) {
         throw new Error("This event has ended");
+      }
+
+      // Guest join-limit gate. Only applies to anonymous / signed-out users.
+      // Signed-in permanent accounts are never gated.
+      const { data: sess } = await supabase.auth.getSession();
+      const uid = sess.session?.user?.id ?? null;
+      const isAnon = sess.session?.user?.is_anonymous === true;
+      if (uid && isAnon) {
+        // Have they already joined this specific event? If so, no new unique
+        // event is being added — never gate re-entry.
+        const { data: existing } = await supabase
+          .from("event_participants")
+          .select("event_id")
+          .eq("event_id", event.id)
+          .eq("user_id", uid)
+          .maybeSingle();
+        const alreadyJoined = !!existing;
+
+        if (!alreadyJoined) {
+          const [limits, currentCount] = await Promise.all([
+            fetchGuestJoinLimits(),
+            fetchGuestEventCount(),
+          ]);
+          if (limits.enabled) {
+            const projected = currentCount + 1;
+            if (projected >= limits.require_at) {
+              setLoading(false);
+              setBlockOpen(true);
+              return;
+            }
+            if (projected === limits.prompt_at) {
+              sessionStorage.setItem(`decks:guest_prompt_pending:${event.id}`, "1");
+            }
+          }
+        }
       }
 
       // Refresh the in-memory profile so EventPage sees the correct nickname
