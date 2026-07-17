@@ -23,6 +23,7 @@ import { PreviewButton } from "@/components/PreviewButton";
 import { NowPlayingDisplay } from "@/components/NowPlayingDisplay";
 import { useTrending } from "@/hooks/useTrending";
 import { ENABLE_BOOSTS } from "@/lib/featureFlags";
+import { GuestUpgradePromptDialog } from "@/components/GuestUpgradePromptDialog";
 
 import { useNowPlaying } from "@/hooks/useNowPlaying";
 
@@ -574,6 +575,7 @@ const EventPage = () => {
     <div className="min-h-screen pb-28 sm:pb-10" style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 6rem)" }}>
       <SEO title="Live event" description="Request songs, vote, and tip the DJ in real time on Decks." path="/event" noindex />
       <AppHeader />
+      <GuestUpgradePromptDialog eventId={eventInfo.id} roomCode={code ?? null} />
       <div className="container max-w-3xl px-4 sm:px-6 py-5 sm:py-10">
         {/* Event header */}
         <div className="mb-5 sm:mb-7 p-5 sm:p-7 rounded-3xl glass-strong relative overflow-hidden">
