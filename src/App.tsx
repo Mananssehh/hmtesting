@@ -16,6 +16,8 @@ import DJDashboard from "./pages/DJDashboard";
 import DJEventManage from "./pages/DJEventManage";
 import DJDevTools from "./pages/DJDevTools";
 import DJOnboarding from "./pages/DJOnboarding";
+import OAuthConsent from "./pages/OAuthConsent";
+
 
 
 import Profile from "./pages/Profile";
@@ -80,6 +82,8 @@ const App = () => (
               <Route path="/trust-safety" element={<TrustSafety />} />
               <Route path="/refund-policy" element={<RefundPolicy />} />
               <Route path="/unsubscribe" element={<Unsubscribe />} />
+              <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
+
 
               
               
