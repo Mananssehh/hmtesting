@@ -1,8 +1,6 @@
 project_id = "rwdgnapajxcxktmewlxb"
 
 [functions]
-  [functions.mcp]
-    verify_jwt = false
   [functions.auth-email-hook]
     verify_jwt = false
   [functions.bridge-pair]
