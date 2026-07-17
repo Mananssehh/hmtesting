@@ -12,6 +12,8 @@ import { SEO } from "@/components/SEO";
 import { SiteFooter } from "@/components/SiteFooter";
 import { nicknameSchema, roomCodeSchema } from "@/lib/validation";
 import { containsProfanity, looksSpammy } from "@/lib/profanity";
+import { GuestLimitReachedDialog } from "@/components/GuestLimitReachedDialog";
+import { fetchGuestEventCount, fetchGuestJoinLimits } from "@/hooks/useGuestJoinLimits";
 
 const Join = () => {
   const navigate = useNavigate();
