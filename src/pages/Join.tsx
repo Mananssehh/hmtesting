@@ -217,8 +217,8 @@ const Join = () => {
                 onClick={() => {
                   const c = code.trim().toUpperCase();
                   const next = c ? `/join?code=${encodeURIComponent(c)}` : "/join";
-                  console.log("[Join] Redirecting to login with returnTo", next);
-                  navigate(`/auth?returnTo=${encodeURIComponent(next)}`);
+                  console.log("[Join] Redirecting to login with next", next);
+                  navigate(`/auth?next=${encodeURIComponent(next)}`);
                 }}
               >
                 Log in
