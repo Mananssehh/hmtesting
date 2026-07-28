@@ -206,8 +206,25 @@ const Join = () => {
           </Button>
 
           <p className="text-xs text-center text-muted-foreground">
-            No signup needed. We'll create a guest session for you.
+            No signup needed — we'll create a guest session for you.
           </p>
+          {!user && (
+            <p className="text-xs text-center text-muted-foreground">
+              Already have an account?{" "}
+              <button
+                type="button"
+                className="text-primary underline underline-offset-2"
+                onClick={() => {
+                  const c = code.trim().toUpperCase();
+                  const next = c ? `/join?code=${encodeURIComponent(c)}` : "/join";
+                  console.log("[Join] Redirecting to login with returnTo", next);
+                  navigate(`/auth?returnTo=${encodeURIComponent(next)}`);
+                }}
+              >
+                Log in
+              </button>
+            </p>
+          )}
         </form>
       </div>
       <div className="flex-1" />
