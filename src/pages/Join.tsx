@@ -18,13 +18,23 @@ import { fetchGuestEventCount, fetchGuestJoinLimits } from "@/hooks/useGuestJoin
 const Join = () => {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const { user, profile, isAnonymous, refreshProfile } = useAuth();
+  const { user, profile, isAnonymous, loading: authLoading, refreshProfile } = useAuth();
   const [blockOpen, setBlockOpen] = useState(false);
   const [code, setCode] = useState(params.get("code")?.toUpperCase() ?? "");
   const initialNickname = profile?.nickname && profile.nickname !== "Guest" ? profile.nickname : "";
   const [nickname, setNickname] = useState(initialNickname);
   const [hasEditedNickname, setHasEditedNickname] = useState(false);
   const [loading, setLoading] = useState(false);
+  const autoJoinedRef = useRef(false);
+
+  // QR route loaded — log for the auth-aware join flow.
+  useEffect(() => {
+    console.log("[Join] QR route loaded", {
+      code: params.get("code"),
+      hasUser: !!user,
+      isAnonymous,
+    });
+  }, []);
 
   // Prefill nickname only once when profile first loads, and only if the user hasn't started editing.
   useEffect(() => {
@@ -34,6 +44,29 @@ const Join = () => {
       setNickname(profile.nickname);
     }
   }, [profile, hasEditedNickname, nickname]);
+
+  // If a real (non-anonymous) session already exists AND a QR code is present,
+  // skip the nickname form and drop the user into the event. Existing users
+  // should never be asked to "sign up again" when scanning a QR poster.
+  useEffect(() => {
+    if (authLoading) return;
+    if (autoJoinedRef.current) return;
+    const qrCode = (params.get("code") || "").toUpperCase();
+    if (!qrCode) {
+      if (!user) console.log("[Join] No session found — showing join/login options");
+      return;
+    }
+    if (!user || isAnonymous) return;
+    if (!profile) return; // wait so we can pass nickname through nav state
+    const parsed = roomCodeSchema.safeParse(qrCode);
+    if (!parsed.success) return;
+    autoJoinedRef.current = true;
+    console.log("[Join] Existing authenticated user — auto-joining event", parsed.data);
+    navigate(`/event/${parsed.data}`, {
+      replace: true,
+      state: { nickname: profile.nickname || "Guest" },
+    });
+  }, [authLoading, user, isAnonymous, profile, params, navigate]);
 
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault();
