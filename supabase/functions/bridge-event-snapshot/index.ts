@@ -102,7 +102,7 @@ Deno.serve(async (req) => {
       .maybeSingle(),
     supabase
       .from("song_requests")
-      .select("id, source_song_id, title, artist, album_art, upvotes, downvotes, boost, status, queue_position, created_at, requested_by")
+      .select("id, source_song_id, title, artist, album_art, upvotes, downvotes, boost, status, queue_position, created_at, requested_by, requester_name")
       .eq("event_id", eventId)
       .in("status", ["pending", "approved", "playing"])
       .order("queue_position", { ascending: true, nullsFirst: false })
