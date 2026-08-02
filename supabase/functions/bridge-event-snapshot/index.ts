@@ -160,6 +160,50 @@ Deno.serve(async (req) => {
     }
   }
 
+  // Batched requester-name resolution (no N+1):
+  //   1. event_participants.nickname (this event)
+  //   2. profiles.nickname (public display name)
+  //   3. song_requests.requester_name (name captured at request time)
+  //   4. null  -> Bridge applies its own "Guest" fallback
+  const userIds = [
+    ...new Set(
+      (queueRes.data ?? [])
+        .map((r) => r.requested_by)
+        .filter((v): v is string => typeof v === "string" && v.length > 0),
+    ),
+  ];
+  const participantName = new Map<string, string>();
+  const profileName = new Map<string, string>();
+  if (userIds.length) {
+    const [partRes, profRes] = await Promise.all([
+      supabase
+        .from("event_participants")
+        .select("user_id, nickname")
+        .eq("event_id", eventId)
+        .in("user_id", userIds),
+      supabase.from("profiles").select("id, nickname").in("id", userIds),
+    ]);
+    for (const p of partRes.data ?? []) {
+      const n = (p.nickname ?? "").trim();
+      if (n) participantName.set(p.user_id, n);
+    }
+    for (const p of profRes.data ?? []) {
+      const n = (p.nickname ?? "").trim();
+      if (n) profileName.set(p.id, n);
+    }
+  }
+
+  const publicName = (r: { requested_by: string | null; requester_name: string | null }) => {
+    const uid = r.requested_by;
+    const fromEvent = uid ? participantName.get(uid) : undefined;
+    if (fromEvent) return fromEvent;
+    const fromProfile = uid ? profileName.get(uid) : undefined;
+    if (fromProfile) return fromProfile;
+    const stored = (r.requester_name ?? "").trim();
+    if (stored && stored.toLowerCase() !== "guest") return stored;
+    return null;
+  };
+
   const queue = (queueRes.data ?? []).map((r, i) => {
     const votes = (r.upvotes ?? 0) - (r.downvotes ?? 0);
     return {
@@ -168,6 +212,7 @@ Deno.serve(async (req) => {
       title: r.title,
       artist: r.artist,
       artwork: r.album_art,
+      guest_nickname: publicName(r),
       vote_count: votes,
       request_count: 1, // one row = one request in current schema
       tip_total_cents: tipBySong.get(r.id) ?? 0,
@@ -176,6 +221,7 @@ Deno.serve(async (req) => {
       created_at: r.created_at,
     };
   });
+
 
   // Trending score: votes + 2*velocity + tip_dollars
   const trending = [...queue]
