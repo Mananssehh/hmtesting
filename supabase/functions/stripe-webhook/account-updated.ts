@@ -172,12 +172,18 @@ export async function handleAccountUpdated(
     });
   } catch (e) {
     // Revert the claim so a Stripe retry re-attempts the email.
-    const { error: revertError } = await store.setPayoutsEnabled(accountId, false);
-    if (revertError) {
-      console.error("[stripe-webhook] failed to revert activation claim", {
-        stripe_account_id: accountId,
-        error: errMessage(revertError),
-      });
+    const { affected: revertAffected, error: revertError } = await store
+      .setPayoutsEnabled(accountId, false);
+    if (revertError || revertAffected !== 1) {
+      // Sanitized: Stripe account id only, no account holder details.
+      console.error(
+        "[stripe-webhook] CRITICAL: failed to revert activation claim — activation email may be permanently lost for this account",
+        {
+          stripe_account_id: accountId,
+          rows_affected: revertAffected,
+          error: revertError ? errMessage(revertError) : "no row affected",
+        },
+      );
     }
     console.error("[stripe-webhook] activation email queueing failed", {
       stripe_account_id: accountId,
