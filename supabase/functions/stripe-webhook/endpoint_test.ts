@@ -56,7 +56,7 @@ const mockServer = Deno.serve({ port: MOCK_PORT }, async (req) => {
   }
 
   if (p.startsWith("/auth/v1/admin/users/")) {
-    const u = { id: "user-1", email: "dj@decks.test" };
+    const u = { id: "11111111-1111-4111-8111-111111111111", email: "dj@decks.test" };
     return Response.json({ ...u, user: u });
   }
 
@@ -132,7 +132,7 @@ Deno.test({
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
-  mock.row = { user_id: "user-1", payouts_enabled: false };
+  mock.row = { user_id: "11111111-1111-4111-8111-111111111111", payouts_enabled: false };
   mock.failLookup = false;
   mock.emails = [];
 
@@ -161,7 +161,7 @@ Deno.test({
   sanitizeOps: false,
   sanitizeResources: false,
   async fn() {
-  mock.row = { user_id: "user-1", payouts_enabled: false };
+  mock.row = { user_id: "11111111-1111-4111-8111-111111111111", payouts_enabled: false };
   mock.failLookup = true;
   mock.emails = [];
 
