@@ -100,6 +100,8 @@ Deno.serve(async (req) => {
     recipientEmail: string | null | undefined;
     idempotencyKey: string;
     templateData: Record<string, unknown>;
+    // When true, failures propagate so the caller can answer a retryable 500.
+    throwOnError?: boolean;
   }) {
     try {
       if (!opts.recipientEmail) return;
@@ -114,11 +116,16 @@ Deno.serve(async (req) => {
           templateData: opts.templateData,
         },
       });
-      if (error) console.warn("[stripe-webhook] sendEmail error", opts.templateName, error.message);
+      if (error) {
+        console.warn("[stripe-webhook] sendEmail error", opts.templateName, error.message);
+        if (opts.throwOnError) throw new Error(error.message ?? "send failed");
+      }
     } catch (e) {
+      if (opts.throwOnError) throw e;
       console.warn("[stripe-webhook] sendEmail threw", opts.templateName, (e as Error).message);
     }
   }
+
 
   // Resolve auth user email by id.
   async function getUserEmail(userId: string | null | undefined): Promise<string | null> {
