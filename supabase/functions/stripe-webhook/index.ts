@@ -390,31 +390,21 @@ Deno.serve(async (req) => {
       }
       case "account.updated": {
         const acct: any = event.data.object;
-        const { data: prev } = await admin
-          .from("dj_payout_accounts")
-          .select("dj_id, payouts_enabled")
-          .eq("stripe_account_id", acct.id)
-          .maybeSingle();
-        await admin.from("dj_payout_accounts").update({
-          charges_enabled: !!acct.charges_enabled,
-          payouts_enabled: !!acct.payouts_enabled,
-          details_submitted: !!acct.details_submitted,
-          livemode: !!acct.livemode,
-          last_synced_at: new Date().toISOString(),
-        }).eq("stripe_account_id", acct.id);
-        // First-time payouts-enabled: notify DJ (idempotent on account id).
-        if (prev?.dj_id && !prev.payouts_enabled && acct.payouts_enabled) {
-          const djEmail = await getUserEmail(prev.dj_id);
-          const djName = (await getNickname(prev.dj_id)) ?? "there";
-          await sendEmail({
-            templateName: "dj-stripe-connected",
-            recipientEmail: djEmail,
-            idempotencyKey: `dj-stripe-connected:${acct.id}`,
-            templateData: { djName },
-          });
+        const result = await handleAccountUpdated(acct, {
+          store: createPayoutStore(admin),
+          getUserEmail: (id) => getUserEmail(id),
+          getNickname: (id) => getNickname(id),
+          sendEmail: async (opts) => {
+            await sendEmail({ ...opts, throwOnError: true });
+          },
+        });
+        if (!result.ok) {
+          // Retryable: Stripe will redeliver this event.
+          return json({ error: `account_updated_${result.outcome}` }, 500);
         }
         break;
       }
+
 
       default:
         // unhandled — ack so Stripe doesn't retry forever
