@@ -55,7 +55,8 @@ const mockServer = Deno.serve({ port: MOCK_PORT }, async (req) => {
   }
 
   if (p.startsWith("/auth/v1/admin/users/")) {
-    return Response.json({ id: "user-1", email: "dj@decks.test" });
+    const u = { id: "user-1", email: "dj@decks.test" };
+    return Response.json({ ...u, user: u });
   }
 
   if (p.startsWith("/rest/v1/profiles")) {
@@ -125,7 +126,11 @@ async function postEvent(payoutsEnabled: boolean) {
   return { status: res.status, body };
 }
 
-Deno.test("endpoint returns 200 and queues one activation email", async () => {
+Deno.test({
+  name: "endpoint returns 200 and queues one activation email",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
   mock.row = { user_id: "user-1", payouts_enabled: false };
   mock.failLookup = false;
   mock.emails = [];
@@ -147,9 +152,14 @@ Deno.test("endpoint returns 200 and queues one activation email", async () => {
   const again = await postEvent(true);
   assertEquals(again.status, 200);
   assertEquals(mock.emails.length, 1);
+  },
 });
 
-Deno.test("endpoint returns retryable 500 when the database lookup fails", async () => {
+Deno.test({
+  name: "endpoint returns retryable 500 when the database lookup fails",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
   mock.row = { user_id: "user-1", payouts_enabled: false };
   mock.failLookup = true;
   mock.emails = [];
@@ -160,9 +170,15 @@ Deno.test("endpoint returns retryable 500 when the database lookup fails", async
   assertEquals(mock.row?.payouts_enabled, false);
 
   mock.failLookup = false;
+  },
 });
 
-Deno.test("teardown", async () => {
-  await fnServer?.shutdown();
-  await mockServer.shutdown();
+Deno.test({
+  name: "teardown",
+  sanitizeOps: false,
+  sanitizeResources: false,
+  async fn() {
+    await fnServer?.shutdown();
+    await mockServer.shutdown();
+  },
 });
