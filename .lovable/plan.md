@@ -9,44 +9,60 @@ In `supabase/functions/stripe-webhook/index.ts`, the `account.updated` handler r
 ## The fix
 
 1. Select `user_id, payouts_enabled`; guard on `prev?.user_id`; pass `prev.user_id` to the email-address and nickname lookups.
-2. Keep the idempotency key `dj-stripe-connected:${acct.id}` and the existing account-status synchronization exactly as they are.
-3. Surface the lookup error: if the previous-state read fails, log it and return a 500 so Stripe retries, instead of acknowledging success with no email.
+2. Keep the idempotency key `dj-stripe-connected:${acct.id}` and the existing account-status synchronization.
+3. Surface errors: a failed read or a failed status write returns a real HTTP 500 so Stripe retries, instead of acknowledging success with no email.
 
-## Ordering so a transient email failure cannot suppress the email forever
+## Ordering, single-winner claim, and error handling
 
-Today the sync update would run before the email attempt. If the email queueing failed after `payouts_enabled` was already flipped to `true`, the Stripe retry would read `prev.payouts_enabled = true`, see no transition, and the activation email would be lost permanently.
+Today the sync update runs before the email attempt. If email queueing failed after `payouts_enabled` was already flipped to `true`, the Stripe retry would read `prev.payouts_enabled = true`, see no transition, and lose the activation email permanently. Concurrent duplicate deliveries have the mirror problem: both read `false` and both send.
 
 New order inside the handler:
 
 ```text
-1. read previous row (user_id, payouts_enabled)   -> error => 500 (retryable)
-2. update all status fields EXCEPT the false->true
-   payouts_enabled flip (charges_enabled,
-   details_submitted, livemode, last_synced_at)
-3. if activation transition: queue dj-stripe-connected
-   -> error => 500 (retryable, payouts_enabled still false)
-4. persist payouts_enabled = acct.payouts_enabled
-5. return 200
+1. read previous row (user_id, payouts_enabled)
+     error   => HTTP 500 (retryable, logged)
+     no row  => log stripe_account_id only, no email, HTTP 200
+2. write charges_enabled, details_submitted, livemode, last_synced_at
+     error   => HTTP 500 (retryable)
+3. no false->true transition:
+     write payouts_enabled as reported; error => HTTP 500; done
+4. transition: ATOMIC CLAIM
+     UPDATE ... SET payouts_enabled = true
+       WHERE stripe_account_id = X AND payouts_enabled = false
+       RETURNING user_id
+     error       => HTTP 500
+     0 rows back => another delivery already owns the email; no email; HTTP 200
+     1 row back  => this delivery owns the email
+5. queue dj-stripe-connected for prev.user_id
+     error => revert payouts_enabled to false, HTTP 500 (retry re-sends)
+6. HTTP 200
 ```
 
-Non-activation cases (no transition) write `payouts_enabled` in step 2 as before, so nothing else changes. Duplicate deliveries of the same webhook are safe: after a successful run `prev.payouts_enabled` is already `true`, so no second email; and the unchanged idempotency key is forwarded through the email queue to the provider as a second layer.
+Both status writes are error-checked; every failure path returns a real retryable HTTP 500 from the endpoint, never a silent 200.
 
-No schema migration is required.
+## Email idempotency — verified behaviour, not assumed
+
+Inspection of `supabase/functions/process-email-queue/index.ts` shows the queue deduplicates on `payload.message_id` (a fresh UUID per invocation) against `email_send_log`; `idempotency_key` is only forwarded to the send API. So the `dj-stripe-connected:${acct.id}` key alone does **not** provably stop a second queued email from this webhook. That is exactly why the single-winner database claim in step 4 is the enforced guarantee; the key is preserved and remains the provider-side second layer.
+
+No schema migration is required — the claim uses the existing `payouts_enabled` column.
 
 ## Tests
 
-New Deno test file `supabase/functions/stripe-webhook/account-updated_test.ts`, exercising the extracted, injectable `handleAccountUpdated` logic with fake database/email/Stripe clients — no real email, no live Stripe:
+New `supabase/functions/stripe-webhook/account_updated_test.ts` (mocked store/email — no real email, no live Stripe, no live rows):
 
-- false -> true: exactly one `dj-stripe-connected` email queued, for the correct `user_id`, with key `dj-stripe-connected:<acct id>`.
-- false -> false: no email.
-- true -> true: no email.
-- missing payout-account row: no email, handler completes safely.
-- lookup failure: handler reports a retryable failure (500), no email, no status write.
-- same webhook delivered twice: only one email queued.
-- email-queue failure: retryable failure and `payouts_enabled` left unflipped, so the retry still sends.
+- false -> true: exactly one `dj-stripe-connected` email, correct `user_id`, key `dj-stripe-connected:<acct id>`.
+- false -> false and true -> true: no email.
+- missing payout-account row: no email, safe completion, log contains only the Stripe account id.
+- lookup failure: retryable failure, no email, no status write.
+- either status write failing: retryable failure.
+- same webhook delivered twice sequentially: one email.
+- two handlers racing on the same `false` state (concurrent `Promise.all` against one shared fake store): one email.
+- email queue failure: retryable failure and `payouts_enabled` reverted to false.
+
+New `supabase/functions/stripe-webhook/endpoint_test.ts`: drives the real `Deno.serve` endpoint over HTTP with a locally signed Stripe test signature and a mock Supabase REST/auth/functions server, asserting HTTP 200 on success and HTTP 500 on a database failure — proving retry behaviour through the outer endpoint, not just the helper. If the outer endpoint cannot be exercised safely offline, that is reported explicitly rather than skipped silently.
 
 ## Technical notes
 
-- `supabase/functions/stripe-webhook/index.ts` gains a small exported handler function for the `account.updated` case; signature verification, payment math, and every other event branch stay byte-identical.
-- Verification: Deno check/tests for the function, `bunx vitest run` for the existing suite, a production `vite build`, and a final diff review for unrelated changes.
-- Nothing is deployed and no live rows are touched; deployment waits for your approval.
+- `supabase/functions/stripe-webhook/index.ts`: the `account.updated` case delegates to a new `account-updated.ts` (injectable store + email deps) and returns 500 when the result is retryable. Signature verification, payment math, and every other event branch stay unchanged.
+- Verification: `deno check` on the function, the new Deno tests, `bunx vitest run`, production `vite build`, and a final diff review.
+- Nothing is deployed and no live rows are touched; deployment waits for separate approval.
