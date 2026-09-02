@@ -49,9 +49,12 @@ function makeHarness(opts: {
     },
     syncStatus(_id, fields) {
       calls.sync++;
-      if (opts.syncError) return Promise.resolve({ error: opts.syncError });
-      if (state.row) state.row = { ...state.row, ...fields };
-      return Promise.resolve({ error: null });
+      if (opts.syncError) {
+        return Promise.resolve({ affected: 0, error: opts.syncError });
+      }
+      if (!state.row) return Promise.resolve({ affected: 0, error: null });
+      state.row = { ...state.row, ...fields };
+      return Promise.resolve({ affected: 1, error: null });
     },
     claimActivation() {
       calls.claim++;
@@ -67,8 +70,9 @@ function makeHarness(opts: {
     },
     setPayoutsEnabled(_id, value) {
       calls.setPayouts++;
-      if (state.row) state.row = { ...state.row, payouts_enabled: value };
-      return Promise.resolve({ error: null });
+      if (!state.row) return Promise.resolve({ affected: 0, error: null });
+      state.row = { ...state.row, payouts_enabled: value };
+      return Promise.resolve({ affected: 1, error: null });
     },
   };
 
@@ -209,4 +213,44 @@ Deno.test("email queue failure reverts the claim and is retryable", async () => 
   const res2 = await handleAccountUpdated(acct(true), retry.deps);
   assertEquals(res2.outcome, "emailed");
   assertEquals(retry.emails.length, 1);
+});
+
+Deno.test("status sync that affects no row is a retryable failure", async () => {
+  const h = makeHarness({ row: { user_id: "user-1", payouts_enabled: false } });
+  const store = h.deps.store;
+  store.syncStatus = () => Promise.resolve({ affected: 0, error: null });
+  const res = await handleAccountUpdated(acct(true), h.deps);
+  assertEquals(res.ok, false);
+  assertEquals(res.outcome, "sync_failed");
+  assertEquals(h.emails.length, 0);
+});
+
+Deno.test("payouts write that affects no row is a retryable failure", async () => {
+  const h = makeHarness({ row: { user_id: "user-1", payouts_enabled: false } });
+  h.deps.store.setPayoutsEnabled = () =>
+    Promise.resolve({ affected: 0, error: null });
+  const res = await handleAccountUpdated(acct(false), h.deps);
+  assertEquals(res.ok, false);
+  assertEquals(res.outcome, "sync_failed");
+  assertEquals(h.emails.length, 0);
+});
+
+Deno.test("failed rollback after email failure logs critical and stays retryable", async () => {
+  const h = makeHarness({
+    row: { user_id: "user-1", payouts_enabled: false },
+    emailThrows: true,
+  });
+  h.deps.store.setPayoutsEnabled = () =>
+    Promise.resolve({ affected: 0, error: new Error("write down") });
+  const logs: string[] = [];
+  const orig = console.error;
+  console.error = (msg: unknown) => logs.push(String(msg));
+  try {
+    const res = await handleAccountUpdated(acct(true), h.deps);
+    assertEquals(res.ok, false);
+    assertEquals(res.outcome, "email_failed");
+  } finally {
+    console.error = orig;
+  }
+  assertEquals(logs.some((l) => l.includes("CRITICAL")), true);
 });

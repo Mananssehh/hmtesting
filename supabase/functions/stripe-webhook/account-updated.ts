@@ -25,7 +25,7 @@ export interface PayoutStore {
   getPrevious(
     stripeAccountId: string,
   ): Promise<{ data: PayoutAccountRow | null; error: unknown | null }>;
-  /** Sync everything except payouts_enabled. */
+  /** Sync everything except payouts_enabled. Reports rows actually affected. */
   syncStatus(
     stripeAccountId: string,
     fields: {
@@ -34,7 +34,7 @@ export interface PayoutStore {
       livemode: boolean;
       last_synced_at: string;
     },
-  ): Promise<{ error: unknown | null }>;
+  ): Promise<{ affected: number; error: unknown | null }>;
   /** Atomic claim: set payouts_enabled = true only if it is currently false. */
   claimActivation(
     stripeAccountId: string,
@@ -43,7 +43,7 @@ export interface PayoutStore {
   setPayoutsEnabled(
     stripeAccountId: string,
     value: boolean,
-  ): Promise<{ error: unknown | null }>;
+  ): Promise<{ affected: number; error: unknown | null }>;
 }
 
 export interface AccountUpdatedDeps {
@@ -111,16 +111,20 @@ export async function handleAccountUpdated(
     return { ok: true, outcome: "no_account_row", emailQueued: false };
   }
 
-  const { error: syncError } = await store.syncStatus(accountId, {
-    charges_enabled: !!acct.charges_enabled,
-    details_submitted: !!acct.details_submitted,
-    livemode: !!acct.livemode,
-    last_synced_at: new Date().toISOString(),
-  });
-  if (syncError) {
+  const { affected: syncAffected, error: syncError } = await store.syncStatus(
+    accountId,
+    {
+      charges_enabled: !!acct.charges_enabled,
+      details_submitted: !!acct.details_submitted,
+      livemode: !!acct.livemode,
+      last_synced_at: new Date().toISOString(),
+    },
+  );
+  if (syncError || syncAffected !== 1) {
     console.error("[stripe-webhook] account.updated status sync failed", {
       stripe_account_id: accountId,
-      error: errMessage(syncError),
+      rows_affected: syncAffected,
+      error: syncError ? errMessage(syncError) : "no row affected",
     });
     return { ok: false, outcome: "sync_failed", emailQueued: false };
   }
@@ -128,14 +132,15 @@ export async function handleAccountUpdated(
   const activating = !!acct.payouts_enabled && !prev.payouts_enabled;
 
   if (!activating) {
-    const { error } = await store.setPayoutsEnabled(
+    const { affected, error } = await store.setPayoutsEnabled(
       accountId,
       !!acct.payouts_enabled,
     );
-    if (error) {
+    if (error || affected !== 1) {
       console.error("[stripe-webhook] account.updated payouts write failed", {
         stripe_account_id: accountId,
-        error: errMessage(error),
+        rows_affected: affected,
+        error: error ? errMessage(error) : "no row affected",
       });
       return { ok: false, outcome: "sync_failed", emailQueued: false };
     }
@@ -167,12 +172,18 @@ export async function handleAccountUpdated(
     });
   } catch (e) {
     // Revert the claim so a Stripe retry re-attempts the email.
-    const { error: revertError } = await store.setPayoutsEnabled(accountId, false);
-    if (revertError) {
-      console.error("[stripe-webhook] failed to revert activation claim", {
-        stripe_account_id: accountId,
-        error: errMessage(revertError),
-      });
+    const { affected: revertAffected, error: revertError } = await store
+      .setPayoutsEnabled(accountId, false);
+    if (revertError || revertAffected !== 1) {
+      // Sanitized: Stripe account id only, no account holder details.
+      console.error(
+        "[stripe-webhook] CRITICAL: failed to revert activation claim — activation email may be permanently lost for this account",
+        {
+          stripe_account_id: accountId,
+          rows_affected: revertAffected,
+          error: revertError ? errMessage(revertError) : "no row affected",
+        },
+      );
     }
     console.error("[stripe-webhook] activation email queueing failed", {
       stripe_account_id: accountId,
@@ -200,11 +211,15 @@ export function createPayoutStore(admin: any): PayoutStore {
       };
     },
     async syncStatus(stripeAccountId, fields) {
-      const { error } = await admin
+      const { data, error } = await admin
         .from("dj_payout_accounts")
         .update(fields)
-        .eq("stripe_account_id", stripeAccountId);
-      return { error: error ?? null };
+        .eq("stripe_account_id", stripeAccountId)
+        .select("user_id");
+      return {
+        affected: Array.isArray(data) ? data.length : 0,
+        error: error ?? null,
+      };
     },
     async claimActivation(stripeAccountId) {
       const { data, error } = await admin
@@ -217,11 +232,15 @@ export function createPayoutStore(admin: any): PayoutStore {
       return { claimed: Array.isArray(data) && data.length > 0, error: null };
     },
     async setPayoutsEnabled(stripeAccountId, value) {
-      const { error } = await admin
+      const { data, error } = await admin
         .from("dj_payout_accounts")
         .update({ payouts_enabled: value })
-        .eq("stripe_account_id", stripeAccountId);
-      return { error: error ?? null };
+        .eq("stripe_account_id", stripeAccountId)
+        .select("user_id");
+      return {
+        affected: Array.isArray(data) ? data.length : 0,
+        error: error ?? null,
+      };
     },
   };
 }
