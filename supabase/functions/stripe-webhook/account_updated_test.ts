@@ -49,9 +49,12 @@ function makeHarness(opts: {
     },
     syncStatus(_id, fields) {
       calls.sync++;
-      if (opts.syncError) return Promise.resolve({ error: opts.syncError });
-      if (state.row) state.row = { ...state.row, ...fields };
-      return Promise.resolve({ error: null });
+      if (opts.syncError) {
+        return Promise.resolve({ affected: 0, error: opts.syncError });
+      }
+      if (!state.row) return Promise.resolve({ affected: 0, error: null });
+      state.row = { ...state.row, ...fields };
+      return Promise.resolve({ affected: 1, error: null });
     },
     claimActivation() {
       calls.claim++;
@@ -67,8 +70,9 @@ function makeHarness(opts: {
     },
     setPayoutsEnabled(_id, value) {
       calls.setPayouts++;
-      if (state.row) state.row = { ...state.row, payouts_enabled: value };
-      return Promise.resolve({ error: null });
+      if (!state.row) return Promise.resolve({ affected: 0, error: null });
+      state.row = { ...state.row, payouts_enabled: value };
+      return Promise.resolve({ affected: 1, error: null });
     },
   };
 
