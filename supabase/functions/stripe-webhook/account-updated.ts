@@ -211,11 +211,15 @@ export function createPayoutStore(admin: any): PayoutStore {
       };
     },
     async syncStatus(stripeAccountId, fields) {
-      const { error } = await admin
+      const { data, error } = await admin
         .from("dj_payout_accounts")
         .update(fields)
-        .eq("stripe_account_id", stripeAccountId);
-      return { error: error ?? null };
+        .eq("stripe_account_id", stripeAccountId)
+        .select("user_id");
+      return {
+        affected: Array.isArray(data) ? data.length : 0,
+        error: error ?? null,
+      };
     },
     async claimActivation(stripeAccountId) {
       const { data, error } = await admin
@@ -228,11 +232,15 @@ export function createPayoutStore(admin: any): PayoutStore {
       return { claimed: Array.isArray(data) && data.length > 0, error: null };
     },
     async setPayoutsEnabled(stripeAccountId, value) {
-      const { error } = await admin
+      const { data, error } = await admin
         .from("dj_payout_accounts")
         .update({ payouts_enabled: value })
-        .eq("stripe_account_id", stripeAccountId);
-      return { error: error ?? null };
+        .eq("stripe_account_id", stripeAccountId)
+        .select("user_id");
+      return {
+        affected: Array.isArray(data) ? data.length : 0,
+        error: error ?? null,
+      };
     },
   };
 }
