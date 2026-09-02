@@ -8,6 +8,8 @@
 // The handler tries each configured secret until one verifies the signature.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, getStripe, json } from "../_shared/stripe.ts";
+import { createPayoutStore, handleAccountUpdated } from "./account-updated.ts";
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
