@@ -25,7 +25,7 @@ export interface PayoutStore {
   getPrevious(
     stripeAccountId: string,
   ): Promise<{ data: PayoutAccountRow | null; error: unknown | null }>;
-  /** Sync everything except payouts_enabled. */
+  /** Sync everything except payouts_enabled. Reports rows actually affected. */
   syncStatus(
     stripeAccountId: string,
     fields: {
@@ -34,7 +34,7 @@ export interface PayoutStore {
       livemode: boolean;
       last_synced_at: string;
     },
-  ): Promise<{ error: unknown | null }>;
+  ): Promise<{ affected: number; error: unknown | null }>;
   /** Atomic claim: set payouts_enabled = true only if it is currently false. */
   claimActivation(
     stripeAccountId: string,
@@ -43,7 +43,7 @@ export interface PayoutStore {
   setPayoutsEnabled(
     stripeAccountId: string,
     value: boolean,
-  ): Promise<{ error: unknown | null }>;
+  ): Promise<{ affected: number; error: unknown | null }>;
 }
 
 export interface AccountUpdatedDeps {
