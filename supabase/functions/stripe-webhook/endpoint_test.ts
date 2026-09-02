@@ -22,6 +22,7 @@ const mock: MockState = { row: null, failLookup: false, emails: [] };
 const mockServer = Deno.serve({ port: MOCK_PORT }, async (req) => {
   const url = new URL(req.url);
   const p = url.pathname;
+  if (Deno.env.get("MOCK_TRACE")) console.log("MOCK", req.method, p + url.search);
 
   if (p.startsWith("/rest/v1/dj_payout_accounts")) {
     if (req.method === "GET") {
