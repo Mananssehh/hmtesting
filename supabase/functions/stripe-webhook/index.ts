@@ -8,6 +8,8 @@
 // The handler tries each configured secret until one verifies the signature.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders, getStripe, json } from "../_shared/stripe.ts";
+import { createPayoutStore, handleAccountUpdated } from "./account-updated.ts";
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -100,6 +102,8 @@ Deno.serve(async (req) => {
     recipientEmail: string | null | undefined;
     idempotencyKey: string;
     templateData: Record<string, unknown>;
+    // When true, failures propagate so the caller can answer a retryable 500.
+    throwOnError?: boolean;
   }) {
     try {
       if (!opts.recipientEmail) return;
@@ -114,11 +118,16 @@ Deno.serve(async (req) => {
           templateData: opts.templateData,
         },
       });
-      if (error) console.warn("[stripe-webhook] sendEmail error", opts.templateName, error.message);
+      if (error) {
+        console.warn("[stripe-webhook] sendEmail error", opts.templateName, error.message);
+        if (opts.throwOnError) throw new Error(error.message ?? "send failed");
+      }
     } catch (e) {
+      if (opts.throwOnError) throw e;
       console.warn("[stripe-webhook] sendEmail threw", opts.templateName, (e as Error).message);
     }
   }
+
 
   // Resolve auth user email by id.
   async function getUserEmail(userId: string | null | undefined): Promise<string | null> {
@@ -383,31 +392,21 @@ Deno.serve(async (req) => {
       }
       case "account.updated": {
         const acct: any = event.data.object;
-        const { data: prev } = await admin
-          .from("dj_payout_accounts")
-          .select("dj_id, payouts_enabled")
-          .eq("stripe_account_id", acct.id)
-          .maybeSingle();
-        await admin.from("dj_payout_accounts").update({
-          charges_enabled: !!acct.charges_enabled,
-          payouts_enabled: !!acct.payouts_enabled,
-          details_submitted: !!acct.details_submitted,
-          livemode: !!acct.livemode,
-          last_synced_at: new Date().toISOString(),
-        }).eq("stripe_account_id", acct.id);
-        // First-time payouts-enabled: notify DJ (idempotent on account id).
-        if (prev?.dj_id && !prev.payouts_enabled && acct.payouts_enabled) {
-          const djEmail = await getUserEmail(prev.dj_id);
-          const djName = (await getNickname(prev.dj_id)) ?? "there";
-          await sendEmail({
-            templateName: "dj-stripe-connected",
-            recipientEmail: djEmail,
-            idempotencyKey: `dj-stripe-connected:${acct.id}`,
-            templateData: { djName },
-          });
+        const result = await handleAccountUpdated(acct, {
+          store: createPayoutStore(admin),
+          getUserEmail: (id) => getUserEmail(id),
+          getNickname: (id) => getNickname(id),
+          sendEmail: async (opts) => {
+            await sendEmail({ ...opts, throwOnError: true });
+          },
+        });
+        if (!result.ok) {
+          // Retryable: Stripe will redeliver this event.
+          return json({ error: `account_updated_${result.outcome}` }, 500);
         }
         break;
       }
+
 
       default:
         // unhandled — ack so Stripe doesn't retry forever
