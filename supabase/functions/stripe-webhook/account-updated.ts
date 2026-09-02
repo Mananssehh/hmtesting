@@ -111,16 +111,20 @@ export async function handleAccountUpdated(
     return { ok: true, outcome: "no_account_row", emailQueued: false };
   }
 
-  const { error: syncError } = await store.syncStatus(accountId, {
-    charges_enabled: !!acct.charges_enabled,
-    details_submitted: !!acct.details_submitted,
-    livemode: !!acct.livemode,
-    last_synced_at: new Date().toISOString(),
-  });
-  if (syncError) {
+  const { affected: syncAffected, error: syncError } = await store.syncStatus(
+    accountId,
+    {
+      charges_enabled: !!acct.charges_enabled,
+      details_submitted: !!acct.details_submitted,
+      livemode: !!acct.livemode,
+      last_synced_at: new Date().toISOString(),
+    },
+  );
+  if (syncError || syncAffected !== 1) {
     console.error("[stripe-webhook] account.updated status sync failed", {
       stripe_account_id: accountId,
-      error: errMessage(syncError),
+      rows_affected: syncAffected,
+      error: syncError ? errMessage(syncError) : "no row affected",
     });
     return { ok: false, outcome: "sync_failed", emailQueued: false };
   }
@@ -128,14 +132,15 @@ export async function handleAccountUpdated(
   const activating = !!acct.payouts_enabled && !prev.payouts_enabled;
 
   if (!activating) {
-    const { error } = await store.setPayoutsEnabled(
+    const { affected, error } = await store.setPayoutsEnabled(
       accountId,
       !!acct.payouts_enabled,
     );
-    if (error) {
+    if (error || affected !== 1) {
       console.error("[stripe-webhook] account.updated payouts write failed", {
         stripe_account_id: accountId,
-        error: errMessage(error),
+        rows_affected: affected,
+        error: error ? errMessage(error) : "no row affected",
       });
       return { ok: false, outcome: "sync_failed", emailQueued: false };
     }
