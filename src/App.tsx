@@ -1,9 +1,17 @@
+import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/contexts/AuthContext";
+import {
+  GuardLoading,
+  RequireAdmin,
+  RequireAuth,
+  RequireDJ,
+  RequireEventOwner,
+} from "@/components/guards/RouteGuards";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import AuthCallback from "./pages/AuthCallback";
@@ -14,9 +22,9 @@ import Connect from "./pages/Connect";
 import EventPage from "./pages/EventPage";
 import DJDashboard from "./pages/DJDashboard";
 import DJEventManage from "./pages/DJEventManage";
-import DJDevTools from "./pages/DJDevTools";
 import DJOnboarding from "./pages/DJOnboarding";
 import OAuthConsent from "./pages/OAuthConsent";
+
 
 
 
