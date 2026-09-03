@@ -26,6 +26,7 @@ import { ENABLE_BOOSTS } from "@/lib/featureFlags";
 import { GuestUpgradePromptDialog } from "@/components/GuestUpgradePromptDialog";
 
 import { useNowPlaying } from "@/hooks/useNowPlaying";
+import { fetchMyProfile } from "@/lib/publicProfiles";
 
 type SortMode = "top" | "trending" | "played";
 
@@ -102,11 +103,7 @@ const EventPage = () => {
 
       // Source of truth for display nickname: live profile fetch > in-memory
       // profile > nickname passed from /join > "Guest" as a last resort.
-      const { data: liveProf } = await supabase
-        .from("profiles")
-        .select("nickname")
-        .eq("id", user.id)
-        .maybeSingle();
+      const liveProf = await fetchMyProfile("EventPage.join");
       const nick =
         (liveProf?.nickname && liveProf.nickname !== "Guest" ? liveProf.nickname : null) ||
         (profile?.nickname && profile.nickname !== "Guest" ? profile.nickname : null) ||
@@ -498,13 +495,12 @@ const EventPage = () => {
     // Resolve display nickname: live DB read > in-memory profile > nav state >
     // last-resort "Guest". If the profile row is somehow still missing, repair
     // it via ensure_profile so future reads find a real nickname.
-    let { data: prof } = await supabase.from("profiles").select("nickname").eq("id", user.id).maybeSingle();
+    let prof = await fetchMyProfile("EventPage.request");
     const fallbackNick =
       (profile?.nickname && profile.nickname !== "Guest" ? profile.nickname : null) || navNickname;
     if ((!prof || !prof.nickname || prof.nickname === "Guest") && fallbackNick) {
       await (supabase as any).rpc("ensure_profile", { p_nickname: fallbackNick }).then(() => null, () => null);
-      const refetch = await supabase.from("profiles").select("nickname").eq("id", user.id).maybeSingle();
-      prof = refetch.data ?? prof;
+      prof = (await fetchMyProfile("EventPage.request.retry")) ?? prof;
     }
     const requesterName =
       (prof?.nickname && prof.nickname !== "Guest" ? prof.nickname : null) ||

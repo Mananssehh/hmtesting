@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { nicknameSchema } from "@/lib/validation";
 import { containsProfanity, looksSpammy } from "@/lib/profanity";
 import { SiteFooter } from "@/components/SiteFooter";
+import { fetchMyProfile } from "@/lib/publicProfiles";
 
 interface Stats {
   totalRequests: number;
@@ -74,7 +75,7 @@ const Profile = () => {
           ? supabase.from("events").select("id, name, room_code, is_active")
               .eq("dj_id", user.id).order("created_at", { ascending: false }).limit(5)
           : Promise.resolve({ data: [] as MyEvent[] }),
-        supabase.from("profiles").select("is_public").eq("id", user.id).maybeSingle(),
+        fetchMyProfile("Profile"),
       ]);
 
       const reqs = reqRes.data ?? [];
@@ -84,7 +85,9 @@ const Profile = () => {
       });
       setTxs((txRes.data ?? []) as TxRow[]);
       setMyEvents((evRes.data ?? []) as MyEvent[]);
-      if (profRes.data) setIsPublic((profRes.data as { is_public?: boolean }).is_public ?? true);
+      // Never assume public on a failed privacy read: keep the safer default.
+      if (profRes) setIsPublic(profRes.is_public === true);
+      else setIsPublic(false);
       setLoading(false);
     })();
   }, [user, isDJ]);

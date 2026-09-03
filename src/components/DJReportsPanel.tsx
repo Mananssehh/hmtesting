@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { fetchNicknames } from "@/lib/publicProfiles";
 
 type Status = "open" | "reviewing" | "resolved" | "dismissed";
 type TargetType = "request" | "user" | "nickname";
@@ -99,11 +100,6 @@ export function DJReportsPanel({ eventId, onRemoveRequest }: Props) {
               .in("id", Array.from(requestIds))
           : Promise.resolve({ data: [], error: null });
 
-      const profilesPromise = (ids: string[]) =>
-        ids.length > 0
-          ? (supabase as any).from("profiles").select("id, nickname").in("id", ids)
-          : Promise.resolve({ data: [], error: null });
-
       const [songsResult] = await Promise.allSettled([songsPromise]);
 
       const songMap: Record<string, SongInfo> = {};
@@ -123,23 +119,7 @@ export function DJReportsPanel({ eventId, onRemoveRequest }: Props) {
         console.error("[DJReportsPanel] song_requests enrichment rejected:", songsResult.reason);
       }
 
-      const [profilesResult] = await Promise.allSettled([profilesPromise(Array.from(userIds))]);
-
-      const nickMap: Record<string, string> = {};
-      if (profilesResult.status === "fulfilled") {
-        const { data: profData, error: pErr } = profilesResult.value as any;
-        if (pErr) {
-          console.error("[DJReportsPanel] profiles enrichment query failed:", pErr.message, {
-            ids: Array.from(userIds),
-          });
-        } else {
-          for (const p of (profData ?? []) as { id: string; nickname: string }[]) {
-            if (p?.id && p?.nickname) nickMap[p.id] = p.nickname;
-          }
-        }
-      } else {
-        console.error("[DJReportsPanel] profiles enrichment rejected:", profilesResult.reason);
-      }
+      const nickMap = await fetchNicknames(Array.from(userIds), "DJReportsPanel");
 
       for (const id of Object.keys(songMap)) {
         const s = songMap[id];
