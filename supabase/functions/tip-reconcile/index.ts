@@ -103,6 +103,17 @@ Deno.serve(async (req) => {
     no_session_id: 0,
   };
   const changes: Array<{ id: string; from: string; to: Resolution }> = [];
+  // Sanitized diagnostics for rows we refuse to classify. No amounts, no
+  // user ids, no Stripe session ids — only the state that drove the decision.
+  const unresolvedDetails: Array<{
+    tip_id: string;
+    age_days: number;
+    retrieve_failed: boolean;
+    session_status: string | null;
+    payment_status: string | null;
+    payment_intent_status: string | null;
+  }> = [];
+
 
   for (const row of rows ?? []) {
     if (!row.stripe_checkout_session_id) {
