@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { fetchNicknames } from "@/lib/publicProfiles";
 
 interface Props {
   open: boolean;
@@ -62,9 +63,8 @@ export function ModerationDialog({ open, onOpenChange, eventId, initial, onSaved
       setBlocks((bl ?? []) as BlockRow[]);
       const banRows = (bn ?? []) as BanRow[];
       if (banRows.length) {
-        const { data: profs } = await supabase.from("profiles").select("id, nickname").in("id", banRows.map((b) => b.user_id));
-        const nameMap = new Map((profs ?? []).map((p) => [p.id, p.nickname]));
-        setBans(banRows.map((b) => ({ ...b, nickname: nameMap.get(b.user_id) ?? "Guest" })));
+        const nameMap = await fetchNicknames(banRows.map((b) => b.user_id), "ModerationDialog");
+        setBans(banRows.map((b) => ({ ...b, nickname: nameMap[b.user_id] ?? "Guest" })));
       } else setBans([]);
     })();
   }, [open, eventId, initial]);

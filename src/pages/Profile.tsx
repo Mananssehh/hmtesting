@@ -14,6 +14,8 @@ import { Badge } from "@/components/ui/badge";
 import { nicknameSchema } from "@/lib/validation";
 import { containsProfanity, looksSpammy } from "@/lib/profanity";
 import { SiteFooter } from "@/components/SiteFooter";
+import { fetchMyProfile } from "@/lib/publicProfiles";
+import { logWarning } from "@/lib/errorLogger";
 
 interface Stats {
   totalRequests: number;
@@ -74,7 +76,7 @@ const Profile = () => {
           ? supabase.from("events").select("id, name, room_code, is_active")
               .eq("dj_id", user.id).order("created_at", { ascending: false }).limit(5)
           : Promise.resolve({ data: [] as MyEvent[] }),
-        supabase.from("profiles").select("is_public").eq("id", user.id).maybeSingle(),
+        fetchMyProfile("Profile"),
       ]);
 
       const reqs = reqRes.data ?? [];
@@ -84,7 +86,9 @@ const Profile = () => {
       });
       setTxs((txRes.data ?? []) as TxRow[]);
       setMyEvents((evRes.data ?? []) as MyEvent[]);
-      if (profRes.data) setIsPublic((profRes.data as { is_public?: boolean }).is_public ?? true);
+      // Never assume public on a failed privacy read: keep the safer default.
+      if (profRes) setIsPublic(profRes.is_public === true);
+      else setIsPublic(false);
       setLoading(false);
     })();
   }, [user, isDJ]);
@@ -94,11 +98,12 @@ const Profile = () => {
     setSavingPrivacy(true);
     const prev = isPublic;
     setIsPublic(next);
-    const { error } = await supabase.from("profiles").update({ is_public: next }).eq("id", user.id);
+    const { error } = await supabase.rpc("update_my_profile", { _is_public: next });
     setSavingPrivacy(false);
     if (error) {
       setIsPublic(prev);
-      toast.error(error.message);
+      logWarning("Profile.togglePrivacy", "update_my_profile failed", { code: error.code ?? null });
+      toast.error("Couldn't update your privacy setting. Please try again.");
     } else {
       toast.success(next ? "Profile is now public" : "Profile is now private");
     }
@@ -112,9 +117,12 @@ const Profile = () => {
     }
     if (!user) return;
     setSavingName(true);
-    const { error } = await supabase.from("profiles").update({ nickname: parsed.data }).eq("id", user.id);
+    const { error } = await supabase.rpc("update_my_profile", { _nickname: parsed.data });
     setSavingName(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      logWarning("Profile.saveName", "update_my_profile failed", { code: error.code ?? null });
+      return toast.error("Couldn't update your nickname. Please try again.");
+    }
     await refreshProfile();
     setEditingName(false);
     toast.success("Nickname updated");
