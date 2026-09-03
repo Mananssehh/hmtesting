@@ -48,7 +48,14 @@ import Unsubscribe from "./pages/Unsubscribe";
 
 import { ErrorBoundary } from "./components/ErrorBoundary";
 
+// Developer tooling is loaded through a dynamic import that only exists in
+// development builds. In production `import.meta.env.DEV` folds to false and
+// the branch (with the entire src/dev chunk) is dropped from the bundle, so
+// /dj/:id/dev falls through to the NotFound catch-all.
+const DevRoutes = import.meta.env.DEV ? lazy(() => import("./dev/DevRoutes")) : null;
+
 const queryClient = new QueryClient();
+
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
