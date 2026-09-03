@@ -79,19 +79,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Realtime: detect profile updates and re-fetch via RPC (points/is_premium
-  // are column-secured and no longer included in realtime payloads).
+  // are column-secured and never included in realtime payloads).
+  //
+  // Client roles hold no SELECT privilege on public.profiles, so Realtime may
+  // legitimately deliver nothing for this self-filtered channel. Focus/interval
+  // refreshes (through get_my_profile) keep the header points accurate either way.
   useEffect(() => {
     if (!user) return;
+    const refresh = () => { void loadProfile(user.id); };
     const channel = supabase
       .channel(`profile-${user.id}`)
       .on(
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${user.id}` },
-        () => { void loadProfile(user.id); },
+        refresh,
       )
       .subscribe();
+    const onVisible = () => { if (document.visibilityState === "visible") refresh(); };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", refresh);
+    const interval = setInterval(() => { if (document.visibilityState === "visible") refresh(); }, 60_000);
     return () => {
       supabase.removeChannel(channel);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", refresh);
+      clearInterval(interval);
     };
   }, [user]);
 
