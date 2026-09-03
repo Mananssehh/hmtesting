@@ -256,15 +256,88 @@ Deno.serve(async (req) => {
   }
 
 
+  // Any genuine database failure must surface as a retryable 500. A conditional
+  // update that matches zero rows is NOT a failure — it is logged and acked.
+  async function updateTips(
+    patch: Record<string, unknown>,
+    apply: (q: any) => any,
+    ctx: Record<string, unknown>,
+  ) {
+    const { data, error } = await apply(
+      admin.from("dj_tips").update(patch).select("id"),
+    );
+    if (error) {
+      console.error("[stripe-webhook] dj_tips update failed", { ...ctx, message: error.message });
+      throw new Error("db_update_failed");
+    }
+    if (!data || data.length === 0) {
+      console.log("[stripe-webhook] dj_tips update matched no rows", ctx);
+    }
+    return (data ?? []) as Array<{ id: string }>;
+  }
+
+  // Map a Checkout Session to a tip status. Session status and payment status
+  // are distinct; a complete session is not necessarily paid when delayed
+  // payment methods are in play.
+  function statusFromSession(s: any): "succeeded" | "pending" | "expired" | null {
+    const sessionStatus = s?.status as string | undefined;         // open | complete | expired
+    const paymentStatus = s?.payment_status as string | undefined; // paid | unpaid | no_payment_required
+    if (sessionStatus === "expired") return "expired";
+    if (paymentStatus === "paid" || paymentStatus === "no_payment_required") return "succeeded";
+    return "pending";
+  }
+
   try {
     switch (event.type) {
-      case "checkout.session.completed": {
+      case "checkout.session.completed":
+      case "checkout.session.async_payment_succeeded": {
         const s: any = event.data.object;
-        await admin.from("dj_tips").update({
-          status: s.payment_status === "paid" ? "succeeded" : "pending",
-          stripe_payment_intent_id: typeof s.payment_intent === "string" ? s.payment_intent : null,
-          livemode: !!event.livemode,
-        }).eq("stripe_checkout_session_id", s.id);
+        const next = statusFromSession(s);
+        await updateTips(
+          {
+            status: next,
+            stripe_payment_intent_id: typeof s.payment_intent === "string" ? s.payment_intent : null,
+            livemode: !!event.livemode,
+            ...(typeof s.expires_at === "number"
+              ? { checkout_expires_at: new Date(s.expires_at * 1000).toISOString() }
+              : {}),
+          },
+          (q: any) => q.eq("stripe_checkout_session_id", s.id),
+          { type: event.type, session_id: s.id, next },
+        );
+        if (next === "succeeded") {
+          const { data: tipRow, error: tipErr } = await admin
+            .from("dj_tips").select("id").eq("stripe_checkout_session_id", s.id).maybeSingle();
+          if (tipErr) {
+            console.error("[stripe-webhook] tip lookup failed", { session_id: s.id, message: tipErr.message });
+            throw new Error("db_lookup_failed");
+          }
+          if (tipRow?.id) await notifyTipSucceeded(tipRow.id);
+        }
+        break;
+      }
+      case "checkout.session.async_payment_failed": {
+        const s: any = event.data.object;
+        await updateTips(
+          { status: "failed", failure_reason: "async_payment_failed" },
+          (q: any) => q.eq("stripe_checkout_session_id", s.id).eq("status", "pending"),
+          { type: event.type, session_id: s.id },
+        );
+        break;
+      }
+      case "checkout.session.expired": {
+        const s: any = event.data.object;
+        // Only pending rows expire — never downgrade a paid/refunded tip.
+        await updateTips(
+          {
+            status: "expired",
+            ...(typeof s.expires_at === "number"
+              ? { checkout_expires_at: new Date(s.expires_at * 1000).toISOString() }
+              : {}),
+          },
+          (q: any) => q.eq("stripe_checkout_session_id", s.id).eq("status", "pending"),
+          { type: event.type, session_id: s.id },
+        );
         break;
       }
       case "payment_intent.succeeded": {
@@ -274,25 +347,38 @@ Deno.serve(async (req) => {
         if (typeof pi.latest_charge === "string") chargeId = pi.latest_charge;
         else if (pi.latest_charge?.id) chargeId = pi.latest_charge.id;
         else if (pi.charges?.data?.[0]?.id) chargeId = pi.charges.data[0].id;
-        await admin.from("dj_tips").update({
-          status: "succeeded",
-          livemode: !!event.livemode,
-          ...(chargeId ? { stripe_charge_id: chargeId } : {}),
-        }).eq("stripe_payment_intent_id", pi.id);
-        const { data: tipRow } = await admin
+        await updateTips(
+          {
+            status: "succeeded",
+            livemode: !!event.livemode,
+            ...(chargeId ? { stripe_charge_id: chargeId } : {}),
+          },
+          (q: any) => q.eq("stripe_payment_intent_id", pi.id),
+          { type: event.type, payment_intent: pi.id },
+        );
+        const { data: tipRow, error: tipErr } = await admin
           .from("dj_tips").select("id").eq("stripe_payment_intent_id", pi.id).maybeSingle();
+        if (tipErr) {
+          console.error("[stripe-webhook] tip lookup failed", { payment_intent: pi.id, message: tipErr.message });
+          throw new Error("db_lookup_failed");
+        }
         if (tipRow?.id) await notifyTipSucceeded(tipRow.id);
         break;
       }
 
       case "payment_intent.payment_failed": {
         const pi: any = event.data.object;
-        await admin.from("dj_tips").update({
-          status: "failed",
-          failure_reason: pi.last_payment_error?.message ?? "payment_failed",
-        }).eq("stripe_payment_intent_id", pi.id);
+        await updateTips(
+          {
+            status: "failed",
+            failure_reason: pi.last_payment_error?.message ?? "payment_failed",
+          },
+          (q: any) => q.eq("stripe_payment_intent_id", pi.id),
+          { type: event.type, payment_intent: pi.id },
+        );
         break;
       }
+
       case "charge.succeeded": {
         // Backfill charge id when we only have the PI.
         const ch: any = event.data.object;
