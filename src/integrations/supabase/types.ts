@@ -1100,24 +1100,6 @@ export type Database = {
       }
     }
     Views: {
-      public_profiles: {
-        Row: {
-          id: string | null
-          nickname: string | null
-          points: number | null
-        }
-        Insert: {
-          id?: string | null
-          nickname?: string | null
-          points?: number | null
-        }
-        Update: {
-          id?: string | null
-          nickname?: string | null
-          points?: number | null
-        }
-        Relationships: []
-      }
       tip_analytics: {
         Row: {
           amount_cents: number | null
@@ -1209,6 +1191,13 @@ export type Database = {
       get_ingest_token: { Args: { _event_id: string }; Returns: string }
       get_my_profile: { Args: never; Returns: Json }
       get_nickname: { Args: { _user_id: string }; Returns: string }
+      get_public_nicknames: {
+        Args: { _user_ids: string[] }
+        Returns: {
+          id: string
+          nickname: string
+        }[]
+      }
       get_public_profile: { Args: { _user_id: string }; Returns: Json }
       has_role: {
         Args: {
