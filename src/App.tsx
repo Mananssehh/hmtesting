@@ -75,20 +75,32 @@ const App = () => (
               <Route path="/join" element={<Join />} />
               <Route path="/connect" element={<Connect />} />
               <Route path="/event/:code" element={<EventPage />} />
-              <Route path="/dj" element={<DJDashboard />} />
-              <Route path="/dj/onboarding" element={<DJOnboarding />} />
-              <Route path="/dj/:id" element={<DJEventManage />} />
-              <Route path="/dj/:id/dev" element={<DJDevTools />} />
-              <Route path="/dj/:id/analytics" element={<Analytics />} />
-              <Route path="/dj/archive" element={<Archive />} />
-              <Route path="/dj/earnings" element={<Earnings />} />
-              <Route path="/dj/errors" element={<ErrorMonitor />} />
+              <Route path="/dj" element={<RequireDJ><DJDashboard /></RequireDJ>} />
+              <Route path="/dj/onboarding" element={<RequireAuth><DJOnboarding /></RequireAuth>} />
+              <Route path="/dj/archive" element={<RequireDJ><Archive /></RequireDJ>} />
+              <Route path="/dj/earnings" element={<RequireDJ><Earnings /></RequireDJ>} />
+              <Route path="/dj/errors" element={<RequireDJ><ErrorMonitor /></RequireDJ>} />
+              <Route path="/dj/:id" element={<RequireEventOwner><DJEventManage /></RequireEventOwner>} />
+              <Route path="/dj/:id/analytics" element={<RequireEventOwner><Analytics /></RequireEventOwner>} />
+              {DevRoutes && (
+                <Route
+                  path="/dj/:id/dev"
+                  element={
+                    <RequireEventOwner>
+                      <Suspense fallback={<GuardLoading />}>
+                        <DevRoutes />
+                      </Suspense>
+                    </RequireEventOwner>
+                  }
+                />
+              )}
               
               
               <Route path="/profile" element={<Profile />} />
               <Route path="/profile/activity" element={<ActivityLedger />} />
               <Route path="/users/:userId" element={<PublicProfile />} />
-              <Route path="/admin/reports" element={<AdminReports />} />
+              <Route path="/admin/reports" element={<RequireAdmin><AdminReports /></RequireAdmin>} />
+
 
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
