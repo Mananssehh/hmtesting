@@ -11,6 +11,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { downloadCSV, toCSV } from "@/lib/csv";
+import { fetchNicknames } from "@/lib/publicProfiles";
 
 interface Event {
   id: string; name: string; venue: string | null; dj_id: string;
@@ -81,9 +82,8 @@ const Analytics = () => {
       }
       const topIds = [...earned.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
       if (topIds.length) {
-        const { data: profs } = await supabase.from("profiles").select("id, nickname").in("id", topIds.map(([uid]) => uid));
-        const nameMap = new Map((profs ?? []).map((p) => [p.id, p.nickname ?? "Guest"]));
-        setTopGuests(topIds.map(([uid, pts]) => ({ user_id: uid, nickname: nameMap.get(uid) ?? "Guest", points: pts })));
+        const nameMap = await fetchNicknames(topIds.map(([uid]) => uid), "Analytics");
+        setTopGuests(topIds.map(([uid, pts]) => ({ user_id: uid, nickname: nameMap[uid] ?? "Guest", points: pts })));
       }
 
       setLoading(false);

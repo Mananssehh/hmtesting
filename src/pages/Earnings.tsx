@@ -8,6 +8,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { fetchNicknames } from "@/lib/publicProfiles";
 
 interface SongRow {
   id: string;
@@ -135,15 +136,8 @@ export default function Earnings() {
       for (const tp of tipRows) if (tp.user_id) uids.add(tp.user_id);
       for (const pr of partRows) if (pr.user_id) uids.add(pr.user_id);
       if (uids.size > 0) {
-        const { data: profs } = await supabase
-          .from("profiles")
-          .select("id,nickname")
-          .in("id", [...uids]);
-        if (!cancelled) {
-          const map: Record<string, string> = {};
-          for (const pr of profs ?? []) if (pr.nickname) map[(pr as any).id] = (pr as any).nickname;
-          setProfileNicknames(map);
-        }
+        const map = await fetchNicknames([...uids], "Earnings");
+        if (!cancelled) setProfileNicknames(map);
       }
       setLoading(false);
     })();
