@@ -142,8 +142,21 @@ Deno.serve(async (req) => {
 
     const resolution = classify(view);
     counts[resolution] += 1;
+    if (resolution === "unresolved") {
+      unresolvedDetails.push({
+        tip_id: row.id,
+        age_days: Math.floor(
+          (Date.now() - new Date(row.created_at as string).getTime()) / 86400000,
+        ),
+        retrieve_failed: view === null,
+        session_status: view?.status ?? null,
+        payment_status: view?.payment_status ?? null,
+        payment_intent_status: view?.payment_intent_status ?? null,
+      });
+    }
     if (resolution === "pending_live" || resolution === "unresolved") continue;
     changes.push({ id: row.id, from: row.status, to: resolution });
+
 
     if (apply) {
       const patch: Record<string, unknown> = { status: resolution };
