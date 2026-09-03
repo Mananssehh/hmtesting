@@ -179,6 +179,8 @@ Deno.serve(async (req) => {
     inspected: rows?.length ?? 0,
     counts,
     proposed_changes: apply ? undefined : changes.length,
+    unresolved_details: apply ? undefined : unresolvedDetails,
     applied: apply ? changes.length : 0,
   });
 });
+
