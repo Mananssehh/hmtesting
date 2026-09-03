@@ -78,34 +78,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => sub.subscription.unsubscribe();
   }, []);
 
-  // Realtime: detect profile updates and re-fetch via RPC (points/is_premium
-  // are column-secured and never included in realtime payloads).
-  //
-  // Client roles hold no SELECT privilege on public.profiles, so Realtime may
-  // legitimately deliver nothing for this self-filtered channel. Focus/interval
-  // refreshes (through get_my_profile) keep the header points accurate either way.
+  // No Realtime subscription on public.profiles: client roles hold no SELECT
+  // privilege on that table, so a postgres_changes channel can never deliver
+  // rows and would only keep an idle socket open. Owner profile state is
+  // refreshed through get_my_profile() on login, focus, visibility change and
+  // a single 60s interval. All listeners/timers are torn down on logout and
+  // unmount.
   useEffect(() => {
     if (!user) return;
-    const refresh = () => { void loadProfile(user.id); };
-    const channel = supabase
-      .channel(`profile-${user.id}`)
-      .on(
-        "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${user.id}` },
-        refresh,
-      )
-      .subscribe();
+    const uid = user.id;
+    let cancelled = false;
+    const refresh = () => { if (!cancelled) void loadProfile(uid); };
     const onVisible = () => { if (document.visibilityState === "visible") refresh(); };
     document.addEventListener("visibilitychange", onVisible);
     window.addEventListener("focus", refresh);
     const interval = setInterval(() => { if (document.visibilityState === "visible") refresh(); }, 60_000);
     return () => {
-      supabase.removeChannel(channel);
+      cancelled = true;
       document.removeEventListener("visibilitychange", onVisible);
       window.removeEventListener("focus", refresh);
       clearInterval(interval);
     };
-  }, [user]);
+  }, [user?.id]);
+
 
   const signOut = async () => {
     await supabase.auth.signOut();
