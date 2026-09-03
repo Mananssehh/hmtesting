@@ -1256,6 +1256,10 @@ export type Database = {
           total_cents: number
         }[]
       }
+      update_my_profile: {
+        Args: { _is_public?: boolean; _nickname?: string }
+        Returns: Json
+      }
       upgrade_anonymous_profile: {
         Args: { p_nickname?: string }
         Returns: Json
