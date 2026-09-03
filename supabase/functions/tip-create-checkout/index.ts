@@ -210,12 +210,19 @@ Deno.serve(async (req) => {
     if (artistMeta) tipMetadata.artist = artistMeta.slice(0, 500);
     if (guestNickname) tipMetadata.guest_nickname = guestNickname.slice(0, 200);
 
+    // One generated expiry timestamp: sent to Stripe and (as the value Stripe
+    // echoes back) persisted so cap math can tell live from abandoned checkouts.
+    // Stripe allows 30 min .. 24 h; we use 30 min so caps free up quickly.
+    const CHECKOUT_TTL_SECONDS = 30 * 60;
+    const expiresAtUnix = Math.floor(Date.now() / 1000) + CHECKOUT_TTL_SECONDS;
+
     let session;
     try {
       session = await stripe.checkout.sessions.create({
         mode: "payment",
         payment_method_types: ["card"],
         customer_email: email,
+        expires_at: expiresAtUnix,
         line_items: [{
           quantity: 1,
           price_data: {
@@ -254,7 +261,12 @@ Deno.serve(async (req) => {
       );
     }
 
-    await admin.from("dj_tips").insert({
+    // Prefer the value Stripe returned; fall back to the requested one.
+    const sessionExpiresAt = new Date(
+      (typeof session.expires_at === "number" ? session.expires_at : expiresAtUnix) * 1000,
+    ).toISOString();
+
+    const { error: insertErr } = await admin.from("dj_tips").insert({
       user_id: userId,
       dj_id: ev.dj_id,
       event_id: eventId,
@@ -268,9 +280,18 @@ Deno.serve(async (req) => {
       currency: "usd",
       status: "pending",
       stripe_checkout_session_id: session.id,
+      checkout_expires_at: sessionExpiresAt,
       stripe_destination_account: payout!.stripe_account_id!,
       livemode: stripeLiveMode,
     });
+    if (insertErr) {
+      console.error("[tip-create-checkout] tip insert failed", {
+        session_id: session.id,
+        message: insertErr.message,
+      });
+      return err("SERVICE_FAILED", "Something went wrong. Please try again.");
+    }
+
 
     return json({ url: session.url, session_id: session.id });
   } catch (e) {
