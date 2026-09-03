@@ -103,6 +103,17 @@ Deno.serve(async (req) => {
     no_session_id: 0,
   };
   const changes: Array<{ id: string; from: string; to: Resolution }> = [];
+  // Sanitized diagnostics for rows we refuse to classify. No amounts, no
+  // user ids, no Stripe session ids — only the state that drove the decision.
+  const unresolvedDetails: Array<{
+    tip_id: string;
+    age_days: number;
+    retrieve_failed: boolean;
+    session_status: string | null;
+    payment_status: string | null;
+    payment_intent_status: string | null;
+  }> = [];
+
 
   for (const row of rows ?? []) {
     if (!row.stripe_checkout_session_id) {
@@ -131,8 +142,21 @@ Deno.serve(async (req) => {
 
     const resolution = classify(view);
     counts[resolution] += 1;
+    if (resolution === "unresolved") {
+      unresolvedDetails.push({
+        tip_id: row.id,
+        age_days: Math.floor(
+          (Date.now() - new Date(row.created_at as string).getTime()) / 86400000,
+        ),
+        retrieve_failed: view === null,
+        session_status: view?.status ?? null,
+        payment_status: view?.payment_status ?? null,
+        payment_intent_status: view?.payment_intent_status ?? null,
+      });
+    }
     if (resolution === "pending_live" || resolution === "unresolved") continue;
     changes.push({ id: row.id, from: row.status, to: resolution });
+
 
     if (apply) {
       const patch: Record<string, unknown> = { status: resolution };
@@ -155,6 +179,8 @@ Deno.serve(async (req) => {
     inspected: rows?.length ?? 0,
     counts,
     proposed_changes: apply ? undefined : changes.length,
+    unresolved_details: apply ? undefined : unresolvedDetails,
     applied: apply ? changes.length : 0,
   });
 });
+
