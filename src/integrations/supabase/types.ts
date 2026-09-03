@@ -188,6 +188,7 @@ export type Database = {
       dj_tips: {
         Row: {
           artist: string | null
+          checkout_expires_at: string | null
           created_at: string
           currency: string
           dj_id: string
@@ -214,6 +215,7 @@ export type Database = {
         }
         Insert: {
           artist?: string | null
+          checkout_expires_at?: string | null
           created_at?: string
           currency?: string
           dj_id: string
@@ -240,6 +242,7 @@ export type Database = {
         }
         Update: {
           artist?: string | null
+          checkout_expires_at?: string | null
           created_at?: string
           currency?: string
           dj_id?: string
@@ -1246,6 +1249,24 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      tip_pending_is_live: {
+        Args: {
+          _checkout_expires_at: string
+          _created_at: string
+          _status: string
+        }
+        Returns: boolean
+      }
+      tip_reconciliation_preview: {
+        Args: never
+        Returns: {
+          bucket: string
+          newest: string
+          oldest: string
+          tip_count: number
+          total_cents: number
+        }[]
+      }
       upgrade_anonymous_profile: {
         Args: { p_nickname?: string }
         Returns: Json
