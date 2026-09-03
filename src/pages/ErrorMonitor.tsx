@@ -26,7 +26,6 @@ export default function ErrorMonitor() {
   const { user, isDJ, loading } = useAuth();
   const [logs, setLogs] = useState<ErrorLog[]>([]);
   const [filter, setFilter] = useState<"all" | "critical" | "warning" | "unreviewed">("unreviewed");
-  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!isDJ) return;
@@ -54,14 +53,6 @@ export default function ErrorMonitor() {
     setLogs((data ?? []) as ErrorLog[]);
   }
 
-  async function markReviewed(id: string) {
-    setBusy(true);
-    const { error } = await supabase.from("error_logs").update({ reviewed: true }).eq("id", id);
-    setBusy(false);
-    if (error) toast({ title: "Update failed", variant: "destructive" });
-    else setLogs((p) => p.map((l) => (l.id === id ? { ...l, reviewed: true } : l)));
-  }
-
   if (loading) return null;
   if (!user) return <Navigate to="/auth?role=dj" replace />;
   if (!isDJ) return <Navigate to="/" replace />;
@@ -83,7 +74,12 @@ export default function ErrorMonitor() {
       <AppHeader />
       <main className="container mx-auto p-4 max-w-5xl space-y-4">
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <h1 className="text-2xl font-bold">Error Monitor</h1>
+          <div>
+            <h1 className="text-2xl font-bold">My Error Reports</h1>
+            <p className="text-sm text-muted-foreground">
+              Shows only error records submitted from your own account. Review and resolution are handled by the Decks team.
+            </p>
+          </div>
           <div className="flex gap-2 flex-wrap">
             <Badge variant="destructive">{counts.critical} critical</Badge>
             <Badge variant="secondary">{counts.warning} warnings</Badge>
@@ -112,7 +108,7 @@ export default function ErrorMonitor() {
                       {l.severity}
                     </Badge>
                     <span className="font-mono text-sm">{l.source}</span>
-                    {l.reviewed && <Badge variant="outline">reviewed</Badge>}
+                    {l.reviewed && <Badge variant="outline">reviewed by Decks</Badge>}
                   </div>
                   <span className="text-xs text-muted-foreground">{new Date(l.created_at).toLocaleString()}</span>
                 </div>
@@ -129,11 +125,6 @@ export default function ErrorMonitor() {
                     <summary className="cursor-pointer text-muted-foreground">Context</summary>
                     <pre className="mt-1 overflow-x-auto bg-muted p-2 rounded">{JSON.stringify(l.context, null, 2)}</pre>
                   </details>
-                )}
-                {!l.reviewed && (
-                  <Button size="sm" variant="outline" disabled={busy} onClick={() => markReviewed(l.id)}>
-                    Mark reviewed
-                  </Button>
                 )}
               </Card>
             ))}

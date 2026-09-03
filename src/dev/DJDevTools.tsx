@@ -5,8 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppHeader } from "@/components/AppHeader";
 import { Button } from "@/components/ui/button";
-import { IngestTestPanel } from "@/components/IngestTestPanel";
-import { BridgeMonitor } from "@/components/BridgeMonitor";
+import { IngestTestPanel } from "./IngestTestPanel";
+import { BridgeMonitor } from "./BridgeMonitor";
 
 
 const DJDevTools = () => {
