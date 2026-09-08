@@ -8,7 +8,6 @@ import { AppHeader } from "@/components/AppHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { generateRoomCode } from "@/lib/roomCode";
 
 interface EventRow {
   id: string;
