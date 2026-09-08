@@ -7,7 +7,7 @@ import {
   submitSongRequest,
   type RequestOutcome,
 } from "@/lib/requestSong";
-import type { SupabaseRequestSongClient } from "@/integrations/supabase/d5bTypes";
+import type { SupabaseRequestSongClient } from "@/lib/requestSong";
 import { readFileSync } from "fs";
 import path from "path";
 
