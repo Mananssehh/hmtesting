@@ -1,6 +1,13 @@
--- D5B Stage A - Migration 1: additive duplicate-song foundation.
--- STAGED ONLY. Not applied to production. Stage B applies this verbatim via the
--- migration tool (which writes the managed supabase/migrations file).
+-- D5B Stage A - Migration 1 (FOUNDATION): additive duplicate-song foundation.
+-- STAGED ONLY. Not applied to production.
+--
+-- ROLLOUT (strict, one migration per stage):
+--   Stage B: convert and apply ONLY this file (01_d5b_foundation.sql).
+--   Stage C: publish and verify the new RPC-based frontend.
+--   Then wait one full measured frontend asset-cache lifetime.
+--   Stage D: convert and apply ONLY 02_d5b_enforcement.sql.
+-- Migration 2 must NEVER be applied during Stage B.
+--
 -- Additive only: no existing index, policy or grant is removed here.
 
 set local lock_timeout = '5s';
@@ -137,13 +144,13 @@ begin
     end if;
   end if;
 
-  if not _ev.is_active or _ev.requests_status = 'ended' or _ev.ended_at is not null then
+  -- Every non-usable event state collapses into the SAME generic outcome so the
+  -- response never reveals whether an event exists, is ended, paused, inactive,
+  -- or simply inaccessible to this caller.
+  if not _ev.is_active
+     or _ev.ended_at is not null
+     or _ev.requests_status <> 'live' then
     return query select 'unavailable'::text, null::uuid;
-    return;
-  end if;
-
-  if _ev.requests_status <> 'live' then
-    return query select 'requests_closed'::text, null::uuid;
     return;
   end if;
 

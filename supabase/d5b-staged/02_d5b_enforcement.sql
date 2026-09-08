@@ -1,7 +1,13 @@
--- D5B Stage A - Migration 2: final enforcement cutover.
+-- D5B Stage A - Migration 2 (ENFORCEMENT): final cutover.
 -- STAGED ONLY. Applied in Stage A to the disposable local fixture only.
--- Apply in production only after Migration 1 is live and the frontend using
--- public.request_song has been published and verified.
+--
+-- ROLLOUT: this file belongs to Stage D ONLY.
+--   Stage B applies 01_d5b_foundation.sql only.
+--   Stage C publishes and verifies the RPC-based frontend.
+--   After one full measured frontend asset-cache lifetime has elapsed,
+--   Stage D converts and applies ONLY this file.
+-- Applying this during Stage B would break any still-cached frontend that
+-- still inserts into public.song_requests directly.
 
 set local lock_timeout = '5s';
 
