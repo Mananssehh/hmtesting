@@ -1,6 +1,13 @@
--- D5B Stage A - Migration 1: additive duplicate-song foundation.
--- STAGED ONLY. Not applied to production. Stage B applies this verbatim via the
--- migration tool (which writes the managed supabase/migrations file).
+-- D5B Stage A - Migration 1 (FOUNDATION): additive duplicate-song foundation.
+-- STAGED ONLY. Not applied to production.
+--
+-- ROLLOUT (strict, one migration per stage):
+--   Stage B: convert and apply ONLY this file (01_d5b_foundation.sql).
+--   Stage C: publish and verify the new RPC-based frontend.
+--   Then wait one full measured frontend asset-cache lifetime.
+--   Stage D: convert and apply ONLY 02_d5b_enforcement.sql.
+-- Migration 2 must NEVER be applied during Stage B.
+--
 -- Additive only: no existing index, policy or grant is removed here.
 
 set local lock_timeout = '5s';
