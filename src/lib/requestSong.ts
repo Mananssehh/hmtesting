@@ -212,6 +212,17 @@ export function requestFeedback(
         startsCooldown: false,
         closeSheet: false,
       };
+    case "legacy_duplicate_conflict":
+      // Transitional: removed once Stage D drops song_requests_unique_active.
+      return {
+        kind: "error",
+        message:
+          "This song can't be added right now because it matches another request in this event.",
+        ownsUpvote: false,
+        startsCooldown: false,
+        closeSheet: false,
+      };
+
     default:
       return {
         kind: "error",
