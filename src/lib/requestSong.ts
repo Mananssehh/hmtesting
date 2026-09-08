@@ -93,7 +93,7 @@ function isRequestOutcome(v: unknown): v is RequestOutcome {
 export async function submitSongRequest(
   eventId: string,
   song: MusicSearchResult,
-  client: SupabaseRequestSongClient = supabaseWithRequestSong,
+  client: SupabaseRequestSongClient = supabase,
 ): Promise<RequestResult> {
   const args = buildRequestSongArgs(eventId, song);
   try {
