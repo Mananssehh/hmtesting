@@ -100,50 +100,39 @@ const Join = () => {
       });
       if (ensureErr) throw new Error(ensureErr.message || "Could not save nickname");
 
-      // Verify event exists & is active
-      const { data: event, error: eventError } = await supabase
-        .from("events")
-        .select("id, is_active, requests_status")
-        .eq("room_code", codeParse.data)
-        .maybeSingle();
-
-      if (eventError) throw eventError;
-      if (!event) throw new Error("No event with that code. Double-check with the DJ.");
-      if (event.requests_status === "ended" || !event.is_active) {
-        throw new Error("This event has ended");
-      }
-
-      // Guest join-limit gate. Only applies to anonymous / signed-out users.
-      // Signed-in permanent accounts are never gated.
+      // Count unique events joined BEFORE the join, so we can tell whether
+      // this join adds a new event or is simply re-entry.
       const { data: sess } = await supabase.auth.getSession();
-      const uid = sess.session?.user?.id ?? null;
       const isAnon = sess.session?.user?.is_anonymous === true;
-      if (uid && isAnon) {
-        // Have they already joined this specific event? If so, no new unique
-        // event is being added — never gate re-entry.
-        const { data: existing } = await supabase
-          .from("event_participants")
-          .select("event_id")
-          .eq("event_id", event.id)
-          .eq("user_id", uid)
-          .maybeSingle();
-        const alreadyJoined = !!existing;
+      const limits = isAnon ? await fetchGuestJoinLimits() : null;
+      const beforeCount = isAnon ? await fetchGuestEventCount() : 0;
 
-        if (!alreadyJoined) {
-          const [limits, currentCount] = await Promise.all([
-            fetchGuestJoinLimits(),
-            fetchGuestEventCount(),
-          ]);
-          if (limits.enabled) {
-            const projected = currentCount + 1;
-            if (projected >= limits.require_at) {
-              setLoading(false);
-              setBlockOpen(true);
-              return;
-            }
-            if (projected === limits.prompt_at) {
-              sessionStorage.setItem(`decks:guest_prompt_pending:${event.id}`, "1");
-            }
+      // Single atomic, rate-limited boundary: validates the code, checks the
+      // event is live, blocks banned guests, and creates our membership.
+      const { data: joined, error: joinErr } = await supabase.functions.invoke("join-event", {
+        body: { code: codeParse.data, nickname: nickParse.data },
+      });
+      const payload = joined as { ok?: boolean; reason?: string; event?: { id: string } } | null;
+      if (joinErr || payload?.reason === "rate_limited") {
+        throw new Error("Too many attempts. Please wait a moment and try again.");
+      }
+      if (!payload?.ok || !payload.event) {
+        throw new Error("No live event with that code. Double-check with the DJ.");
+      }
+      const eventId = payload.event.id;
+
+      // Guest join-limit gate. Only applies to anonymous guests, and only when
+      // this join actually added a new unique event.
+      if (isAnon && limits?.enabled) {
+        const afterCount = await fetchGuestEventCount();
+        if (afterCount > beforeCount) {
+          if (afterCount >= limits.require_at) {
+            setLoading(false);
+            setBlockOpen(true);
+            return;
+          }
+          if (afterCount === limits.prompt_at) {
+            sessionStorage.setItem(`decks:guest_prompt_pending:${eventId}`, "1");
           }
         }
       }
@@ -154,6 +143,7 @@ const Join = () => {
 
       toast.success(`Joining as ${nickParse.data}`);
       navigate(`/event/${codeParse.data}`, { state: { nickname: nickParse.data } });
+
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not join");
     } finally {
