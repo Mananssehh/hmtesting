@@ -77,29 +77,6 @@ const EventPage = () => {
 
     (async () => {
       setLoading(true);
-      const { data: ev } = await supabase
-        .from("events")
-        .select("id, name, venue, dj_name, is_active, requests_status, allow_explicit, require_approval, cooldown_seconds, rules_text")
-        .eq("room_code", code.toUpperCase())
-        .maybeSingle();
-
-      if (!ev) {
-        toast.error("That event code doesn't exist. Double-check the code on the QR poster.");
-        navigate("/join", { replace: true });
-        return;
-      }
-      if (cancelled) return;
-      if (ev.requests_status === "ended") {
-        toast.info("This event has ended — you can still browse the played tracks.");
-      }
-      setEventInfo(ev as EventInfo);
-
-      // Show welcome hint once per event per browser
-      const hintKey = `decks-hint-${ev.id}`;
-      if (!localStorage.getItem(hintKey)) {
-        setShowHint(true);
-        localStorage.setItem(hintKey, "1");
-      }
 
       // Source of truth for display nickname: live profile fetch > in-memory
       // profile > nickname passed from /join > "Guest" as a last resort.
@@ -111,40 +88,44 @@ const EventPage = () => {
         liveProf?.nickname ||
         profile?.nickname ||
         "Guest";
-      const nowIso = new Date().toISOString();
-      // Upsert participant row: avoids 409 on revisit, preserves joined_at, refreshes last_seen_at.
-      await supabase
-        .from("event_participants")
-        .upsert(
-          {
-            event_id: ev.id,
-            user_id: user.id,
-            nickname: nick,
-            joined_at: nowIso,
-            last_seen_at: nowIso,
-          },
-          { onConflict: "event_id,user_id", ignoreDuplicates: true },
-        )
-        .then(() => null, () => null);
 
-      // If the participant row already existed but with a stale "Guest"
-      // nickname (e.g. a previous visit before this fix), refresh it now.
-      if (nick && nick !== "Guest") {
-        await supabase
-          .from("event_participants")
-          .update({ nickname: nick, last_seen_at: nowIso })
-          .eq("event_id", ev.id)
-          .eq("user_id", user.id)
-          .then(() => null, () => null);
+      // Members and owners can read the event directly. Everyone else must go
+      // through the atomic join boundary, which is the only way to become a
+      // participant (and the only path that reveals an event exists at all).
+      const { data: existingEv } = await supabase
+        .from("events")
+        .select("id, name, venue, dj_name, is_active, requests_status, allow_explicit, require_approval, cooldown_seconds, rules_text")
+        .eq("room_code", code.toUpperCase())
+        .maybeSingle();
+
+      let ev = existingEv as EventInfo | null;
+
+      if (!ev) {
+        const { data: joined, error: joinErr } = await supabase.functions.invoke("join-event", {
+          body: { code: code.toUpperCase(), nickname: nick },
+        });
+        const payload = joined as { ok?: boolean; event?: EventInfo } | null;
+        if (joinErr || !payload?.ok || !payload.event) {
+          toast.error("That event isn't available. Double-check the code on the QR poster.");
+          navigate("/join", { replace: true });
+          return;
+        }
+        ev = { ...payload.event, is_active: true } as EventInfo;
       }
 
-      // Always bump last_seen_at for returning guests (ignoreDuplicates skips update on conflict).
-      await supabase
-        .from("event_participants")
-        .update({ last_seen_at: nowIso })
-        .eq("event_id", ev.id)
-        .eq("user_id", user.id)
-        .then(() => null, () => null);
+      if (cancelled) return;
+      if (ev.requests_status === "ended") {
+        toast.info("This event has ended — you can still browse the played tracks.");
+      }
+      setEventInfo(ev);
+
+      // Show welcome hint once per event per browser
+      const hintKey = `decks-hint-${ev.id}`;
+      if (!localStorage.getItem(hintKey)) {
+        setShowHint(true);
+        localStorage.setItem(hintKey, "1");
+      }
+
 
       const [{ data: reqs }, { data: votes }] = await Promise.all([
         supabase.from("song_requests").select("*").eq("event_id", ev.id),
