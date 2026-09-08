@@ -83,47 +83,42 @@ const DJDashboard = () => {
     if (!parsed.success) throw new Error(parsed.error.issues[0].message);
     if (!user) throw new Error("Not signed in");
 
-    let code = form.room_code.trim();
-    if (code) {
-      const codeParsed = roomCodeSchema.safeParse(code);
-      if (!codeParsed.success) throw new Error(codeParsed.error.issues[0].message);
-      code = codeParsed.data;
-      const { data: existing } = await supabase.from("events").select("id").eq("room_code", code).maybeSingle();
-      if (existing) throw new Error("That room code is already taken");
-    } else {
-      code = generateRoomCode();
-      for (let i = 0; i < 5; i++) {
-        const { data: existing } = await supabase.from("events").select("id").eq("room_code", code).maybeSingle();
-        if (!existing) break;
-        code = generateRoomCode();
-      }
-    }
-
-    const { data, error } = await supabase
-      .from("events")
-      .insert({
-        dj_id: user.id,
-        name: parsed.data.name,
-        venue: parsed.data.venue || null,
-        dj_name: parsed.data.dj_name,
-        room_code: code,
-        allow_explicit: form.allow_explicit,
-        require_approval: form.require_approval,
-        cooldown_seconds: Math.max(0, Math.min(600, Math.floor(form.cooldown_seconds))),
-        rules_text: form.rules_text.trim() || null,
-      })
-      .select()
-      .single();
+    // Atomic, DJ-only creation: the room code is generated and reserved
+    // server-side, so the app never probes whether a code already exists.
+    const { data: created, error } = await (supabase as any).rpc("create_event", {
+      _name: parsed.data.name,
+      _venue: parsed.data.venue || null,
+      _dj_name: parsed.data.dj_name,
+      _allow_explicit: form.allow_explicit,
+      _require_approval: form.require_approval,
+      _cooldown_seconds: Math.max(0, Math.min(600, Math.floor(form.cooldown_seconds))),
+      _rules_text: form.rules_text.trim() || null,
+    });
     if (error) {
-      logCritical("DJDashboard.createEvent", error.message, { djId: user.id, code });
+      logCritical("DJDashboard.createEvent", error.message, { djId: user.id });
       throw error;
     }
+    const row = Array.isArray(created) ? created[0] : created;
+    if (!row) throw new Error("Could not create the event. Please try again.");
 
-    setEvents((prev) => [data, ...prev]);
+    setEvents((prev) => [
+      {
+        id: row.id,
+        name: row.name,
+        venue: parsed.data.venue || null,
+        dj_name: parsed.data.dj_name,
+        room_code: row.room_code,
+        is_active: true,
+        requests_status: "live",
+        created_at: row.created_at,
+      } as EventRow,
+      ...prev,
+    ]);
     setCreateOpen(false);
     toast.success("Event created!");
-    navigate(`/dj/${data.id}`);
+    navigate(`/dj/${row.id}`);
   };
+
 
   const copyJoinLink = (code: string) => {
     navigator.clipboard.writeText(`${window.location.origin}/join?code=${code}`);
