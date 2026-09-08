@@ -1169,6 +1169,23 @@ export type Database = {
         Returns: undefined
       }
       claim_dj_role: { Args: never; Returns: undefined }
+      create_event: {
+        Args: {
+          _allow_explicit?: boolean
+          _cooldown_seconds?: number
+          _dj_name?: string
+          _name: string
+          _require_approval?: boolean
+          _rules_text?: string
+          _venue?: string
+        }
+        Returns: {
+          created_at: string
+          id: string
+          name: string
+          room_code: string
+        }[]
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -1205,6 +1222,12 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      is_event_member: { Args: { _event_id: string }; Returns: boolean }
+      is_event_owner: { Args: { _event_id: string }; Returns: boolean }
+      join_event_by_code: {
+        Args: { _code: string; _nickname?: string }
+        Returns: Json
       }
       move_to_dlq: {
         Args: {
