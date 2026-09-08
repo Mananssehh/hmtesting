@@ -452,84 +452,99 @@ const EventPage = () => {
       return;
     }
 
-    // Client-side cooldown
-    const cooldown = eventInfo.cooldown_seconds ?? 30;
-    const elapsed = (Date.now() - lastRequestAt) / 1000;
-    if (cooldown > 0 && elapsed < cooldown) {
-      toast.error(`Slow down! Try again in ${Math.ceil(cooldown - elapsed)}s`);
-      return;
+    // Duplicate detection uses canonical provider identity only: identical
+    // titles with different provider IDs stay separately requestable, and
+    // played/skipped/removed tracks can be requested again.
+    const identity = canonicalTrackIdentity(song.source_platform, song.source_song_id);
+    const existing = songs.find(
+      (s) =>
+        isActiveRequestStatus(s.status) &&
+        sameTrack(identity, canonicalTrackIdentity(s.source_platform, s.source_song_id)),
+    );
+
+    // Cooldown applies to genuinely new tracks only — supporting is free.
+    if (!existing) {
+      const cooldown = eventInfo.cooldown_seconds ?? 30;
+      const elapsed = (Date.now() - lastRequestAt) / 1000;
+      if (cooldown > 0 && elapsed < cooldown) {
+        toast.error(`Slow down! Try again in ${Math.ceil(cooldown - elapsed)}s`);
+        return;
+      }
     }
 
-    // Duplicate detection: source_song_id first, then normalized title+artist
-    const key = normalizeKey(song.title, song.artist);
-    const exists = songs.some((s) => {
-      if (s.status === "removed") return false;
-      if (song.source_song_id && s.source_song_id && s.source_song_id === song.source_song_id) return true;
-      return normalizeKey(s.title, s.artist) === key;
-    });
-    if (exists) {
-      toast.error("Already requested — vote for it instead!");
-      setRequestOpen(false);
-      return;
-    }
-
-    // Resolve display nickname: live DB read > in-memory profile > nav state >
-    // last-resort "Guest". If the profile row is somehow still missing, repair
-    // it via ensure_profile so future reads find a real nickname.
-    let prof = await fetchMyProfile("EventPage.request");
+    // Keep the caller's profile nickname healthy: the server derives
+    // requester_name from it (falling back to "Guest").
+    const prof = await fetchMyProfile("EventPage.request");
     const fallbackNick =
       (profile?.nickname && profile.nickname !== "Guest" ? profile.nickname : null) || navNickname;
     if ((!prof || !prof.nickname || prof.nickname === "Guest") && fallbackNick) {
       await (supabase as any).rpc("ensure_profile", { p_nickname: fallbackNick }).then(() => null, () => null);
-      prof = (await fetchMyProfile("EventPage.request.retry")) ?? prof;
     }
-    const requesterName =
-      (prof?.nickname && prof.nickname !== "Guest" ? prof.nickname : null) ||
-      fallbackNick ||
-      prof?.nickname ||
-      "Guest";
 
-    const { data: inserted, error } = await supabase
-      .from("song_requests")
-      .insert({
-        event_id: eventInfo.id,
-        requested_by: user.id,
-        requester_name: requesterName,
-        title: song.title,
-        artist: song.artist,
-        album: song.album,
-        album_art: song.album_art_url,
-        album_art_url: song.album_art_url,
-        duration_ms: song.duration_ms,
-        preview_url: song.preview_url,
-        explicit: song.explicit,
-        source_platform: song.source_platform,
-        source_song_id: song.source_song_id,
-        external_url:
-          (song.external_url && song.external_url.trim()) ||
-          `https://music.apple.com/us/search?term=${encodeURIComponent(`${song.title} ${song.artist}`.trim())}`,
-      })
-      .select()
-      .single();
+    const { data, error } = await (supabase as any).rpc("request_song", {
+      _event_id: eventInfo.id,
+      _source_platform: song.source_platform,
+      _source_song_id: song.source_song_id,
+      _title: song.title,
+      _artist: song.artist,
+      _album: song.album,
+      _album_art_url: song.album_art_url,
+      _duration_ms: song.duration_ms,
+      _preview_url: song.preview_url,
+      _explicit: song.explicit,
+      _external_url:
+        (song.external_url && song.external_url.trim()) ||
+        `https://music.apple.com/us/search?term=${encodeURIComponent(`${song.title} ${song.artist}`.trim())}`,
+    });
 
     if (error) {
-      if (error.code === "23505") toast.error("Already requested — vote for it!");
-      else if (error.code === "42501" || /row-level security|violates row-level/i.test(error.message)) {
-        const cd = eventInfo.cooldown_seconds ?? 30;
-        toast.error(`Hold on — you can request again in ${cd}s, or this song may be blocked by the DJ.`);
-      } else toast.error(error.message);
+      toast.error("Couldn't send that request — please try again.");
       return;
     }
 
-    setLastRequestAt(Date.now());
+    const row = Array.isArray(data) ? data[0] : data;
+    const outcome: string | undefined = row?.outcome;
+    const requestId: string | undefined = row?.request_id ?? undefined;
 
-    if (inserted) {
-      await supabase.from("votes").upsert({ song_request_id: inserted.id, user_id: user.id, value: 1 });
-      setMyVotes((p) => ({ ...p, [inserted.id]: 1 }));
+    switch (outcome) {
+      case "created":
+        setLastRequestAt(Date.now());
+        if (requestId) setMyVotes((p) => ({ ...p, [requestId]: 1 }));
+        toast.success("Song requested! +1 pt 🎶", { icon: <PartyPopper className="h-4 w-4" /> });
+        setRequestOpen(false);
+        return;
+      case "supported_existing":
+        if (requestId) setMyVotes((p) => ({ ...p, [requestId]: 1 }));
+        toast.success("Already in the queue — your vote was added 👍");
+        setRequestOpen(false);
+        return;
+      case "already_supported":
+        if (requestId) setMyVotes((p) => ({ ...p, [requestId]: 1 }));
+        toast.success("You've already backed this one — it's in the queue.");
+        setRequestOpen(false);
+        return;
+      case "cooldown":
+        toast.error(`Slow down! Try again in ${eventInfo.cooldown_seconds ?? 30}s`);
+        return;
+      case "explicit_not_allowed":
+        toast.error("This event isn't accepting explicit songs.");
+        return;
+      case "blocked":
+        toast.error("The DJ has blocked this song or artist.");
+        return;
+      case "requests_closed":
+        toast.error("Requests are paused right now.");
+        return;
+      case "invalid_track":
+        toast.error("We couldn't identify that track. Try another version.");
+        return;
+      case "unavailable":
+        toast.error("You can't request songs for this event right now.");
+        return;
+      default:
+        toast.error("Couldn't send that request — please try again.");
+        return;
     }
-
-    toast.success("Song requested! +1 pt 🎶", { icon: <PartyPopper className="h-4 w-4" /> });
-    setRequestOpen(false);
   };
 
   if (authLoading || loading || !eventInfo) {
