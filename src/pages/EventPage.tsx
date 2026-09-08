@@ -1009,7 +1009,15 @@ function RequestPicker({ onPick, existing, allowExplicit = true }: { onPick: (so
               <div className="flex items-center gap-1 shrink-0">
                 {s.preview_url && <PreviewButton src={s.preview_url} size="icon" />}
                 {already ? (
-                  <Badge variant="secondary" className="text-[10px]">Added</Badge>
+                  <Button
+                    size="sm"
+                    onClick={() => onPick(s)}
+                    variant="secondary"
+                    className="h-9 px-2 text-[11px]"
+                    aria-label={`Support ${s.title}`}
+                  >
+                    Support this request
+                  </Button>
                 ) : !allowExplicit && s.explicit ? (
                   <Badge variant="secondary" className="text-[10px] bg-amber-500/15 text-amber-300 border-amber-500/30">Blocked</Badge>
                 ) : (
