@@ -302,7 +302,7 @@ function CreateEventForm({ defaultDJ, onCreate }: { defaultDJ: string; onCreate:
     name: "",
     venue: "",
     dj_name: defaultDJ,
-    room_code: "",
+    
     allow_explicit: true,
     require_approval: false,
     cooldown_seconds: 30,
@@ -340,11 +340,8 @@ function CreateEventForm({ defaultDJ, onCreate }: { defaultDJ: string; onCreate:
           <Input id="dj" value={form.dj_name} onChange={(e) => update("dj_name", e.target.value)} placeholder="DJ Sparkles" required />
         </div>
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="code">Room code (optional)</Label>
-        <Input id="code" value={form.room_code} onChange={(e) => update("room_code", e.target.value.toUpperCase())} placeholder="Auto-generated if blank" maxLength={10} />
-        <p className="text-xs text-muted-foreground">5–10 letters/numbers. Leave blank for a random one.</p>
-      </div>
+      <p className="text-xs text-muted-foreground">A unique room code is generated automatically when you create the event.</p>
+
 
       <div className="flex items-center justify-between gap-4 pt-1">
         <div>
