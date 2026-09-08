@@ -212,3 +212,97 @@ describe("requestFeedback", () => {
     expect(requestFeedback("error", 30)).toMatchObject({ kind: "error", ownsUpvote: false });
   });
 });
+
+const LEGACY_MESSAGE =
+  "This song can't be added right now because it matches another request in this event.";
+
+describe("legacy song_requests_unique_active transitional handling", () => {
+  it("maps the exact legacy constraint error to the truthful temporary message", async () => {
+    const { client } = clientReturning(null, {
+      message:
+        'duplicate key value violates unique constraint "song_requests_unique_active"',
+    });
+    const res = await submitSongRequest("ev1", spotifySong, client);
+    expect(res).toEqual({ outcome: "legacy_duplicate_conflict", requestId: null });
+    expect(requestFeedback(res.outcome, 30)).toMatchObject({
+      kind: "error",
+      message: LEGACY_MESSAGE,
+      ownsUpvote: false,
+      startsCooldown: false,
+      closeSheet: false,
+    });
+  });
+
+  it("detects the legacy constraint when it is reported in details or constraint fields", async () => {
+    for (const err of [
+      { message: "db error", details: "Key ... conflicts with song_requests_unique_active." },
+      { message: "db error", constraint: "song_requests_unique_active" },
+    ]) {
+      const { client } = clientReturning(null, err);
+      expect((await submitSongRequest("ev1", spotifySong, client)).outcome).toBe(
+        "legacy_duplicate_conflict",
+      );
+    }
+  });
+
+  it("never mislabels the provider index error as the legacy condition", async () => {
+    const { client } = clientReturning(null, {
+      message:
+        'duplicate key value violates unique constraint "song_requests_unique_active_provider"',
+    });
+    expect((await submitSongRequest("ev1", spotifySong, client)).outcome).toBe("error");
+    expect(requestFeedback("error", 30).message).not.toBe(LEGACY_MESSAGE);
+  });
+
+  it("keeps unrelated database and transport failures generic and retryable", async () => {
+    const cases = [
+      { message: "permission denied for table song_requests" },
+      { message: 'violates unique constraint "votes_pkey"' },
+      { message: "boom" },
+    ];
+    for (const err of cases) {
+      const { client } = clientReturning(null, err);
+      const res = await submitSongRequest("ev1", spotifySong, client);
+      expect(res.outcome).toBe("error");
+      expect(requestFeedback(res.outcome, 30).message).toMatch(/please try again/i);
+    }
+    const thrower = {
+      rpc: vi.fn().mockRejectedValue(new Error("network")),
+    } as unknown as SupabaseRequestSongClient;
+    expect((await submitSongRequest("ev1", spotifySong, thrower)).outcome).toBe("error");
+  });
+
+  it("maps a thrown legacy-constraint failure to the same temporary message", async () => {
+    const thrower = {
+      rpc: vi
+        .fn()
+        .mockRejectedValue(
+          new Error('duplicate key value violates unique constraint "song_requests_unique_active"'),
+        ),
+    } as unknown as SupabaseRequestSongClient;
+    expect((await submitSongRequest("ev1", spotifySong, thrower)).outcome).toBe(
+      "legacy_duplicate_conflict",
+    );
+  });
+
+  it("leaves successful outcomes untouched", async () => {
+    for (const outcome of ["created", "supported_existing", "already_supported"] as const) {
+      const { client } = clientReturning([{ outcome, request_id: "r1" }]);
+      const res = await submitSongRequest("ev1", spotifySong, client);
+      expect(res).toEqual({ outcome, requestId: "r1" });
+      const f = requestFeedback(res.outcome, 30);
+      expect(f.kind).toBe("success");
+      expect(f.ownsUpvote).toBe(true);
+      expect(f.message).not.toBe(LEGACY_MESSAGE);
+    }
+    expect(requestFeedback("created", 30).startsCooldown).toBe(true);
+    expect(requestFeedback("supported_existing", 30).startsCooldown).toBe(false);
+    expect(requestFeedback("already_supported", 30).startsCooldown).toBe(false);
+  });
+
+  it("adds no ninth RPC outcome", () => {
+    expect(REQUEST_OUTCOMES).toHaveLength(8);
+    expect(REQUEST_OUTCOMES).not.toContain("legacy_duplicate_conflict" as never);
+  });
+});
+
