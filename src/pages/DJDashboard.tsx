@@ -14,8 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { PayoutStatusCard } from "@/components/PayoutStatusCard";
-import { eventSchema, roomCodeSchema } from "@/lib/validation";
-import { generateRoomCode } from "@/lib/roomCode";
+import { eventSchema } from "@/lib/validation";
 import { EventQR } from "@/components/EventQR";
 import { logCritical } from "@/lib/errorLogger";
 
@@ -34,7 +33,7 @@ interface CreateForm {
   name: string;
   venue: string;
   dj_name: string;
-  room_code: string;
+
   allow_explicit: boolean;
   require_approval: boolean;
   cooldown_seconds: number;
