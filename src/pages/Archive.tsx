@@ -62,27 +62,23 @@ const Archive = () => {
 
   const duplicate = async (ev: EventRow) => {
     if (!user) return;
-    let code = generateRoomCode();
-    for (let i = 0; i < 5; i++) {
-      const { data: existing } = await supabase.from("events").select("id").eq("room_code", code).maybeSingle();
-      if (!existing) break;
-      code = generateRoomCode();
-    }
-    const { data, error } = await supabase.from("events").insert({
-      dj_id: user.id,
-      name: `${ev.name} (copy)`,
-      venue: ev.venue,
-      dj_name: ev.dj_name,
-      room_code: code,
-      allow_explicit: ev.allow_explicit,
-      require_approval: ev.require_approval,
-      cooldown_seconds: ev.cooldown_seconds,
-      rules_text: ev.rules_text,
-    }).select().single();
+    // Server-side atomic creation reserves a fresh room code for the copy.
+    const { data, error } = await (supabase as any).rpc("create_event", {
+      _name: `${ev.name} (copy)`,
+      _venue: ev.venue,
+      _dj_name: ev.dj_name,
+      _allow_explicit: ev.allow_explicit,
+      _require_approval: ev.require_approval,
+      _cooldown_seconds: ev.cooldown_seconds,
+      _rules_text: ev.rules_text,
+    });
     if (error) return toast.error(error.message);
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row) return toast.error("Could not duplicate the event.");
     toast.success("Event duplicated");
-    navigate(`/dj/${data.id}`);
+    navigate(`/dj/${row.id}`);
   };
+
 
   if (authLoading || loading) {
     return (
