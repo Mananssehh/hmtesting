@@ -17,8 +17,9 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { searchMusic, MusicSearchResult, normalizeKey, RateLimitedError } from "@/lib/musicSearch";
+import { searchMusic, MusicSearchResult, RateLimitedError } from "@/lib/musicSearch";
 import { canonicalTrackIdentity, sameTrack, isActiveRequestStatus } from "@/lib/trackIdentity";
+import { submitSongRequest, requestFeedback } from "@/lib/requestSong";
 import { formatDuration, platformLabel } from "@/lib/searchLinks";
 import { PreviewButton } from "@/components/PreviewButton";
 import { NowPlayingDisplay } from "@/components/NowPlayingDisplay";
@@ -479,73 +480,26 @@ const EventPage = () => {
     const fallbackNick =
       (profile?.nickname && profile.nickname !== "Guest" ? profile.nickname : null) || navNickname;
     if ((!prof || !prof.nickname || prof.nickname === "Guest") && fallbackNick) {
-      await (supabase as any).rpc("ensure_profile", { p_nickname: fallbackNick }).then(() => null, () => null);
+      await supabase.rpc("ensure_profile", { p_nickname: fallbackNick }).then(() => null, () => null);
     }
 
-    const { data, error } = await (supabase as any).rpc("request_song", {
-      _event_id: eventInfo.id,
-      _source_platform: song.source_platform,
-      _source_song_id: song.source_song_id,
-      _title: song.title,
-      _artist: song.artist,
-      _album: song.album,
-      _album_art_url: song.album_art_url,
-      _duration_ms: song.duration_ms,
-      _preview_url: song.preview_url,
-      _explicit: song.explicit,
-      _external_url:
-        (song.external_url && song.external_url.trim()) ||
-        `https://music.apple.com/us/search?term=${encodeURIComponent(`${song.title} ${song.artist}`.trim())}`,
-    });
+    const { outcome, requestId } = await submitSongRequest(eventInfo.id, song);
+    const feedback = requestFeedback(outcome, eventInfo.cooldown_seconds ?? 30);
 
-    if (error) {
-      toast.error("Couldn't send that request — please try again.");
+    if (feedback.kind === "error") {
+      toast.error(feedback.message);
       return;
     }
 
-    const row = Array.isArray(data) ? data[0] : data;
-    const outcome: string | undefined = row?.outcome;
-    const requestId: string | undefined = row?.request_id ?? undefined;
-
-    switch (outcome) {
-      case "created":
-        setLastRequestAt(Date.now());
-        if (requestId) setMyVotes((p) => ({ ...p, [requestId]: 1 }));
-        toast.success("Song requested! +1 pt 🎶", { icon: <PartyPopper className="h-4 w-4" /> });
-        setRequestOpen(false);
-        return;
-      case "supported_existing":
-        if (requestId) setMyVotes((p) => ({ ...p, [requestId]: 1 }));
-        toast.success("Already in the queue — your vote was added 👍");
-        setRequestOpen(false);
-        return;
-      case "already_supported":
-        if (requestId) setMyVotes((p) => ({ ...p, [requestId]: 1 }));
-        toast.success("You've already backed this one — it's in the queue.");
-        setRequestOpen(false);
-        return;
-      case "cooldown":
-        toast.error(`Slow down! Try again in ${eventInfo.cooldown_seconds ?? 30}s`);
-        return;
-      case "explicit_not_allowed":
-        toast.error("This event isn't accepting explicit songs.");
-        return;
-      case "blocked":
-        toast.error("The DJ has blocked this song or artist.");
-        return;
-      case "requests_closed":
-        toast.error("Requests are paused right now.");
-        return;
-      case "invalid_track":
-        toast.error("We couldn't identify that track. Try another version.");
-        return;
-      case "unavailable":
-        toast.error("You can't request songs for this event right now.");
-        return;
-      default:
-        toast.error("Couldn't send that request — please try again.");
-        return;
-    }
+    if (feedback.startsCooldown) setLastRequestAt(Date.now());
+    // No optimistic vote arithmetic: only this user's own vote map is set, and
+    // the counts themselves come from Realtime.
+    if (feedback.ownsUpvote && requestId) setMyVotes((p) => ({ ...p, [requestId]: 1 }));
+    toast.success(
+      feedback.message,
+      outcome === "created" ? { icon: <PartyPopper className="h-4 w-4" /> } : undefined,
+    );
+    if (feedback.closeSheet) setRequestOpen(false);
   };
 
   if (authLoading || loading || !eventInfo) {
