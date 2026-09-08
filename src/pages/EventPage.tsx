@@ -890,14 +890,16 @@ function RequestPicker({ onPick, existing, allowExplicit = true }: { onPick: (so
     return () => { cancelled = true; };
   }, [debounced]);
 
-  const isAlreadyRequested = (s: MusicSearchResult) =>
-    existing.some(
-      (e) => {
-        if (e.status === "removed") return false;
-        if (s.source_song_id && e.source_song_id && e.source_song_id === s.source_song_id) return true;
-        return normalizeKey(e.title, e.artist) === normalizeKey(s.title, s.artist);
-      },
+  // Only an active request for the exact same provider track counts as a
+  // duplicate — tapping it supports the existing request instead.
+  const isAlreadyRequested = (s: MusicSearchResult) => {
+    const identity = canonicalTrackIdentity(s.source_platform, s.source_song_id);
+    return existing.some(
+      (e) =>
+        isActiveRequestStatus(e.status) &&
+        sameTrack(identity, canonicalTrackIdentity(e.source_platform, e.source_song_id)),
     );
+  };
 
   const hasQuery = debounced.length >= 2;
   const showInitialEmpty = !hasQuery && !loading;
