@@ -144,13 +144,13 @@ begin
     end if;
   end if;
 
-  if not _ev.is_active or _ev.requests_status = 'ended' or _ev.ended_at is not null then
+  -- Every non-usable event state collapses into the SAME generic outcome so the
+  -- response never reveals whether an event exists, is ended, paused, inactive,
+  -- or simply inaccessible to this caller.
+  if not _ev.is_active
+     or _ev.ended_at is not null
+     or _ev.requests_status <> 'live' then
     return query select 'unavailable'::text, null::uuid;
-    return;
-  end if;
-
-  if _ev.requests_status <> 'live' then
-    return query select 'requests_closed'::text, null::uuid;
     return;
   end if;
 
