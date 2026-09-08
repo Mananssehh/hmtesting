@@ -1259,6 +1259,25 @@ export type Database = {
         Args: { _song_request_id: string }
         Returns: undefined
       }
+      request_song: {
+        Args: {
+          _album?: string
+          _album_art_url?: string
+          _artist: string
+          _duration_ms?: number
+          _event_id: string
+          _explicit?: boolean
+          _external_url?: string
+          _preview_url?: string
+          _source_platform: string
+          _source_song_id: string
+          _title: string
+        }
+        Returns: {
+          outcome: string
+          request_id: string
+        }[]
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       tip_pending_is_live: {

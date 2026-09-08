@@ -4,11 +4,15 @@
 // EventPage so the whole request flow is unit-testable without React.
 
 import type { MusicSearchResult } from "@/lib/musicSearch";
-import {
-  supabaseWithRequestSong,
-  type RequestSongArgs,
-  type SupabaseRequestSongClient,
-} from "@/integrations/supabase/d5bTypes";
+import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
+
+export type RequestSongArgs =
+  Database["public"]["Functions"]["request_song"]["Args"];
+export type RequestSongRow =
+  Database["public"]["Functions"]["request_song"]["Returns"][number];
+/** The officially typed Supabase client used for the request boundary. */
+export type SupabaseRequestSongClient = typeof supabase;
 
 /**
  * The complete approved outcome set. There is deliberately no
@@ -89,7 +93,7 @@ function isRequestOutcome(v: unknown): v is RequestOutcome {
 export async function submitSongRequest(
   eventId: string,
   song: MusicSearchResult,
-  client: SupabaseRequestSongClient = supabaseWithRequestSong,
+  client: SupabaseRequestSongClient = supabase,
 ): Promise<RequestResult> {
   const args = buildRequestSongArgs(eventId, song);
   try {
