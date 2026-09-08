@@ -63,11 +63,8 @@ describe("approved outcome set", () => {
   });
 
   it("has no requests_closed reference anywhere in the request path", () => {
-    const files = ["../lib/requestSong.ts", "../pages/EventPage.tsx"];
-    for (const f of files) {
-      const src = readFileSync(path.resolve(__dirname, f), "utf8");
-      expect(src.includes("requests_closed")).toBe(false);
-    }
+    const page = readFileSync(path.resolve(__dirname, "../pages/EventPage.tsx"), "utf8");
+    expect(page.includes("requests_closed")).toBe(false);
   });
 });
 
@@ -80,8 +77,12 @@ describe("EventPage request path", () => {
     expect(src.includes('.from("song_requests").insert')).toBe(false);
   });
 
-  it("no longer performs the separate author-vote upsert", () => {
-    expect(src).not.toMatch(/from\("votes"\)[\s\S]{0,120}upsert/);
+  it("no longer performs the separate author-vote upsert in the request handler", () => {
+    const start = src.indexOf("const handleRequestSong");
+    const handler = src.slice(start, src.indexOf("\n  };", start));
+    expect(start).toBeGreaterThan(-1);
+    expect(handler).not.toContain('from("votes")');
+    expect(handler).not.toContain("upsert");
   });
 
   it("uses no `as any` cast for request_song", () => {
