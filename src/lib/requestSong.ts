@@ -32,11 +32,36 @@ export const REQUEST_OUTCOMES = [
 
 export type RequestOutcome = (typeof REQUEST_OUTCOMES)[number];
 
-/** `error` is client-side only: an unexpected transport/database failure. */
+/**
+ * Client-side only outcomes (never returned by the RPC):
+ * - `error`: an unexpected transport/database failure.
+ * - `legacy_duplicate_conflict`: the database rejected the insert on the
+ *   pre-D5D legacy title/artist index `song_requests_unique_active`, which
+ *   still exists until the Stage D enforcement migration drops it. This is
+ *   NOT a ninth RPC outcome; it is a transitional mapping of a raw database
+ *   error. Errors from `song_requests_unique_active_provider` or any other
+ *   constraint must never map here.
+ */
 export type RequestResult = {
-  outcome: RequestOutcome | "error";
+  outcome: RequestOutcome | "error" | "legacy_duplicate_conflict";
   requestId: string | null;
 };
+
+/** Legacy title/artist index name, exact match only (not the _provider one). */
+const LEGACY_ACTIVE_INDEX = "song_requests_unique_active";
+
+function isLegacyActiveIndexError(error: unknown): boolean {
+  if (!error || typeof error !== "object") return false;
+  const e = error as Record<string, unknown>;
+  const haystack = [e.message, e.details, e.hint, e.constraint]
+    .filter((v): v is string => typeof v === "string")
+    .join(" | ");
+  // Word-boundary match so `song_requests_unique_active_provider` never matches.
+  return new RegExp(`(^|[^A-Za-z0-9_])${LEGACY_ACTIVE_INDEX}([^A-Za-z0-9_]|$)`).test(
+    haystack,
+  );
+}
+
 
 export type RequestFeedback = {
   kind: "success" | "error";
