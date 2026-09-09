@@ -29,6 +29,8 @@ import { GuestUpgradePromptDialog } from "@/components/GuestUpgradePromptDialog"
 
 import { useNowPlaying } from "@/hooks/useNowPlaying";
 import { fetchMyProfile } from "@/lib/publicProfiles";
+import { resolveEventEntry } from "@/lib/eventEntry";
+
 
 type SortMode = "top" | "trending" | "played";
 
