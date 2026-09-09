@@ -75,7 +75,7 @@ describe("resolveEventEntry", () => {
     invoke.mockResolvedValue({ data: { ok: true, event: EV }, error: null });
     const ev = await resolveEventEntry("abc12", "guest1", "Pat");
     expect(ev).toEqual(EV);
-    expect((ev as Record<string, unknown>).dj_id).toBeUndefined();
+    expect((ev as unknown as Record<string, unknown>).dj_id).toBeUndefined();
     // First visit in this session refreshes presence once...
     expect(invoke).toHaveBeenCalledTimes(1);
     invoke.mockClear();
