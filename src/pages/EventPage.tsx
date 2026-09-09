@@ -91,29 +91,17 @@ const EventPage = () => {
         profile?.nickname ||
         "Guest";
 
-      // Members and owners can read the event directly. Everyone else must go
-      // through the atomic join boundary, which is the only way to become a
-      // participant (and the only path that reveals an event exists at all).
-      const { data: existingEv } = await supabase
-        .from("events")
-        .select("id, name, venue, dj_name, is_active, requests_status, allow_explicit, require_approval, cooldown_seconds, rules_text")
-        .eq("room_code", code.toUpperCase())
-        .maybeSingle();
-
-      let ev = existingEv as EventInfo | null;
+      // Membership — not event readability — decides whether this visitor can
+      // take part. resolveEventEntry guarantees a participant row exists for
+      // non-owners, including guests who open the event link directly.
+      const ev = await resolveEventEntry(code, user.id, nick);
 
       if (!ev) {
-        const { data: joined, error: joinErr } = await supabase.functions.invoke("join-event", {
-          body: { code: code.toUpperCase(), nickname: nick },
-        });
-        const payload = joined as { ok?: boolean; event?: EventInfo } | null;
-        if (joinErr || !payload?.ok || !payload.event) {
-          toast.error("That event isn't available. Double-check the code on the QR poster.");
-          navigate("/join", { replace: true });
-          return;
-        }
-        ev = { ...payload.event, is_active: true } as EventInfo;
+        toast.error("That event isn't available. Double-check the code on the QR poster.");
+        navigate("/join", { replace: true });
+        return;
       }
+
 
       if (cancelled) return;
       if (ev.requests_status === "ended") {
