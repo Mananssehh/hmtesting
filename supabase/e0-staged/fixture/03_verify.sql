@@ -157,18 +157,24 @@ end $$;
 do $$
 declare id bigint; before_n int; after_n int;
 begin
+  -- caller-controlled decoys created in the caller's own session
   set role service_role;
   create temp table q_auth_emails (msg_id bigint, message jsonb);
   execute 'create function pg_temp.send(text, jsonb) returns bigint language plpgsql as $f$ begin raise exception ''HIJACKED''; end $f$';
+  reset role;
+
   select count(*) into before_n from pgmq.q_auth_emails;
+  set role service_role;
   id := public.enqueue_email('auth_emails', '{"message_id":"shadow-test"}'::jsonb);
+  reset role;
   select count(*) into after_n from pgmq.q_auth_emails;
+
   assert after_n = before_n + 1, 'message did not land in pgmq.q_auth_emails';
   assert exists (select 1 from pgmq.q_auth_emails where msg_id = id), 'row missing from real queue table';
   assert (select count(*) from pg_temp.q_auth_emails) = 0, 'shadow table was written to';
-  reset role;
   raise notice 'TEST 5 PASS: temp/public shadow objects cannot hijack the schema-qualified pgmq calls';
 end $$;
+
 
 \echo ''
 \echo '=========== TEST 6: trigger + cron + mocked net.http_post ==========='
