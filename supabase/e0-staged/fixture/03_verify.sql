@@ -75,10 +75,10 @@ begin
            join public._e0_before b on b.sig = p.oid::regprocedure::text
            where n.nspname='public'
   loop
-    assert r.proconfig @> array['search_path='], 'search_path not empty on ' || r.sig || ' -> ' || coalesce(r.proconfig::text,'(null)');
+    assert r.proconfig @> array['search_path=""'], 'search_path not empty on ' || r.sig || ' -> ' || coalesce(r.proconfig::text,'(null)');
     assert r.h = r.bh, 'BODY CHANGED for ' || r.sig;
   end loop;
-  raise notice 'TEST 2 PASS: all six have search_path = %L and identical bodies', '';
+  raise notice 'TEST 2 PASS: all six have an empty search_path and byte-identical bodies';
 end $$;
 
 \echo ''
