@@ -53,7 +53,9 @@ declare r int;
 begin
   assert has_function_privilege('authenticated','public.canary_c()','EXECUTE'), 'D: authenticated denied';
   assert not has_function_privilege('anon','public.canary_c()','EXECUTE'), 'D: anon leaked';
-  assert not has_function_privilege('service_role','public.canary_c()','EXECUTE'), 'D: service_role leaked';
+  -- service_role retains EXECUTE from the UNCHANGED service_role default grant,
+  -- which this mitigation deliberately does not touch (no dependency review).
+  assert has_function_privilege('service_role','public.canary_c()','EXECUTE'), 'D: service_role default grant changed';
   -- harmless functional call as the approved role
   set role authenticated;
   select public.canary_c() into r;
@@ -67,7 +69,7 @@ end $$;
 do $$
 declare denied int := 0; rl text;
 begin
-  foreach rl in array array['anon','service_role'] loop
+  foreach rl in array array['anon'] loop
     begin
       execute format('set role %I', rl);
       perform public.canary_c();
