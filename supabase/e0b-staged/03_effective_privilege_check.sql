@@ -30,9 +30,8 @@ BEGIN
     INTO bad
   FROM (
     SELECT p.oid::regprocedure::text AS sig,
-           array_agg(DISTINCT CASE WHEN a.grantee = 0 THEN 'public'
-                                   ELSE pg_catalog.pg_get_userbyid(a.grantee) END
-                     ORDER BY 1) AS grantees
+           string_agg(DISTINCT CASE WHEN a.grantee = 0 THEN 'public'
+                                    ELSE pg_catalog.pg_get_userbyid(a.grantee) END, ',') AS grantees
     FROM pg_catalog.pg_proc p
     JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
     CROSS JOIN LATERAL pg_catalog.aclexplode(
