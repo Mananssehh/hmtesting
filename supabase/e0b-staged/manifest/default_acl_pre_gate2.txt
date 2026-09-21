@@ -1,0 +1,34 @@
+      role      |     schema     | objtype |                                                                     acl                                                                     
+----------------+----------------+---------+---------------------------------------------------------------------------------------------------------------------------------------------
+ postgres       | auth           | S       | {sandbox_exec=rU/postgres}
+ postgres       | auth           | r       | {sandbox_exec=ar/postgres}
+ postgres       | extensions     | S       | {sandbox_exec=rU/postgres}
+ postgres       | extensions     | r       | {sandbox_exec=ar/postgres}
+ postgres       | pgmq           | S       | {pg_monitor=r/postgres}
+ postgres       | pgmq           | r       | {pg_monitor=r/postgres}
+ postgres       | public         | S       | {postgres=rwU/postgres,anon=rwU/postgres,authenticated=rwU/postgres,service_role=rwU/postgres,sandbox_exec=rU/postgres}
+ postgres       | public         | f       | {postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+ postgres       | public         | r       | {postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres,sandbox_exec=ar/postgres}
+ postgres       | storage        | S       | {postgres=rwU/postgres,anon=rwU/postgres,authenticated=rwU/postgres,service_role=rwU/postgres,sandbox_exec=rU/postgres}
+ postgres       | storage        | f       | {postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}
+ postgres       | storage        | r       | {postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres,sandbox_exec=ar/postgres}
+ supabase_admin | cron           | S       | {postgres=r*w*U*/supabase_admin}
+ supabase_admin | cron           | f       | {postgres=X*/supabase_admin}
+ supabase_admin | cron           | r       | {postgres=a*r*w*d*D*x*t*m*/supabase_admin}
+ supabase_admin | extensions     | S       | {postgres=r*w*U*/supabase_admin}
+ supabase_admin | extensions     | f       | {postgres=X*/supabase_admin}
+ supabase_admin | extensions     | r       | {postgres=a*r*w*d*D*x*t*m*/supabase_admin}
+ supabase_admin | graphql        | S       | {postgres=rwU/supabase_admin,anon=rwU/supabase_admin,authenticated=rwU/supabase_admin,service_role=rwU/supabase_admin}
+ supabase_admin | graphql        | f       | {postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}
+ supabase_admin | graphql        | r       | {postgres=arwdDxtm/supabase_admin,anon=arwdDxtm/supabase_admin,authenticated=arwdDxtm/supabase_admin,service_role=arwdDxtm/supabase_admin}
+ supabase_admin | graphql_public | S       | {postgres=rwU/supabase_admin,anon=rwU/supabase_admin,authenticated=rwU/supabase_admin,service_role=rwU/supabase_admin}
+ supabase_admin | graphql_public | f       | {postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}
+ supabase_admin | graphql_public | r       | {postgres=arwdDxtm/supabase_admin,anon=arwdDxtm/supabase_admin,authenticated=arwdDxtm/supabase_admin,service_role=arwdDxtm/supabase_admin}
+ supabase_admin | public         | S       | {postgres=rwU/supabase_admin,anon=rwU/supabase_admin,authenticated=rwU/supabase_admin,service_role=rwU/supabase_admin}
+ supabase_admin | public         | f       | {postgres=X/supabase_admin,anon=X/supabase_admin,authenticated=X/supabase_admin,service_role=X/supabase_admin}
+ supabase_admin | public         | r       | {postgres=arwdDxtm/supabase_admin,anon=arwdDxtm/supabase_admin,authenticated=arwdDxtm/supabase_admin,service_role=arwdDxtm/supabase_admin}
+ supabase_admin | realtime       | S       | {postgres=rwU/supabase_admin,dashboard_user=rwU/supabase_admin}
+ supabase_admin | realtime       | f       | {postgres=X/supabase_admin,dashboard_user=X/supabase_admin}
+ supabase_admin | realtime       | r       | {postgres=arwdDxtm/supabase_admin,dashboard_user=arwdDxtm/supabase_admin}
+(30 rows)
+

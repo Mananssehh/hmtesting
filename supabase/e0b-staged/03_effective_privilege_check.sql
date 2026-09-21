@@ -1,13 +1,24 @@
--- E0b accompanying requirement 2: migration verification check.
+-- E0b accompanying requirement 2 (CORRECTED, rev 2): migration verification check.
 --
--- Tests EFFECTIVE privileges from the catalog (pg_proc.proacl via aclexplode),
--- NOT the presence of a REVOKE string in SQL text. Any function in public that
--- is executable by PUBLIC (grantee oid 0), anon or authenticated and is not in
--- the explicit allowlist raises an exception and aborts the migration.
+-- CORRECTION (reviewer Correction 2): the previous version inspected only DIRECT
+-- proacl entries for PUBLIC/anon/authenticated via aclexplode. That MISSES
+-- EXECUTE reachable through ROLE INHERITANCE (e.g. a grant to some role that
+-- anon or authenticated is a member of). This version asks PostgreSQL the
+-- question directly:
+--
+--     has_function_privilege('anon',          p.oid, 'EXECUTE')
+--     has_function_privilege('authenticated', p.oid, 'EXECUTE')
+--
+-- which resolves direct grants, the built-in/explicit PUBLIC grant, and
+-- privileges inherited through role membership. Any public-schema function a
+-- client role HOLDS EXECUTE on, and that is not in the explicit
+-- role-and-function allowlist, raises an exception and aborts the migration.
 --
 -- Maintenance: adding a row to public._e0b_client_exposed_allowlist is the only
 -- way to expose a function to clients, and must be reviewed in the migration
--- that creates the function.
+-- that creates the function. allowed_grantees is now interpreted as the set of
+-- CLIENT ROLES permitted to HOLD EXECUTE (by any path); the legacy 'public'
+-- value is accepted and treated as allowing both anon and authenticated.
 
 CREATE TABLE IF NOT EXISTS public._e0b_client_exposed_allowlist (
   signature text PRIMARY KEY,           -- oid::regprocedure::text form
@@ -26,26 +37,38 @@ AS $fn$
 DECLARE
   bad text;
 BEGIN
-  SELECT string_agg(format('%s -> %s', sig, grantees), E'\n' ORDER BY sig)
+  SELECT string_agg(format('%s -> %s (%s)', sig, role_name, via), E'\n' ORDER BY sig, role_name)
     INTO bad
   FROM (
     SELECT p.oid::regprocedure::text AS sig,
-           string_agg(DISTINCT CASE WHEN a.grantee = 0 THEN 'public'
-                                    ELSE pg_catalog.pg_get_userbyid(a.grantee) END, ',') AS grantees
+           r.role_name,
+           CASE
+             WHEN EXISTS (
+               SELECT 1 FROM pg_catalog.aclexplode(
+                        COALESCE(p.proacl, pg_catalog.acldefault('f', p.proowner))) a
+                WHERE a.privilege_type = 'EXECUTE'
+                  AND a.grantee <> 0
+                  AND pg_catalog.pg_get_userbyid(a.grantee) = r.role_name)
+               THEN 'direct grant'
+             WHEN EXISTS (
+               SELECT 1 FROM pg_catalog.aclexplode(
+                        COALESCE(p.proacl, pg_catalog.acldefault('f', p.proowner))) a
+                WHERE a.privilege_type = 'EXECUTE' AND a.grantee = 0)
+               THEN 'PUBLIC grant'
+             ELSE 'INHERITED via role membership'
+           END AS via
     FROM pg_catalog.pg_proc p
     JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
-    CROSS JOIN LATERAL pg_catalog.aclexplode(
-      COALESCE(p.proacl, pg_catalog.acldefault('f', p.proowner))) a
+    CROSS JOIN (VALUES ('anon'), ('authenticated')) AS r(role_name)
     WHERE n.nspname = 'public'
-      AND a.privilege_type = 'EXECUTE'
-      AND (a.grantee = 0 OR pg_catalog.pg_get_userbyid(a.grantee) IN ('anon','authenticated'))
+      AND EXISTS (SELECT 1 FROM pg_catalog.pg_roles pr WHERE pr.rolname = r.role_name)
+      AND pg_catalog.has_function_privilege(r.role_name, p.oid, 'EXECUTE')
       AND NOT EXISTS (
         SELECT 1 FROM public._e0b_client_exposed_allowlist w
         WHERE w.signature = p.oid::regprocedure::text
-          AND (CASE WHEN a.grantee = 0 THEN 'public'
-                    ELSE pg_catalog.pg_get_userbyid(a.grantee) END) = ANY (w.allowed_grantees)
+          AND (r.role_name = ANY (w.allowed_grantees)
+               OR 'public' = ANY (w.allowed_grantees))
       )
-    GROUP BY 1
   ) t;
 
   IF bad IS NOT NULL THEN
