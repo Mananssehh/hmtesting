@@ -1,0 +1,10 @@
+                      sig                      |  owner   | prosecdef |      proconfig       |                      acl                      |             body_md5             
+-----------------------------------------------+----------+-----------+----------------------+-----------------------------------------------+----------------------------------
+ public.delete_email(text,bigint)              | postgres | t         | {"search_path=\"\""} | {postgres=X/postgres,service_role=X/postgres} | 2cd34cff7c6bdf2db1f6935ec51dc8db
+ public.email_queue_dispatch()                 | postgres | t         | {"search_path=\"\""} | {postgres=X/postgres}                         | 9f8e4895e38aebe816829972650e4437
+ public.email_queue_wake()                     | postgres | t         | {"search_path=\"\""} | {postgres=X/postgres}                         | a8ea5fd31e7d7386796122a83448e33e
+ public.enqueue_email(text,jsonb)              | postgres | t         | {"search_path=\"\""} | {postgres=X/postgres,service_role=X/postgres} | 4483879669e0c80ecb876151dee937d2
+ public.move_to_dlq(text,text,bigint,jsonb)    | postgres | t         | {"search_path=\"\""} | {postgres=X/postgres,service_role=X/postgres} | 121ff5ca3d6e8e9fe91e278ab48a947a
+ public.read_email_batch(text,integer,integer) | postgres | t         | {"search_path=\"\""} | {postgres=X/postgres,service_role=X/postgres} | a50fdee3ce25df11533f1911c03f2e2b
+(6 rows)
+
