@@ -98,7 +98,9 @@ end $$;
 -- Close the residual the approved way, allowlist the approved exposure, re-run.
 revoke execute on function public.canary_b() from public, anon, authenticated;
 insert into public._e0b_client_exposed_allowlist (signature, allowed_grantees, reason)
-values ('canary_c()', array['authenticated'], 'fixture: approved client RPC');
+values ('public.canary_c()', array['authenticated'], 'fixture: approved client RPC'),
+       ('public.canary_a()', array['anon','authenticated'], 'fixture: pre-existing exposure, unchanged'),
+       ('public.existing_open(integer)', array['public','anon','authenticated'], 'fixture: pre-existing exposure, unchanged');
 do $$
 begin
   perform public._e0b_assert_no_unapproved_client_execute();
