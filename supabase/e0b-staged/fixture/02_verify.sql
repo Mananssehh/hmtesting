@@ -122,6 +122,72 @@ end $$;
 drop function public.canary_text_only();
 
 \echo ''
+\echo '=========== CANARY E: EXECUTE reachable ONLY via ROLE INHERITANCE ==========='
+-- No direct anon/authenticated grant, no PUBLIC grant: the only path is
+-- membership of anon in an intermediate role that holds EXECUTE. The previous
+-- proacl-only checker MISSED this; the corrected has_function_privilege()
+-- checker must catch it.
+create role app_reader nologin;
+create function public.canary_e() returns int language sql immutable as $$ select 5 $$;
+revoke execute on function public.canary_e() from public, anon, authenticated;
+grant execute on function public.canary_e() to app_reader;
+grant app_reader to anon;
+
+select proacl::text as canary_e_acl from pg_proc where oid='public.canary_e()'::regprocedure;
+
+do $$
+declare a text := (select proacl::text from pg_proc where oid='public.canary_e()'::regprocedure);
+begin
+  -- Precondition: the ACL contains NO anon/authenticated/PUBLIC entry at all.
+  assert a not like '%anon=%', 'E: unexpected direct anon entry: ' || a;
+  assert a not like '%authenticated=%', 'E: unexpected direct authenticated entry: ' || a;
+  assert a not like '{=X/%' and a not like '%,=X/%', 'E: unexpected PUBLIC entry: ' || a;
+  -- But the privilege IS effectively held, through membership.
+  assert has_function_privilege('anon','public.canary_e()','EXECUTE'),
+    'E: fixture failed to create an inherited EXECUTE path';
+  raise notice 'CANARY E SETUP: no direct/PUBLIC ACL entry, yet anon HOLDS EXECUTE via app_reader';
+end $$;
+
+-- Proof the OLD (proacl-only) logic would have MISSED it.
+do $$
+declare missed boolean;
+begin
+  select not exists (
+    select 1 from pg_proc p
+    cross join lateral aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a
+    where p.oid = 'public.canary_e()'::regprocedure
+      and a.privilege_type = 'EXECUTE'
+      and (a.grantee = 0 or pg_get_userbyid(a.grantee) in ('anon','authenticated'))
+  ) into missed;
+  assert missed, 'E: old proacl-only logic would have caught it (fixture invalid)';
+  raise notice 'CANARY E: confirmed the retired proacl-only check would have MISSED this exposure';
+end $$;
+
+-- The corrected checker MUST reject it.
+do $$
+begin
+  perform public._e0b_assert_no_unapproved_client_execute();
+  raise exception 'CHECKER FAILURE: inherited-role EXECUTE was accepted';
+exception when raise_exception then
+  if position('E0b check FAILED' in SQLERRM) = 0 then raise; end if;
+  if position('canary_e' in SQLERRM) = 0 then
+    raise exception 'CHECKER FAILURE: rejection did not name canary_e: %', SQLERRM;
+  end if;
+  raise notice 'CANARY E PASS (inherited): corrected checker rejected -> %', left(SQLERRM, 200);
+end $$;
+
+-- Remove the inheritance path; the checker must accept again.
+revoke app_reader from anon;
+do $$
+begin
+  assert not has_function_privilege('anon','public.canary_e()','EXECUTE'), 'E: inheritance not removed';
+  perform public._e0b_assert_no_unapproved_client_execute();
+  raise notice 'CANARY E CLEANUP PASS: inheritance removed, checker accepts again';
+end $$;
+drop function public.canary_e();
+drop role app_reader;
+
+\echo ''
 \echo '=========== out-of-scope defaults untouched ==========='
 do $$
 declare a text;
