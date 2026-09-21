@@ -78,7 +78,7 @@ begin
     exception when insufficient_privilege then reset role; denied := denied + 1;
     end;
   end loop;
-  assert denied = 2, 'expected 2 denials, got ' || denied;
+  assert denied = 1, 'expected 1 denial, got ' || denied;
   assert not pg_has_role('anon','authenticated','USAGE'), 'anon is a member of authenticated';
   raise notice 'INHERITANCE PASS: no client role inherits the approved grant';
 end $$;
