@@ -10,7 +10,16 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "sb:version": "supabase --version",
+    "sb:local:start": "supabase start",
+    "sb:local:stop": "supabase stop --no-backup",
+    "sb:local:reset": "supabase db reset --local",
+    "sb:local:list": "supabase migration list --local",
+    "sb:remote:list": "supabase migration list --db-url",
+    "sb:remote:push:dry-run": "supabase db push --dry-run --db-url",
+    "sb:remote:push": "supabase db push --db-url",
+    "sb:remote:repair:applied": "supabase migration repair --status applied --db-url"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
