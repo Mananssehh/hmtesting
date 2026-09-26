@@ -53,7 +53,7 @@ T='public.join_event_by_code_trusted(uuid,text,text)'; O='public.join_event_by_c
 for r in anon:f authenticated:t service_role:t; do check "A old ${r%%:*}" ${r##*:} "$(q "select has_function_privilege('${r%%:*}','$O','EXECUTE')")"; done
 for r in anon:f authenticated:f service_role:t; do check "A new ${r%%:*}" ${r##*:} "$(q "select has_function_privilege('${r%%:*}','$T','EXECUTE')")"; done
 check "A new PUBLIC not in ACL" f "$(q "select proacl::text like '%{=X%' or proacl::text like '%,=X%' from pg_proc where proname='join_event_by_code_trusted'")"
-check "A new owner/secdef/search_path" "postgres|t|{search_path=\"\"}" "$(q "select pg_get_userbyid(proowner)||'|'||prosecdef||'|'||proconfig::text from pg_proc where proname='join_event_by_code_trusted'")"
+check "A new owner/secdef/search_path" "postgres|true|{\"search_path=\\\"\\\"\"}" "$(q "select pg_get_userbyid(proowner)||'|'||prosecdef||'|'||proconfig::text from pg_proc where proname='join_event_by_code_trusted'")"
 check "A old md5 unchanged" $OLDMD5 "$(q "select md5(prosrc) from pg_proc where proname='join_event_by_code'")"
 # live-call behaviour after A
 R=$(call authenticated $UA "select public.join_event_by_code('live01','OldPath')")
@@ -68,7 +68,7 @@ check "new: first join ok" true "$(echo "$R" | grep -q '"ok": true' && echo true
 check "new: nickname falls back to profile" "ProfileA|1|1" "$(q "select nickname||'|'||count(*) over()||'|'||(select points from public.profiles where id='$UA') from public.event_participants where user_id='$UA'")"
 L1=$(q "select last_seen_at from public.event_participants where user_id='$UA'"); sleep 0.05
 exp service_role "select public.join_event_by_code_trusted('$UA','LIVE01','NewNick')" >/dev/null
-check "new: refresh keeps one row, updates nick, no extra point" "NewNick|1|1|t" "$(q "select nickname||'|'||count(*) over()||'|'||(select points from public.profiles where id='$UA')||'|'||(last_seen_at > '$L1') from public.event_participants where user_id='$UA'")"
+check "new: refresh keeps one row, updates nick, no extra point" "NewNick|1|1|true" "$(q "select nickname||'|'||count(*) over()||'|'||(select points from public.profiles where id='$UA')||'|'||(last_seen_at > '$L1') from public.event_participants where user_id='$UA'")"
 exp service_role "select public.join_event_by_code_trusted('$UB','LIVE01',null)" >/dev/null
 check "new: blank profile nickname -> Guest" Guest "$(q "select nickname from public.event_participants where user_id='$UB'")"
 exp service_role "select public.join_event_by_code_trusted('$UB','LIVE01','ABCDEFGHIJKLMNOPQRSTUVWXYZ')" >/dev/null
