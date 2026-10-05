@@ -76,10 +76,8 @@ describe("resolveEventEntry", () => {
     const ev = await resolveEventEntry("abc12", "guest1", "Pat");
     expect(ev).toEqual(EV);
     expect((ev as unknown as Record<string, unknown>).dj_id).toBeUndefined();
-    // First visit in this session refreshes presence once...
-    expect(invoke).toHaveBeenCalledTimes(1);
-    invoke.mockClear();
-    // ...and a second load within the throttle window does not.
+    // Returning members never touch the rate-limited join boundary.
+    expect(invoke).not.toHaveBeenCalled();
     await resolveEventEntry("abc12", "guest1", "Pat");
     expect(invoke).not.toHaveBeenCalled();
   });

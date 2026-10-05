@@ -9,8 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
  * songs, and the DJ's guest list stops refreshing. So membership is verified
  * explicitly and the atomic join boundary (join-event) is invoked when missing.
  *
- * join-event is rate limited (10/user/10min), so returning members only touch it
- * on a throttled cadence to refresh nickname + last_seen_at.
+ * join-event is rate limited per user and per shared IP, so returning members
+ * never touch it; only true first joins do.
  */
 
 export interface EventEntryInfo {
@@ -28,31 +28,6 @@ export interface EventEntryInfo {
 
 const EVENT_COLUMNS =
   "id, dj_id, name, venue, dj_name, is_active, requests_status, allow_explicit, require_approval, cooldown_seconds, rules_text";
-
-/** Minimum gap between last_seen_at refreshes for an already-joined guest. */
-export const PRESENCE_REFRESH_MS = 5 * 60 * 1000;
-
-function presenceKey(eventId: string) {
-  return `decks:presence:${eventId}`;
-}
-
-function shouldRefreshPresence(eventId: string, now: number): boolean {
-  try {
-    const raw = sessionStorage.getItem(presenceKey(eventId));
-    const last = raw ? parseInt(raw, 10) : 0;
-    return !last || now - last >= PRESENCE_REFRESH_MS;
-  } catch {
-    return false;
-  }
-}
-
-function markPresence(eventId: string, now: number) {
-  try {
-    sessionStorage.setItem(presenceKey(eventId), String(now));
-  } catch {
-    /* ignore */
-  }
-}
 
 async function callJoin(code: string, nickname: string) {
   const { data, error } = await supabase.functions.invoke("join-event", {
@@ -98,14 +73,11 @@ export async function resolveEventEntry(
     // song requests work and the DJ's guest list sees them.
     const joined = await callJoin(code, nickname);
     if (!joined) return null;
-    markPresence(row.id, Date.now());
     return { ...(event as EventEntryInfo), ...joined, id: row.id };
   }
 
-  const now = Date.now();
-  if (shouldRefreshPresence(row.id, now)) {
-    markPresence(row.id, now);
-    void callJoin(code, nickname); // fire-and-forget last_seen_at/nickname refresh
-  }
+  // Existing participant: do NOT call join-event. Every call consumes the
+  // shared per-IP allowance, so returning guests opening new tabs could lock
+  // out first-time joiners on the same venue Wi-Fi.
   return event as EventEntryInfo;
 }
