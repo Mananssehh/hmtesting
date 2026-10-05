@@ -98,14 +98,11 @@ export async function resolveEventEntry(
     // song requests work and the DJ's guest list sees them.
     const joined = await callJoin(code, nickname);
     if (!joined) return null;
-    markPresence(row.id, Date.now());
     return { ...(event as EventEntryInfo), ...joined, id: row.id };
   }
 
-  const now = Date.now();
-  if (shouldRefreshPresence(row.id, now)) {
-    markPresence(row.id, now);
-    void callJoin(code, nickname); // fire-and-forget last_seen_at/nickname refresh
-  }
+  // Existing participant: do NOT call join-event. Every call consumes the
+  // shared per-IP allowance, so returning guests opening new tabs could lock
+  // out first-time joiners on the same venue Wi-Fi.
   return event as EventEntryInfo;
 }
