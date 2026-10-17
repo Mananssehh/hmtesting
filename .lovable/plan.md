@@ -1,6 +1,58 @@
-# DECKS Analytics — Revised Audit and Staged Plan (rev 2, no implementation)
+# DECKS Analytics — Revised Audit and Staged Plan (rev 3, no implementation)
 
 This plan comes from read-only review only. Nothing has been implemented, migrated, deployed or published. Gate 1 (writing and testing locally) starts only after you approve this plan.
+
+## Rev 3 changes (these override any conflicting text below)
+
+**R1. Request details survive hard deletes.**
+- The history row stores a snapshot when a request is created and when it is deleted: title, artist, provider, track id, explicit flag, requested_by (server-side only, never returned), event_id and created_at.
+- Metrics for deleted requests are calculated from these snapshots.
+
+**R2. Actor attribution.**
+- **No signed-in user:** `actor_type = system`, `reason_code = null` ("unverified").
+- **Bridge:** never assumed. `system_bridge_played` is recorded only in a later, separately approved phase where the Bridge function explicitly marks its own writes.
+- **Signed-in user who is not the requester, the DJ or an admin:** recorded as `unknown`, so it shows up for review.
+
+**R3. A selection can arrive before its search record.**
+- `log_search_event`, `mark_search_selected` and `link_search_request` all upsert on `search_event_id`. Whichever arrives first creates the row; the others fill in their fields.
+- Selection and link only work for the caller's own pseudonym. If an existing row's pseudonym doesn't match, the call is rejected.
+- Rows with a selection but no search record after 24 hours are counted as "search log missing". They are reported, not hidden.
+
+**R4. Refunds and revenue.**
+- Refunded amounts come from the actual stored refund data (`dj_tips.refunded_amount_cents`, `refunded_at`).
+- Platform revenue after partial refunds is calculated in proportion and labelled **"Estimated platform revenue"**.
+- Exact fee reversal is not stored, so it is never presented as exact.
+
+**R5. Timezone saving.**
+- After creating an event, the screen saves the timezone, then reads it back.
+- If the read-back value doesn't match, the DJ sees a visible warning ("Timezone not saved, reports will use UTC") with a Retry button, and the event shows a "UTC" badge.
+- Tests cover a successful save, a rejected save and an invalid timezone.
+
+**R6. Logging failures are detectable.**
+- When the history trigger fails, it writes a row to `analytics_logging_failures` (time, table, operation, error code). It never blocks the queue change.
+- `get_admin_analytics` reports the failure count.
+- A reconciliation function compares song_requests with history events per event and reports any gaps.
+- Tests force a failure and confirm it is recorded and the queue change still succeeded.
+
+**R7. Baseline and post-change measurements.**
+- Measure on the test database before and after: current Analytics page queries, `request_song`, vote insert, DJ status update and search response time, using the same data and concurrency.
+- Pass mark: the request, vote and status-update paths are no more than 10% slower at the 95th percentile.
+- The authorization matrix is run before and after, and must stay the same for every existing path.
+
+## Gate 1 isolation
+
+- **Where:** a new Lovable draft of the project.
+  - Draft changes stay out of the GitHub repository until the draft is accepted.
+  - Accepting a draft does not publish the site.
+- **Database tests:** a throwaway Postgres in the sandbox, built from the staged SQL and test data. Nothing is sent to the production database.
+- **First step, read-only:**
+  - Confirm the draft's backend is separate from production (project reference and auth users differ).
+  - Confirm that no function deploys or migrations are triggered from the draft.
+  - **If the draft's backend is production, or this can't be proven, stop and report the blocker before any edit.**
+- **Gate 1 never:**
+  - uses the migration tool or deploys functions
+  - accepts the draft
+  - publishes the site
 
 ## A. Audit summary (unchanged findings, plus new facts)
 
